@@ -102,6 +102,23 @@ export const colors = {
     800: violetDark.violet6,
     900: violet.violet12,
   },
+  fd: {
+    background: '#F5F5FA',
+    surface: '#FFFFFF',
+    border: '#E7E8F0',
+    text: '#1B1B2F',
+    muted: '#6B6B80',
+    primary: '#4F5CD1',
+    action: '#2C63FF',
+    green: '#12805C',
+    greenSoft: '#E7F6EC',
+    blue: '#1B66C9',
+    blueSoft: '#E8F0FE',
+    red: '#D72C2C',
+    redSoft: '#FDECEC',
+    amber: '#F5A623',
+    amberSoft: '#FFF4DE',
+  },
 
   // next design system color
   n: {

@@ -1,13 +1,14 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
+import { useStore } from 'vuex';
 import { getLastMessage } from 'dashboard/helper/conversationHelper';
+import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import MessagePreview from './MessagePreview.vue';
 import InboxName from '../InboxName.vue';
 import TimeAgo from 'dashboard/components/ui/TimeAgo.vue';
-import CardLabels from './conversationCardComponents/CardLabels.vue';
-import CardPriorityIcon from 'dashboard/components-next/Conversation/ConversationCard/CardPriorityIcon.vue';
 import UnreadBadge from 'dashboard/components-next/Conversation/ConversationCard/UnreadBadge.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
 import VoiceCallStatus from './VoiceCallStatus.vue';
@@ -20,7 +21,6 @@ const props = defineProps({
   inbox: { type: Object, default: () => ({}) },
   selected: { type: Boolean, default: false },
   isActiveChat: { type: Boolean, default: false },
-  showAssignee: { type: Boolean, default: false },
   showInboxName: { type: Boolean, default: false },
   hideThumbnail: { type: Boolean, default: false },
   compact: { type: Boolean, default: false },
@@ -29,15 +29,29 @@ const props = defineProps({
 const emit = defineEmits([
   'click',
   'contextmenu',
+  'assignAgent',
+  'assignPriority',
+  'updateConversationStatus',
   'selectConversation',
   'deSelectConversation',
 ]);
 
+const { t } = useI18n();
+const store = useStore();
+const { getPlainText } = useMessageFormatter();
 const hovered = ref(false);
 
 const unreadCount = computed(() => props.chat.unread_count);
 const hasUnread = computed(() => unreadCount.value > 0);
 const lastMessageInChat = computed(() => getLastMessage(props.chat));
+const displayId = computed(() => props.chat.display_id || props.chat.id);
+const createdTimestamp = computed(
+  () => props.chat.created_at || props.chat.timestamp
+);
+const appliedSLA = computed(() => props.chat?.applied_sla);
+const isAgentBotAssignee = computed(
+  () => props.chat?.meta?.assignee_type === 'AgentBot'
+);
 
 const voiceCallData = computed(() => {
   const last = lastMessageInChat.value;
@@ -50,24 +64,13 @@ const voiceCallData = computed(() => {
   };
 });
 
-const showMetaSection = computed(() => {
-  return (
-    props.showInboxName ||
-    (props.showAssignee && props.assignee.name) ||
-    props.chat.priority
-  );
-});
-
-const isAgentBotAssignee = computed(
-  () => props.chat?.meta?.assignee_type === 'AgentBot'
-);
-
 const hasSlaPolicyId = computed(
   () => props.chat?.applied_sla?.id && !props.currentContact?.blocked
 );
 
-const showLabelsSection = computed(() => {
-  return props.chat.labels?.length > 0 || hasSlaPolicyId.value;
+const hasSlaMiss = computed(() => {
+  const status = appliedSLA.value?.sla_status;
+  return status === 'missed' || status === 'active_with_misses';
 });
 
 const messagePreviewClass = computed(() => {
@@ -76,6 +79,128 @@ const messagePreviewClass = computed(() => {
     !props.compact && hasUnread.value ? 'ltr:pr-4 rtl:pl-4' : '',
     props.compact && hasUnread.value ? 'ltr:pr-6 rtl:pl-6' : '',
   ];
+});
+
+const subject = computed(() => {
+  const customAttributes =
+    props.chat.custom_attributes || props.chat.customAttributes || {};
+  const emailSubject = customAttributes.email?.subject;
+  return getPlainText(
+    emailSubject ||
+      lastMessageInChat.value?.content ||
+      t('CHAT_LIST.NO_CONTENT')
+  );
+});
+
+const priorityOptions = computed(() => [
+  { key: '', label: t('CONVERSATION.PRIORITY.OPTIONS.NONE') },
+  { key: 'low', label: t('CONVERSATION.PRIORITY.OPTIONS.LOW') },
+  { key: 'medium', label: t('CONVERSATION.PRIORITY.OPTIONS.MEDIUM') },
+  { key: 'high', label: t('CONVERSATION.PRIORITY.OPTIONS.HIGH') },
+  { key: 'urgent', label: t('CONVERSATION.PRIORITY.OPTIONS.URGENT') },
+]);
+
+const priorityLabel = computed(() => {
+  const selected = priorityOptions.value.find(
+    item => item.key === (props.chat.priority || '')
+  );
+  return selected?.label || t('CONVERSATION.PRIORITY.OPTIONS.NONE');
+});
+
+const priorityDotClass = computed(() => {
+  if (props.chat.priority === 'urgent') return 'bg-fd-red';
+  if (['medium', 'high'].includes(props.chat.priority)) return 'bg-fd-amber';
+  return 'bg-fd-green';
+});
+
+const statusOptions = computed(() => [
+  { key: 'open', label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT') },
+  {
+    key: 'pending',
+    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT'),
+  },
+  {
+    key: 'resolved',
+    label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),
+  },
+  ...(props.chat.status === 'snoozed'
+    ? [
+        {
+          key: 'snoozed',
+          label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.snoozed.TEXT'),
+        },
+      ]
+    : []),
+]);
+
+const currentStatusLabel = computed(() => {
+  const currentStatus = statusOptions.value.find(
+    item => item.key === props.chat.status
+  );
+  return currentStatus?.label || props.chat.status;
+});
+
+const statusPills = computed(() => {
+  const pills = [];
+  if (hasSlaMiss.value) {
+    pills.push({
+      key: 'overdue',
+      label: t('CHAT_LIST.FRESHDESK_CARD.STATUS.OVERDUE'),
+      class: 'bg-fd-redSoft text-fd-red',
+    });
+  }
+
+  if (props.chat.status === 'open' && !props.assignee.name) {
+    pills.push({
+      key: 'new',
+      label: t('CHAT_LIST.FRESHDESK_CARD.STATUS.NEW'),
+      class: 'bg-fd-greenSoft text-fd-green',
+    });
+  }
+
+  if (
+    lastMessageInChat.value?.message_type === 'incoming' &&
+    props.assignee.name
+  ) {
+    pills.push({
+      key: 'customer-responded',
+      label: t('CHAT_LIST.FRESHDESK_CARD.STATUS.CUSTOMER_RESPONDED'),
+      class: 'bg-fd-blueSoft text-fd-blue',
+    });
+  }
+
+  if (!pills.length) {
+    pills.push({
+      key: props.chat.status,
+      label: currentStatusLabel.value,
+      class: 'bg-n-slate-3 text-n-slate-11',
+    });
+  }
+  return pills;
+});
+
+const assignableAgents = computed(() => {
+  const agents = store.getters['inboxAssignableAgents/getAssignableAgents'](
+    props.inbox.id
+  );
+  return [
+    {
+      confirmed: true,
+      name: t('CHAT_LIST.FRESHDESK_CARD.UNASSIGNED'),
+      id: null,
+      role: 'agent',
+      account_id: 0,
+      email: '',
+    },
+    ...agents,
+  ];
+});
+
+const assigneeId = computed(() => props.assignee.id || '');
+const assigneeLabel = computed(() => {
+  const group = props.inbox.name || t('CHAT_LIST.FRESHDESK_CARD.ANY_GROUP');
+  const agent = props.assignee.name || t('CHAT_LIST.FRESHDESK_CARD.UNASSIGNED');
+  return `${group} / ${agent}`;
 });
 
 const onThumbnailHover = () => {
@@ -99,148 +224,230 @@ const selectedModel = computed({
   set: value => onSelectConversation(value),
 });
 
+const onAssignAgent = event => {
+  const selectedId = event.target.value;
+  const agent = assignableAgents.value.find(
+    item => String(item.id ?? '') === selectedId
+  );
+  if (agent) emit('assignAgent', agent);
+};
+
+const onAssignPriority = event => {
+  emit('assignPriority', event.target.value || null);
+};
+
+const onUpdateStatus = event => {
+  emit('updateConversationStatus', event.target.value, null);
+};
+
+const fetchAssignableAgents = () => {
+  if (props.inbox.id) {
+    store.dispatch('inboxAssignableAgents/fetch', [props.inbox.id]);
+  }
+};
+
+onMounted(fetchAssignableAgents);
+
 watch(
   () => props.chat.id,
   () => {
     hovered.value = false;
   }
 );
+
+watch(() => props.inbox.id, fetchAssignableAgents);
 </script>
 
 <template>
   <div
-    class="relative flex items-start flex-grow-0 flex-shrink-0 w-auto max-w-full py-0 cursor-pointer conversation border-b border-n-slate-3 hover:border-n-surface-1 hover:bg-n-alpha-1 dark:hover:bg-n-alpha-3 group hover:z-[1] before:content-[none] before:absolute before:-top-px before:inset-x-0 before:h-px before:bg-n-surface-1 before:pointer-events-none hover:before:content-['']"
+    class="relative flex flex-grow-0 flex-shrink-0 w-auto max-w-full px-3 py-2 cursor-pointer conversation bg-fd-background group hover:z-[1]"
     :class="{
-      'active animate-card-select bg-n-background !border-n-surface-1':
-        isActiveChat,
-      'selected bg-n-slate-2 !border-n-surface-1': selected,
-      'px-0': compact,
-      'px-3': !compact,
+      'active animate-card-select': isActiveChat,
+      selected: selected,
+      'px-1': compact,
     }"
     @click="$emit('click', $event)"
     @contextmenu="$emit('contextmenu', $event)"
   >
     <div
-      class="relative"
-      @mouseenter="onThumbnailHover"
-      @mouseleave="onThumbnailLeave"
+      class="grid w-full grid-cols-[auto_1fr_auto] items-start gap-3 rounded-xl border border-fd-border bg-fd-surface p-3 shadow-sm transition-colors hover:border-fd-primary/40"
+      :class="{
+        'ring-2 ring-fd-primary/30': isActiveChat,
+        'border-fd-primary bg-fd-surface': selected,
+      }"
     >
-      <Avatar
-        v-if="!hideThumbnail"
-        :name="currentContact.name"
-        :src="currentContact.thumbnail"
-        :size="32"
-        :status="currentContact.availability_status"
-        :class="!showInboxName ? 'mt-4' : 'mt-8'"
-        hide-offline-status
-      >
-        <template #overlay="{ size }">
-          <label
-            v-if="hovered || selected"
-            class="flex items-center justify-center rounded-full cursor-pointer absolute inset-0 z-10 backdrop-blur-[2px]"
-            :style="{ width: `${size}px`, height: `${size}px` }"
-            @click.stop
-          >
-            <Checkbox v-model="selectedModel" />
-          </label>
-        </template>
-      </Avatar>
-    </div>
-    <div class="px-0 py-3 flex-1 min-w-0 border-line">
       <div
-        v-if="showMetaSection"
-        class="flex items-center min-w-0 gap-1"
-        :class="{
-          'ltr:ml-2 rtl:mr-2': !compact,
-          'mx-2': compact,
-        }"
+        class="grid grid-cols-[auto_2rem] gap-2"
+        @mouseenter="onThumbnailHover"
+        @mouseleave="onThumbnailLeave"
       >
-        <InboxName v-if="showInboxName" :inbox="inbox" class="flex-1 min-w-0" />
+        <div class="pt-2" @click.stop>
+          <Checkbox v-model="selectedModel" />
+        </div>
+        <Avatar
+          v-if="!hideThumbnail"
+          :name="currentContact.name"
+          :src="currentContact.thumbnail"
+          :size="32"
+          :status="currentContact.availability_status"
+          hide-offline-status
+        />
+      </div>
+
+      <div class="flex min-w-0 flex-col gap-2">
+        <div class="flex flex-wrap gap-1.5">
+          <span
+            v-for="pill in statusPills"
+            :key="pill.key"
+            class="rounded-md px-2 py-1 text-xxs font-semibold uppercase leading-none"
+            :class="pill.class"
+          >
+            {{ pill.label }}
+          </span>
+          <UnreadBadge v-if="hasUnread" :count="unreadCount" />
+        </div>
+
+        <h4
+          class="conversation--user m-0 line-clamp-2 text-[15px] font-semibold leading-5 text-fd-text"
+        >
+          {{ subject }}
+          {{ $t('CHAT_LIST.FRESHDESK_CARD.TICKET_ID', { id: displayId }) }}
+        </h4>
+
         <div
-          class="flex items-baseline gap-2 flex-shrink-0"
-          :class="{
-            'flex-1 justify-between': !showInboxName,
-          }"
+          class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fd-muted"
         >
           <span
-            v-if="showAssignee && assignee.name"
-            class="text-n-slate-11 text-xs font-medium leading-3 py-0.5 px-0 inline-flex items-center gap-px truncate"
+            v-if="showInboxName"
+            class="inline-flex min-w-0 max-w-full items-center gap-1"
+          >
+            <InboxName :inbox="inbox" class="min-w-0" />
+          </span>
+          <span
+            v-else
+            class="inline-flex min-w-0 max-w-full items-center gap-1 truncate"
+          >
+            <Icon icon="i-lucide-mail" class="size-3.5 shrink-0" />
+            <span class="truncate">{{ currentContact.name }}</span>
+          </span>
+          <span class="text-n-slate-8">
+            {{ $t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
+          </span>
+          <span class="inline-flex items-center gap-1">
+            {{ $t('CHAT_LIST.FRESHDESK_CARD.CREATED') }}
+            <TimeAgo
+              :last-activity-timestamp="createdTimestamp"
+              :created-at-timestamp="createdTimestamp"
+              :conversation-id="chat.id"
+            />
+          </span>
+          <span v-if="hasSlaPolicyId" class="inline-flex items-center gap-1">
+            <span class="text-n-slate-8">
+              {{ $t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
+            </span>
+            <SLACardLabel :chat="chat" />
+          </span>
+        </div>
+
+        <VoiceCallStatus
+          v-if="voiceCallData.status"
+          key="voice-status-row"
+          :status="voiceCallData.status"
+          :direction="voiceCallData.direction"
+          :message-preview-class="messagePreviewClass"
+        />
+        <MessagePreview
+          v-else-if="lastMessageInChat"
+          key="message-preview"
+          :message="lastMessageInChat"
+          class="m-0 min-w-0 text-sm leading-5"
+          :class="messagePreviewClass"
+        />
+        <p
+          v-else
+          key="no-messages"
+          class="m-0 flex min-w-0 items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-5 text-n-slate-11"
+          :class="messagePreviewClass"
+        >
+          <Icon icon="i-lucide-info" class="size-3.5 shrink-0" />
+          <span class="mx-0.5">
+            {{ $t(`CHAT_LIST.NO_MESSAGES`) }}
+          </span>
+        </p>
+      </div>
+
+      <div class="grid w-40 shrink-0 gap-2 text-xs text-fd-muted" @click.stop>
+        <label class="grid gap-1">
+          <span class="sr-only">{{
+            $t('CHAT_LIST.FRESHDESK_CARD.PRIORITY')
+          }}</span>
+          <span
+            class="inline-flex items-center gap-1.5 font-medium text-fd-text"
+          >
+            <span class="size-2 rounded-full" :class="priorityDotClass" />
+            {{ priorityLabel }}
+          </span>
+          <select
+            class="h-8 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            :value="chat.priority || ''"
+            @change="onAssignPriority"
+          >
+            <option
+              v-for="option in priorityOptions"
+              :key="option.key"
+              :value="option.key"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+
+        <label class="grid gap-1">
+          <span
+            class="inline-flex min-w-0 items-center gap-1 font-medium text-fd-text"
           >
             <Icon
               :icon="
                 isAgentBotAssignee ? 'i-lucide-bot' : 'i-lucide-user-round'
               "
-              class="size-3 text-n-slate-11 flex-shrink-0"
+              class="size-3.5 shrink-0"
             />
-            <span class="truncate">{{ assignee.name }}</span>
+            <span class="truncate">{{ assigneeLabel }}</span>
           </span>
-          <CardPriorityIcon
-            :priority="chat.priority"
-            class="flex-shrink-0 !size-3.5"
-          />
-        </div>
+          <select
+            class="h-8 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            :value="assigneeId"
+            @change="onAssignAgent"
+          >
+            <option
+              v-for="agent in assignableAgents"
+              :key="agent.id ?? 'none'"
+              :value="agent.id ?? ''"
+            >
+              {{ agent.name }}
+            </option>
+          </select>
+        </label>
+
+        <label class="grid gap-1">
+          <span class="sr-only">
+            {{ $t('CHAT_LIST.FRESHDESK_CARD.STATUS_LABEL') }}
+          </span>
+          <select
+            class="h-8 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs font-medium text-fd-text outline-none focus:border-fd-primary"
+            :value="chat.status"
+            @change="onUpdateStatus"
+          >
+            <option
+              v-for="option in statusOptions"
+              :key="option.key"
+              :value="option.key"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
       </div>
-      <h4
-        class="conversation--user text-sm my-0 mx-2 capitalize pt-0.5 text-ellipsis overflow-hidden whitespace-nowrap flex-1 min-w-0 ltr:pr-16 rtl:pl-16 text-n-slate-12"
-        :class="hasUnread ? 'font-semibold' : 'font-medium'"
-      >
-        {{ currentContact.name }}
-      </h4>
-      <VoiceCallStatus
-        v-if="voiceCallData.status"
-        key="voice-status-row"
-        :status="voiceCallData.status"
-        :direction="voiceCallData.direction"
-        :message-preview-class="messagePreviewClass"
-      />
-      <MessagePreview
-        v-else-if="lastMessageInChat"
-        key="message-preview"
-        :message="lastMessageInChat"
-        class="my-0 mx-2 leading-6 h-6 flex-1 min-w-0 text-sm"
-        :class="messagePreviewClass"
-      />
-      <p
-        v-else
-        key="no-messages"
-        class="text-n-slate-11 text-sm my-0 mx-2 leading-6 h-6 flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
-        :class="messagePreviewClass"
-      >
-        <fluent-icon
-          size="16"
-          class="-mt-0.5 align-middle inline-block text-n-slate-10"
-          icon="info"
-        />
-        <span class="mx-0.5">
-          {{ $t(`CHAT_LIST.NO_MESSAGES`) }}
-        </span>
-      </p>
-      <div
-        class="absolute flex flex-col ltr:right-3 rtl:left-3"
-        :class="showMetaSection ? 'top-8' : 'top-4'"
-      >
-        <span class="ml-auto font-normal leading-4 text-xxs">
-          <TimeAgo
-            :last-activity-timestamp="chat.timestamp"
-            :created-at-timestamp="chat.created_at"
-            :conversation-id="chat.id"
-          />
-        </span>
-        <UnreadBadge
-          v-if="hasUnread"
-          :count="unreadCount"
-          class="ltr:ml-auto rtl:mr-auto mt-1"
-        />
-      </div>
-      <CardLabels
-        v-if="showLabelsSection"
-        :conversation-labels="chat.labels"
-        class="mt-0.5 mx-2 mb-0"
-      >
-        <template v-if="hasSlaPolicyId" #before>
-          <SLACardLabel :chat="chat" class="ltr:mr-1 rtl:ml-1" />
-        </template>
-      </CardLabels>
     </div>
   </div>
 </template>

@@ -36,6 +36,20 @@
         "TEXT": "All"
       }
     },
+    "FRESHDESK_CARD": {
+      "ANY_GROUP": "Any group",
+      "CREATED": "Created",
+      "PRIORITY": "Priority",
+      "STATUS_LABEL": "Status",
+      "SEPARATOR": "•",
+      "TICKET_ID": "#{id}",
+      "UNASSIGNED": "Unassigned",
+      "STATUS": {
+        "NEW": "New",
+        "CUSTOMER_RESPONDED": "Customer responded",
+        "OVERDUE": "Overdue"
+      }
+    },
     "VIEW_FILTER": "View",
     "SORT_TOOLTIP_LABEL": "Sort conversations",
     "CHAT_SORT": {
