@@ -62,6 +62,18 @@
       "STATUS_BY": "Status:",
       "TABLE_LAYOUT": "Table"
     },
+    "FRESHDESK_PANEL": {
+      "STATUS_HEADING": "Status",
+      "ASSIGNEE_HEADING": "Assignee",
+      "MORE_FILTERS": "More filters",
+      "STATUS": {
+        "all": "All",
+        "open": "Open",
+        "pending": "Pending",
+        "resolved": "Closed",
+        "snoozed": "Snoozed"
+      }
+    },
     "VIEW_FILTER": "View",
     "SORT_TOOLTIP_LABEL": "Sort conversations",
     "CHAT_SORT": {

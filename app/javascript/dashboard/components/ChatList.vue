@@ -12,8 +12,8 @@ import ConversationList from './ConversationList.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import ConversationFilter from 'next/filter/ConversationFilter.vue';
 import SaveCustomView from 'next/filter/SaveCustomView.vue';
-import ChatTypeTabs from './widgets/ChatTypeTabs.vue';
 import FreshdeskListToolbar from './widgets/conversation/FreshdeskListToolbar.vue';
+import FreshdeskStatusPanel from './widgets/conversation/FreshdeskStatusPanel.vue';
 import DeleteCustomViews from 'dashboard/routes/dashboard/customviews/DeleteCustomViews.vue';
 import ConversationBulkActions from './widgets/conversation/conversationBulkActions/Index.vue';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
@@ -879,128 +879,127 @@ watch(conversationFilters, (newVal, oldVal) => {
 
 <template>
   <div
-    class="flex flex-col flex-shrink-0 conversations-list-wrap bg-fd-background relative"
-    :class="[
-      { hidden: !showConversationList },
-      isOnExpandedLayout ? 'basis-full' : 'w-[520px] 2xl:w-[640px]',
-    ]"
+    class="flex basis-full min-w-0"
+    :class="{ hidden: !showConversationList }"
   >
-    <slot />
-    <ChatListHeader
-      :page-title="pageTitle"
-      :has-applied-filters="hasAppliedFilters"
-      :has-active-folders="hasActiveFolders"
-      :active-status="activeStatus"
-      :is-on-expanded-layout="isOnExpandedLayout"
-      :conversation-stats="conversationStats"
-      :is-list-loading="chatListLoading && !conversationList.length"
-      @add-folders="onClickOpenAddFoldersModal"
-      @delete-folders="onClickOpenDeleteFoldersModal"
-      @filters-modal="onToggleAdvanceFiltersModal"
-      @reset-filters="resetAndFetchData"
-      @basic-filter-change="onBasicFilterChange"
-    />
-
-    <TeleportWithDirection
-      v-if="showAddFoldersModal"
-      to="#saveFilterTeleportTarget"
+    <div
+      class="relative flex min-w-0 flex-1 flex-col conversations-list-wrap bg-fd-background"
     >
-      <SaveCustomView
-        v-model="appliedFilter"
-        :custom-views-query="foldersQuery"
-        :open-last-saved-item="openLastSavedItemInFolder"
-        @close="onCloseAddFoldersModal"
+      <slot />
+      <ChatListHeader
+        :page-title="pageTitle"
+        :has-applied-filters="hasAppliedFilters"
+        :has-active-folders="hasActiveFolders"
+        :active-status="activeStatus"
+        :is-on-expanded-layout="isOnExpandedLayout"
+        :conversation-stats="conversationStats"
+        :is-list-loading="chatListLoading && !conversationList.length"
+        @add-folders="onClickOpenAddFoldersModal"
+        @delete-folders="onClickOpenDeleteFoldersModal"
+        @filters-modal="onToggleAdvanceFiltersModal"
+        @reset-filters="resetAndFetchData"
+        @basic-filter-change="onBasicFilterChange"
       />
-    </TeleportWithDirection>
 
-    <DeleteCustomViews
-      v-if="showDeleteFoldersModal"
-      v-model:show="showDeleteFoldersModal"
-      :active-custom-view="activeFolder"
-      :custom-views-id="foldersId"
-      :open-last-item-after-delete="openLastItemAfterDeleteInFolder"
-      @close="onCloseDeleteFoldersModal"
-    />
+      <TeleportWithDirection
+        v-if="showAddFoldersModal"
+        to="#saveFilterTeleportTarget"
+      >
+        <SaveCustomView
+          v-model="appliedFilter"
+          :custom-views-query="foldersQuery"
+          :open-last-saved-item="openLastSavedItemInFolder"
+          @close="onCloseAddFoldersModal"
+        />
+      </TeleportWithDirection>
 
-    <ChatTypeTabs
-      v-if="!hasAppliedFiltersOrActiveFolders"
-      :items="assigneeTabItems"
-      :active-tab="activeAssigneeTab"
-      is-compact
-      @chat-tab-change="updateAssigneeTab"
-    />
+      <DeleteCustomViews
+        v-if="showDeleteFoldersModal"
+        v-model:show="showDeleteFoldersModal"
+        :active-custom-view="activeFolder"
+        :custom-views-id="foldersId"
+        :open-last-item-after-delete="openLastItemAfterDeleteInFolder"
+        @close="onCloseDeleteFoldersModal"
+      />
 
-    <FreshdeskListToolbar
-      :all-conversations-selected="allConversationsSelected"
-      :active-sort-by="activeSortBy"
+      <FreshdeskListToolbar
+        :all-conversations-selected="allConversationsSelected"
+        :active-sort-by="activeSortBy"
+        :conversation-count="conversationList.length"
+        :total-count="activeAssigneeTabCount"
+        @select-all="toggleSelectAll"
+        @change-filter="onBasicFilterChange"
+      />
+
+      <p
+        v-if="!chatListLoading && !conversationList.length"
+        class="flex overflow-auto justify-center items-center p-4"
+      >
+        {{ $t('CHAT_LIST.LIST.404') }}
+      </p>
+      <ConversationBulkActions
+        :conversations="selectedConversations"
+        :all-conversations-selected="allConversationsSelected"
+        :selected-inboxes="uniqueInboxes"
+        :show-open-action="allSelectedConversationsStatus('open')"
+        :show-resolved-action="allSelectedConversationsStatus('resolved')"
+        :show-snoozed-action="allSelectedConversationsStatus('snoozed')"
+        :class="isOnExpandedLayout && 'sm:!w-[24rem] !w-full'"
+        @select-all-conversations="toggleSelectAll"
+      />
+      <ConversationList
+        :conversation-list="conversationList"
+        :is-loading="chatListLoading"
+        :show-end-of-list-message="showEndOfListMessage"
+        :label="label"
+        :team-id="teamId"
+        :folders-id="foldersId"
+        :conversation-type="conversationType"
+        @load-more="loadMoreConversations"
+      />
+      <Dialog
+        ref="deleteConversationDialogRef"
+        type="alert"
+        :title="
+          $t('CONVERSATION.DELETE_CONVERSATION.TITLE', {
+            conversationId: selectedConversationId,
+          })
+        "
+        :description="$t('CONVERSATION.DELETE_CONVERSATION.DESCRIPTION')"
+        :confirm-button-label="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
+        @confirm="deleteConversation"
+        @close="selectedConversationId = null"
+      />
+      <TeleportWithDirection v-if="showAdvancedFilters" to="body">
+        <div class="fixed inset-0 z-50 flex justify-end bg-black/20">
+          <aside
+            class="h-full w-[440px] max-w-[calc(100vw-1rem)] bg-fd-surface shadow-2xl"
+          >
+            <ConversationFilter
+              v-model="appliedFilter"
+              :folder-name="activeFolderName"
+              :is-folder-view="hasActiveFolders"
+              is-side-panel
+              @apply-filter="onApplyFilter"
+              @update-folder="onUpdateSavedFilter"
+              @close="closeAdvanceFiltersModal"
+            />
+          </aside>
+        </div>
+      </TeleportWithDirection>
+      <ConversationResolveAttributesModal
+        ref="resolveAttributesModalRef"
+        @submit="handleResolveWithAttributes"
+      />
+    </div>
+    <FreshdeskStatusPanel
       :active-status="activeStatus"
-      :conversation-count="conversationList.length"
-      :total-count="activeAssigneeTabCount"
-      :has-applied-filters="hasAppliedFilters"
-      @select-all="toggleSelectAll"
-      @change-filter="onBasicFilterChange"
-      @filters-modal="onToggleAdvanceFiltersModal"
-    />
-
-    <p
-      v-if="!chatListLoading && !conversationList.length"
-      class="flex overflow-auto justify-center items-center p-4"
-    >
-      {{ $t('CHAT_LIST.LIST.404') }}
-    </p>
-    <ConversationBulkActions
-      :conversations="selectedConversations"
-      :all-conversations-selected="allConversationsSelected"
-      :selected-inboxes="uniqueInboxes"
-      :show-open-action="allSelectedConversationsStatus('open')"
-      :show-resolved-action="allSelectedConversationsStatus('resolved')"
-      :show-snoozed-action="allSelectedConversationsStatus('snoozed')"
-      :class="isOnExpandedLayout && 'sm:!w-[24rem] !w-full'"
-      @select-all-conversations="toggleSelectAll"
-    />
-    <ConversationList
-      :conversation-list="conversationList"
-      :is-loading="chatListLoading"
-      :show-end-of-list-message="showEndOfListMessage"
-      :label="label"
-      :team-id="teamId"
-      :folders-id="foldersId"
-      :conversation-type="conversationType"
-      @load-more="loadMoreConversations"
-    />
-    <Dialog
-      ref="deleteConversationDialogRef"
-      type="alert"
-      :title="
-        $t('CONVERSATION.DELETE_CONVERSATION.TITLE', {
-          conversationId: selectedConversationId,
-        })
-      "
-      :description="$t('CONVERSATION.DELETE_CONVERSATION.DESCRIPTION')"
-      :confirm-button-label="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
-      @confirm="deleteConversation"
-      @close="selectedConversationId = null"
-    />
-    <TeleportWithDirection v-if="showAdvancedFilters" to="body">
-      <div class="fixed inset-0 z-50 flex justify-end bg-black/20">
-        <aside
-          class="h-full w-[440px] max-w-[calc(100vw-1rem)] bg-fd-surface shadow-2xl"
-        >
-          <ConversationFilter
-            v-model="appliedFilter"
-            :folder-name="activeFolderName"
-            :is-folder-view="hasActiveFolders"
-            is-side-panel
-            @apply-filter="onApplyFilter"
-            @update-folder="onUpdateSavedFilter"
-            @close="closeAdvanceFiltersModal"
-          />
-        </aside>
-      </div>
-    </TeleportWithDirection>
-    <ConversationResolveAttributesModal
-      ref="resolveAttributesModalRef"
-      @submit="handleResolveWithAttributes"
+      :active-assignee-tab="activeAssigneeTab"
+      :assignee-tab-items="assigneeTabItems"
+      :applied-filter-count="hasAppliedFilters ? 1 : 0"
+      @change-status="value => onBasicFilterChange(value, 'status')"
+      @change-assignee="updateAssigneeTab"
+      @open-filters="onToggleAdvanceFiltersModal"
     />
   </div>
 </template>
