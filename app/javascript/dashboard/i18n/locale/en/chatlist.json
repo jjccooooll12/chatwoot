@@ -62,6 +62,12 @@
       "STATUS_BY": "Status:",
       "TABLE_LAYOUT": "Table"
     },
+    "FRESHDESK_TOPBAR": {
+      "APPS": "Apps",
+      "HELP": "Help",
+      "NEW": "+ New",
+      "NOTIFICATIONS": "Notifications"
+    },
     "FRESHDESK_PANEL": {
       "STATUS_HEADING": "Status",
       "ASSIGNEE_HEADING": "Assignee",
