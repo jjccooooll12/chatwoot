@@ -50,6 +50,17 @@
         "OVERDUE": "Overdue"
       }
     },
+    "FRESHDESK_TOOLBAR": {
+      "CARD_LAYOUT": "Card",
+      "EMPTY_RANGE": "0 of 0",
+      "FILTERS": "Filters ({count})",
+      "LAYOUT": "Layout:",
+      "RANGE": "{start} - {end} of {total}",
+      "SELECT_ALL": "Select all tickets",
+      "SORT_BY": "Sort by:",
+      "STATUS_BY": "Status:",
+      "TABLE_LAYOUT": "Table"
+    },
     "VIEW_FILTER": "View",
     "SORT_TOOLTIP_LABEL": "Sort conversations",
     "CHAT_SORT": {

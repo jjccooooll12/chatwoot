@@ -13,6 +13,7 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import ConversationFilter from 'next/filter/ConversationFilter.vue';
 import SaveCustomView from 'next/filter/SaveCustomView.vue';
 import ChatTypeTabs from './widgets/ChatTypeTabs.vue';
+import FreshdeskListToolbar from './widgets/conversation/FreshdeskListToolbar.vue';
 import DeleteCustomViews from 'dashboard/routes/dashboard/customviews/DeleteCustomViews.vue';
 import ConversationBulkActions from './widgets/conversation/conversationBulkActions/Index.vue';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
@@ -935,6 +936,19 @@ watch(conversationFilters, (newVal, oldVal) => {
       @chat-tab-change="updateAssigneeTab"
     />
 
+    <FreshdeskListToolbar
+      :all-conversations-selected="allConversationsSelected"
+      :active-sort-by="activeSortBy"
+      :active-status="activeStatus"
+      :conversation-count="conversationList.length"
+      :total-count="activeAssigneeTabCount"
+      :has-applied-filters="hasAppliedFilters"
+      :is-on-expanded-layout="isOnExpandedLayout"
+      @select-all="toggleSelectAll"
+      @change-filter="onBasicFilterChange"
+      @filters-modal="onToggleAdvanceFiltersModal"
+    />
+
     <p
       v-if="!chatListLoading && !conversationList.length"
       class="flex overflow-auto justify-center items-center p-4"
@@ -976,18 +990,20 @@ watch(conversationFilters, (newVal, oldVal) => {
       @confirm="deleteConversation"
       @close="selectedConversationId = null"
     />
-    <TeleportWithDirection
-      v-if="showAdvancedFilters"
-      to="#conversationFilterTeleportTarget"
-    >
-      <ConversationFilter
-        v-model="appliedFilter"
-        :folder-name="activeFolderName"
-        :is-folder-view="hasActiveFolders"
-        @apply-filter="onApplyFilter"
-        @update-folder="onUpdateSavedFilter"
-        @close="closeAdvanceFiltersModal"
-      />
+    <TeleportWithDirection v-if="showAdvancedFilters" to="body">
+      <div class="fixed inset-0 z-50 flex justify-end bg-black/20">
+        <aside class="h-full w-[360px] max-w-full bg-fd-surface shadow-2xl">
+          <ConversationFilter
+            v-model="appliedFilter"
+            :folder-name="activeFolderName"
+            :is-folder-view="hasActiveFolders"
+            is-side-panel
+            @apply-filter="onApplyFilter"
+            @update-folder="onUpdateSavedFilter"
+            @close="closeAdvanceFiltersModal"
+          />
+        </aside>
+      </div>
     </TeleportWithDirection>
     <ConversationResolveAttributesModal
       ref="resolveAttributesModalRef"

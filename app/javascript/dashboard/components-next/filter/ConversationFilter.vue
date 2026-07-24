@@ -17,6 +17,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isSidePanel: {
+    type: Boolean,
+    default: false,
+  },
   folderName: {
     type: String,
     default: '',
@@ -105,7 +109,12 @@ const outsideClickHandler = [
 <template>
   <div
     v-on-click-outside="outsideClickHandler"
-    class="z-40 max-w-3xl lg:w-[750px] overflow-visible w-full border border-n-weak bg-n-alpha-3 backdrop-blur-[100px] shadow-lg rounded-xl p-6 grid gap-6"
+    class="z-40 grid w-full gap-6 border border-n-weak bg-n-alpha-3 p-6 shadow-lg backdrop-blur-[100px]"
+    :class="
+      isSidePanel
+        ? 'h-full max-w-full content-start overflow-y-auto rounded-none border-y-0 border-r-0'
+        : 'max-w-3xl overflow-visible rounded-xl lg:w-[750px]'
+    "
   >
     <h3 class="text-base font-medium leading-6 text-n-slate-12">
       {{ filterModalHeaderTitle }}
