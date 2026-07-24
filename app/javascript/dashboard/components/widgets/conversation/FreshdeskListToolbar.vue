@@ -167,7 +167,12 @@ const filterCount = computed(() => (props.hasAppliedFilters ? 1 : 0));
       <button
         id="toggleConversationFilterButton"
         type="button"
-        class="inline-flex h-8 items-center gap-2 rounded-lg border border-fd-border bg-fd-surface px-2 font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary"
+        class="inline-flex h-8 items-center gap-2 rounded-lg border px-2 font-medium hover:border-fd-primary hover:text-fd-primary"
+        :class="
+          filterCount
+            ? 'border-fd-primary bg-fd-primary/5 text-fd-primary'
+            : 'border-fd-border bg-fd-surface text-fd-text'
+        "
         @click="emit('filtersModal')"
       >
         <Icon icon="i-lucide-list-filter" class="size-3.5" />

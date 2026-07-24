@@ -62,25 +62,24 @@ const toggleConversationLayout = () => {
       'border-b border-n-strong': hasAppliedFiltersOrActiveFolders,
     }"
   >
-    <div class="flex items-center justify-center min-w-0">
+    <!-- FRESHDESK-SKIN: bolder title, always-on purple total-count badge, subtle status chip -->
+    <div class="flex items-center min-w-0 gap-1.5">
       <h1
-        class="text-base font-medium truncate text-n-slate-12"
+        class="text-base font-semibold truncate text-fd-text"
         :title="pageTitle"
       >
         {{ pageTitle }}
       </h1>
       <span
-        v-if="
-          allCount > 0 && hasAppliedFiltersOrActiveFolders && !isListLoading
-        "
-        class="px-2 py-1 my-0.5 mx-1 rounded-md capitalize bg-n-slate-3 text-xxs text-n-slate-12 shrink-0"
+        v-if="allCount > 0 && !isListLoading"
+        class="shrink-0 rounded-md bg-fd-primary/10 px-2 py-0.5 text-xxs font-semibold text-fd-primary"
         :title="allCount"
       >
         {{ formattedAllCount }}
       </span>
       <span
         v-if="!hasAppliedFiltersOrActiveFolders"
-        class="px-2 py-1 my-0.5 mx-1 rounded-md capitalize bg-n-slate-3 text-xxs text-n-slate-12 shrink-0"
+        class="shrink-0 rounded-md border border-fd-border bg-fd-surface px-2 py-0.5 text-xxs capitalize text-fd-muted"
       >
         {{ $t(`CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.${activeStatus}.TEXT`) }}
       </span>
