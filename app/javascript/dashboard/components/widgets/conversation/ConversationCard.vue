@@ -7,12 +7,10 @@ import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { MESSAGE_TYPE } from 'shared/constants/messages';
 import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
-import MessagePreview from './MessagePreview.vue';
 import InboxName from '../InboxName.vue';
 import TimeAgo from 'dashboard/components/ui/TimeAgo.vue';
 import UnreadBadge from 'dashboard/components-next/Conversation/ConversationCard/UnreadBadge.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
-import VoiceCallStatus from './VoiceCallStatus.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 
 const props = defineProps({
@@ -54,17 +52,6 @@ const isAgentBotAssignee = computed(
   () => props.chat?.meta?.assignee_type === 'AgentBot'
 );
 
-const voiceCallData = computed(() => {
-  const last = lastMessageInChat.value;
-  if (last?.content_type !== 'voice_call' || !last.call) {
-    return { status: null, direction: null };
-  }
-  return {
-    status: last.call.status,
-    direction: last.call.direction === 'outgoing' ? 'outbound' : 'inbound',
-  };
-});
-
 const hasSlaPolicyId = computed(
   () => props.chat?.applied_sla?.id && !props.currentContact?.blocked
 );
@@ -72,14 +59,6 @@ const hasSlaPolicyId = computed(
 const hasSlaMiss = computed(() => {
   const status = appliedSLA.value?.sla_status;
   return status === 'missed' || status === 'active_with_misses';
-});
-
-const messagePreviewClass = computed(() => {
-  return [
-    hasUnread.value ? 'font-medium text-n-slate-12' : 'text-n-slate-11',
-    !props.compact && hasUnread.value ? 'ltr:pr-4 rtl:pl-4' : '',
-    props.compact && hasUnread.value ? 'ltr:pr-6 rtl:pl-6' : '',
-  ];
 });
 
 const subject = computed(() => {
@@ -279,7 +258,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
 
 <template>
   <div
-    class="relative flex flex-grow-0 flex-shrink-0 w-auto max-w-full px-3 py-2 cursor-pointer conversation bg-fd-background group hover:z-[1]"
+    class="relative flex flex-grow-0 flex-shrink-0 w-auto max-w-full px-3 py-1 cursor-pointer conversation bg-fd-background group hover:z-[1]"
     :class="{
       'active animate-card-select': isActiveChat,
       selected: selected,
@@ -289,52 +268,55 @@ watch(() => props.inbox.id, fetchAssignableAgents);
     @contextmenu="$emit('contextmenu', $event)"
   >
     <div
-      class="grid w-full grid-cols-[auto_1fr_auto] items-start gap-3 rounded-xl border border-fd-border bg-fd-surface p-3 shadow-sm transition-colors hover:border-fd-primary/40"
+      class="grid w-full grid-cols-[auto_minmax(0,1fr)] items-center gap-x-4 gap-y-2 border border-fd-border bg-fd-surface px-3 py-3 transition-colors hover:border-fd-primary/40 sm:grid-cols-[auto_minmax(0,1fr)_minmax(11rem,14rem)]"
       :class="{
         'ring-2 ring-fd-primary/30': isActiveChat,
         'border-fd-primary bg-fd-surface': selected,
       }"
     >
       <div
-        class="grid grid-cols-[auto_2rem] gap-2"
+        class="grid grid-cols-[auto_2.5rem] items-center gap-3"
         @mouseenter="onThumbnailHover"
         @mouseleave="onThumbnailLeave"
       >
-        <div class="pt-2" @click.stop>
+        <div @click.stop>
           <Checkbox v-model="selectedModel" />
         </div>
         <Avatar
           v-if="!hideThumbnail"
           :name="currentContact.name"
           :src="currentContact.thumbnail"
-          :size="32"
+          :size="40"
           :status="currentContact.availability_status"
           hide-offline-status
         />
       </div>
 
-      <div class="flex min-w-0 flex-col gap-2">
-        <div class="flex flex-wrap gap-1.5">
+      <div class="flex min-w-0 flex-col gap-1.5">
+        <div class="flex flex-wrap items-center gap-1.5">
           <span
             v-for="pill in statusPills"
             :key="pill.key"
-            class="rounded-md px-2 py-1 text-xxs font-semibold uppercase leading-none"
+            class="rounded px-1.5 py-0.5 text-xxs font-medium leading-4"
             :class="pill.class"
           >
             {{ pill.label }}
           </span>
           <UnreadBadge v-if="hasUnread" :count="unreadCount" />
+          <SLACardLabel v-if="hasSlaPolicyId" :chat="chat" show-extended-info />
         </div>
 
         <h4
-          class="conversation--user m-0 line-clamp-2 text-[15px] font-semibold leading-5 text-fd-text"
+          class="conversation--user m-0 truncate text-[13px] font-semibold leading-5 text-fd-text"
         >
           {{ subject }}
-          {{ $t('CHAT_LIST.FRESHDESK_CARD.TICKET_ID', { id: displayId }) }}
+          <span class="font-medium text-fd-muted">
+            {{ $t('CHAT_LIST.FRESHDESK_CARD.TICKET_ID', { id: displayId }) }}
+          </span>
         </h4>
 
         <div
-          class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-fd-muted"
+          class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5 text-fd-text"
         >
           <span
             v-if="showInboxName"
@@ -346,13 +328,13 @@ watch(() => props.inbox.id, fetchAssignableAgents);
             v-else
             class="inline-flex min-w-0 max-w-full items-center gap-1 truncate"
           >
-            <Icon icon="i-lucide-mail" class="size-3.5 shrink-0" />
+            <Icon icon="i-lucide-mail" class="size-3 shrink-0 text-fd-muted" />
             <span class="truncate">{{ currentContact.name }}</span>
           </span>
-          <span class="text-n-slate-8">
+          <span class="text-fd-muted">
             {{ $t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
           </span>
-          <span class="inline-flex items-center gap-1">
+          <span class="inline-flex items-center gap-1 text-fd-muted">
             {{ $t('CHAT_LIST.FRESHDESK_CARD.CREATED') }}
             <TimeAgo
               :last-activity-timestamp="createdTimestamp"
@@ -360,57 +342,22 @@ watch(() => props.inbox.id, fetchAssignableAgents);
               :conversation-id="chat.id"
             />
           </span>
-          <span v-if="hasSlaPolicyId" class="inline-flex items-center gap-1">
-            <span class="text-n-slate-8">
-              {{ $t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
-            </span>
-            <SLACardLabel :chat="chat" />
-          </span>
         </div>
-
-        <VoiceCallStatus
-          v-if="voiceCallData.status"
-          key="voice-status-row"
-          :status="voiceCallData.status"
-          :direction="voiceCallData.direction"
-          :message-preview-class="messagePreviewClass"
-        />
-        <MessagePreview
-          v-else-if="lastMessageInChat"
-          key="message-preview"
-          :message="lastMessageInChat"
-          class="m-0 min-w-0 text-sm leading-5"
-          :class="messagePreviewClass"
-        />
-        <p
-          v-else
-          key="no-messages"
-          class="m-0 flex min-w-0 items-center gap-1 overflow-hidden text-ellipsis whitespace-nowrap text-sm leading-5 text-n-slate-11"
-          :class="messagePreviewClass"
-        >
-          <Icon icon="i-lucide-info" class="size-3.5 shrink-0" />
-          <span class="mx-0.5">
-            {{ $t(`CHAT_LIST.NO_MESSAGES`) }}
-          </span>
-        </p>
       </div>
 
       <div
-        class="grid shrink-0 gap-2 text-xs text-fd-muted sm:grid-cols-[9rem_11rem_8rem] sm:items-start sm:gap-3"
+        class="col-start-2 grid min-w-0 shrink-0 gap-1.5 text-xs leading-5 text-fd-text sm:col-start-auto sm:gap-2"
         @click.stop
       >
-        <label class="grid gap-1">
+        <label class="relative inline-flex min-w-0 items-center gap-1.5">
           <span class="sr-only">{{
             $t('CHAT_LIST.FRESHDESK_CARD.PRIORITY')
           }}</span>
-          <span
-            class="inline-flex items-center gap-1.5 font-medium text-fd-text"
-          >
-            <span class="size-2 rounded-full" :class="priorityDotClass" />
-            {{ priorityLabel }}
-          </span>
+          <span class="size-1.5 rounded-sm" :class="priorityDotClass" />
+          <span class="truncate">{{ priorityLabel }}</span>
+          <Icon icon="i-lucide-chevron-down" class="size-3 shrink-0" />
           <select
-            class="h-8 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            class="absolute inset-0 cursor-pointer opacity-0"
             :value="chat.priority || ''"
             @change="onAssignPriority"
           >
@@ -424,20 +371,15 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           </select>
         </label>
 
-        <label class="grid gap-1">
-          <span
-            class="inline-flex min-w-0 items-center gap-1 font-medium text-fd-text"
-          >
-            <Icon
-              :icon="
-                isAgentBotAssignee ? 'i-lucide-bot' : 'i-lucide-user-round'
-              "
-              class="size-3.5 shrink-0"
-            />
-            <span class="truncate">{{ assigneeLabel }}</span>
-          </span>
+        <label class="relative inline-flex min-w-0 items-center gap-1.5">
+          <Icon
+            :icon="isAgentBotAssignee ? 'i-lucide-bot' : 'i-lucide-user-round'"
+            class="size-3 shrink-0 text-fd-muted"
+          />
+          <span class="truncate">{{ assigneeLabel }}</span>
+          <Icon icon="i-lucide-chevron-down" class="size-3 shrink-0" />
           <select
-            class="h-8 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            class="absolute inset-0 cursor-pointer opacity-0"
             :value="assigneeId"
             @change="onAssignAgent"
           >
@@ -451,13 +393,18 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           </select>
         </label>
 
-        <label class="grid gap-1">
+        <label class="relative inline-flex min-w-0 items-center gap-1.5">
           <span class="sr-only">
             {{ $t('CHAT_LIST.FRESHDESK_CARD.STATUS_LABEL') }}
           </span>
-          <span class="font-medium text-fd-text">{{ currentStatusLabel }}</span>
+          <Icon
+            icon="i-lucide-activity"
+            class="size-3 shrink-0 text-fd-muted"
+          />
+          <span class="truncate">{{ currentStatusLabel }}</span>
+          <Icon icon="i-lucide-chevron-down" class="size-3 shrink-0" />
           <select
-            class="h-8 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs font-medium text-fd-text outline-none focus:border-fd-primary"
+            class="absolute inset-0 cursor-pointer opacity-0"
             :value="chat.status"
             @change="onUpdateStatus"
           >
