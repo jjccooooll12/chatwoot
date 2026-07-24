@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import ConversationCard from './widgets/conversation/ConversationCard.vue';
-import ConversationCardExpanded from 'dashboard/components-next/Conversation/ConversationCard/ConversationCardExpanded.vue';
 import ContextMenu from 'dashboard/components/ui/ContextMenu.vue';
 import ConversationContextMenu from './widgets/conversation/contextMenu/Index.vue';
 
@@ -14,8 +13,6 @@ const props = defineProps({
   label: { type: String, default: '' },
   conversationType: { type: String, default: '' },
   foldersId: { type: [String, Number], default: 0 },
-  showAssignee: { type: Boolean, default: false },
-  showExpanded: { type: Boolean, default: false },
 });
 
 const router = useRouter();
@@ -74,10 +71,6 @@ const inbox = computed(() => {
 const showInboxName = computed(
   () => !activeInbox.value && inboxesList.value.length > 1
 );
-const isInboxView = computed(() => !!activeInbox.value);
-const showAssigneeForExpandedCard = computed(
-  () => props.showExpanded || props.showAssignee
-);
 
 const conversationPath = computed(() =>
   frontendURL(
@@ -109,14 +102,6 @@ const onCardClick = e => {
 
   if (isActiveChat.value) return;
   router.push({ path });
-};
-
-const onExpandedSelect = checked => {
-  if (checked) {
-    selectConversation(props.source.id, inbox.value.id);
-  } else {
-    deSelectConversation(props.source.id, inbox.value.id);
-  }
 };
 
 const openContextMenu = e => {
@@ -179,27 +164,9 @@ const onDeleteConversation = () => {
 </script>
 
 <template>
-  <!-- Expanded layout: wide screen + expanded setting -->
-  <ConversationCardExpanded
-    v-if="showExpanded"
-    :chat="source"
-    :current-contact="currentContact"
-    :assignee="assignee"
-    :inbox="inbox"
-    :selected="isConversationSelected(source.id)"
-    :is-active-chat="isActiveChat"
-    :show-assignee="showAssigneeForExpandedCard"
-    :show-inbox-name="showInboxName"
-    :is-inbox-view="isInboxView"
-    @select-conversation="onExpandedSelect"
-    @de-select-conversation="onExpandedSelect"
-    @click="onCardClick"
-    @contextmenu="openContextMenu"
-  />
-
-  <!-- Default (condensed) layout -->
+  <!-- FRESHDESK-SKIN: always render the Freshdesk ticket card (full-width list
+       included) — Chatwoot's expanded/table card is intentionally not used. -->
   <ConversationCard
-    v-else
     :chat="source"
     :current-contact="currentContact"
     :assignee="assignee"

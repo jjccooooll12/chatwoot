@@ -188,13 +188,6 @@ const assigneeTabItems = computed(() => {
   }));
 });
 
-const showAssigneeInConversationCard = computed(() => {
-  return (
-    hasAppliedFiltersOrActiveFolders.value ||
-    activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ALL
-  );
-});
-
 const currentPageFilterKey = computed(() => {
   return hasAppliedFiltersOrActiveFolders.value
     ? 'appliedFilters'
@@ -944,7 +937,6 @@ watch(conversationFilters, (newVal, oldVal) => {
       :conversation-count="conversationList.length"
       :total-count="activeAssigneeTabCount"
       :has-applied-filters="hasAppliedFilters"
-      :is-on-expanded-layout="isOnExpandedLayout"
       @select-all="toggleSelectAll"
       @change-filter="onBasicFilterChange"
       @filters-modal="onToggleAdvanceFiltersModal"
@@ -974,8 +966,6 @@ watch(conversationFilters, (newVal, oldVal) => {
       :team-id="teamId"
       :folders-id="foldersId"
       :conversation-type="conversationType"
-      :show-assignee="showAssigneeInConversationCard"
-      :is-on-expanded-layout="isOnExpandedLayout"
       @load-more="loadMoreConversations"
     />
     <Dialog

@@ -80,12 +80,10 @@ export default {
       return this.conversationId ? true : !this.isOnExpandedLayout;
     },
     isOnExpandedLayout() {
-      const {
-        LAYOUT_TYPES: { CONDENSED },
-      } = wootConstants;
-      const { conversation_display_type: conversationDisplayType = CONDENSED } =
-        this.uiSettings;
-      return conversationDisplayType !== CONDENSED;
+      // FRESHDESK-SKIN: always use the full-width ticket list + full-screen
+      // ticket model (Freshdesk-style). No split pane, no layout toggle — the
+      // message thread is shown only after clicking a ticket, with a back button.
+      return true;
     },
 
     shouldShowSidebar() {

@@ -1,15 +1,12 @@
 <script setup>
 import { ref, computed, provide } from 'vue';
 import { Virtualizer } from 'virtua/vue';
-import { useBreakpoints } from '@vueuse/core';
 import { useChatListKeyboardEvents } from 'dashboard/composables/chatlist/useChatListKeyboardEvents';
 import ConversationItem from './ConversationItem.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import IntersectionObserver from 'dashboard/components/IntersectionObserver.vue';
 
-import wootConstants from 'dashboard/constants/globals';
-
-const props = defineProps({
+defineProps({
   conversationList: { type: Array, default: () => [] },
   isLoading: { type: Boolean, default: false },
   showEndOfListMessage: { type: Boolean, default: false },
@@ -17,8 +14,6 @@ const props = defineProps({
   teamId: { type: [String, Number], default: 0 },
   foldersId: { type: [String, Number], default: 0 },
   conversationType: { type: String, default: '' },
-  showAssignee: { type: Boolean, default: false },
-  isOnExpandedLayout: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['loadMore']);
@@ -28,14 +23,6 @@ const virtualListRef = ref(null);
 const isContextMenuOpen = ref(false);
 
 provide('contextMenuElementTarget', virtualListRef);
-
-const breakpoints = useBreakpoints({
-  lg: wootConstants.LARGE_SCREEN_BREAKPOINT,
-});
-const isLgScreen = breakpoints.greaterOrEqual('lg');
-const showExpandedCards = computed(
-  () => props.isOnExpandedLayout && isLgScreen.value
-);
 
 useChatListKeyboardEvents(conversationListRef);
 
@@ -75,8 +62,6 @@ defineExpose({ conversationListRef });
         :team-id="teamId"
         :folders-id="foldersId"
         :conversation-type="conversationType"
-        :show-assignee="showAssignee"
-        :show-expanded="showExpandedCards"
       />
     </Virtualizer>
     <div v-if="isLoading" class="flex justify-center my-4">

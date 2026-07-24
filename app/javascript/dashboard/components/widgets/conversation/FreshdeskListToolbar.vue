@@ -11,7 +11,6 @@ const props = defineProps({
   conversationCount: { type: Number, default: 0 },
   totalCount: { type: Number, default: 0 },
   hasAppliedFilters: { type: Boolean, default: false },
-  isOnExpandedLayout: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['selectAll', 'changeFilter', 'filtersModal']);
@@ -80,12 +79,6 @@ const rangeLabel = computed(() => {
   });
 });
 
-const layoutLabel = computed(() =>
-  props.isOnExpandedLayout
-    ? t('CHAT_LIST.FRESHDESK_TOOLBAR.TABLE_LAYOUT')
-    : t('CHAT_LIST.FRESHDESK_TOOLBAR.CARD_LAYOUT')
-);
-
 const filterCount = computed(() => (props.hasAppliedFilters ? 1 : 0));
 </script>
 
@@ -152,14 +145,6 @@ const filterCount = computed(() => (props.hasAppliedFilters ? 1 : 0));
     <div
       class="flex min-w-0 flex-wrap items-center gap-2 text-xs text-fd-muted"
     >
-      <div
-        class="inline-flex h-8 items-center gap-2 rounded-lg border border-fd-border bg-fd-surface px-2"
-      >
-        <Icon icon="i-lucide-layout-list" class="size-3.5" />
-        <span>{{ t('CHAT_LIST.FRESHDESK_TOOLBAR.LAYOUT') }}</span>
-        <span class="font-medium text-fd-text">{{ layoutLabel }}</span>
-      </div>
-
       <span class="whitespace-nowrap font-medium text-fd-text">
         {{ rangeLabel }}
       </span>
