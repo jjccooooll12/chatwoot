@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useStore } from 'vuex';
 import { getLastMessage } from 'dashboard/helper/conversationHelper';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
+import { MESSAGE_TYPE } from 'shared/constants/messages';
 import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import MessagePreview from './MessagePreview.vue';
@@ -140,6 +141,27 @@ const currentStatusLabel = computed(() => {
   return currentStatus?.label || props.chat.status;
 });
 
+// An agent has replied at least once when Chatwoot has stamped the first reply.
+const hasAgentReplied = computed(() =>
+  Boolean(props.chat.first_reply_created_at)
+);
+const isAssigned = computed(() => Boolean(props.assignee?.id));
+const lastMessageIsIncoming = computed(
+  () => lastMessageInChat.value?.message_type === MESSAGE_TYPE.INCOMING
+);
+
+// Freshdesk "New": open, nobody assigned, and no agent has replied yet.
+const isNew = computed(
+  () =>
+    props.chat.status === 'open' && !isAssigned.value && !hasAgentReplied.value
+);
+
+// Freshdesk "Customer responded": the latest message is from the customer and
+// an agent had already replied earlier in the thread.
+const customerResponded = computed(
+  () => lastMessageIsIncoming.value && hasAgentReplied.value
+);
+
 const statusPills = computed(() => {
   const pills = [];
   if (hasSlaMiss.value) {
@@ -150,7 +172,7 @@ const statusPills = computed(() => {
     });
   }
 
-  if (props.chat.status === 'open' && !props.assignee.name) {
+  if (isNew.value) {
     pills.push({
       key: 'new',
       label: t('CHAT_LIST.FRESHDESK_CARD.STATUS.NEW'),
@@ -158,10 +180,7 @@ const statusPills = computed(() => {
     });
   }
 
-  if (
-    lastMessageInChat.value?.message_type === 'incoming' &&
-    props.assignee.name
-  ) {
+  if (customerResponded.value) {
     pills.push({
       key: 'customer-responded',
       label: t('CHAT_LIST.FRESHDESK_CARD.STATUS.CUSTOMER_RESPONDED'),
