@@ -56,11 +56,9 @@ const toggleConversationLayout = () => {
 </script>
 
 <template>
+  <!-- FRESHDESK-SKIN: header sits on the lavender chrome with a persistent divider -->
   <div
-    class="flex items-center justify-between gap-2 px-3 h-[3.25rem]"
-    :class="{
-      'border-b border-n-strong': hasAppliedFiltersOrActiveFolders,
-    }"
+    class="flex items-center justify-between gap-2 px-3 h-[3.25rem] border-b border-fd-border bg-fd-background"
   >
     <!-- FRESHDESK-SKIN: bolder title, always-on purple total-count badge, subtle status chip -->
     <div class="flex items-center min-w-0 gap-1.5">
@@ -72,7 +70,7 @@ const toggleConversationLayout = () => {
       </h1>
       <span
         v-if="allCount > 0 && !isListLoading"
-        class="shrink-0 rounded-md bg-fd-primary/10 px-2 py-0.5 text-xxs font-semibold text-fd-primary"
+        class="shrink-0 rounded-md bg-fd-primary px-2 py-0.5 text-xxs font-semibold text-white"
         :title="allCount"
       >
         {{ formattedAllCount }}

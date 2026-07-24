@@ -37,6 +37,7 @@
       }
     },
     "FRESHDESK_CARD": {
+      "ALL_TICKETS": "All tickets",
       "ANY_GROUP": "Any group",
       "CREATED": "Created",
       "PRIORITY": "Priority",

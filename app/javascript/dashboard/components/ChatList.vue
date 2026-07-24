@@ -294,7 +294,8 @@ const pageTitle = computed(() => {
   if (hasActiveFolders.value) {
     return activeFolder.value.name;
   }
-  return t('CHAT_LIST.TAB_HEADING');
+  // FRESHDESK-SKIN: Freshdesk vocabulary for the default ticket list view.
+  return t('CHAT_LIST.FRESHDESK_CARD.ALL_TICKETS');
 });
 
 function filterByAssigneeTab(conversations) {
@@ -885,7 +886,7 @@ watch(conversationFilters, (newVal, oldVal) => {
 
 <template>
   <div
-    class="flex flex-col flex-shrink-0 conversations-list-wrap bg-n-surface-1 relative"
+    class="flex flex-col flex-shrink-0 conversations-list-wrap bg-fd-background relative"
     :class="[
       { hidden: !showConversationList },
       isOnExpandedLayout ? 'basis-full' : 'w-[520px] 2xl:w-[640px]',
