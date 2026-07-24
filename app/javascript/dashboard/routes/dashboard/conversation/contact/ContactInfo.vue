@@ -178,15 +178,15 @@ export default {
 </script>
 
 <template>
-  <div class="relative items-center w-full p-4">
-    <div class="flex flex-col w-full gap-2 text-left rtl:text-right">
+  <div class="relative w-full border-b border-fd-border p-4">
+    <div class="flex flex-col w-full gap-3 text-left rtl:text-right">
       <div class="flex flex-row justify-between">
         <Avatar
           v-if="showAvatar"
           :src="contact.thumbnail"
           :name="contact.name"
           :status="contact.availability_status"
-          :size="48"
+          :size="40"
           hide-offline-status
         />
       </div>
@@ -205,7 +205,7 @@ export default {
           />
           <h3
             v-else
-            class="group/name flex-shrink max-w-full min-w-0 my-0 text-base capitalize break-words text-n-slate-12 cursor-pointer hover:text-n-slate-12/80"
+            class="group/name flex-shrink max-w-full min-w-0 my-0 text-sm font-semibold capitalize break-words text-fd-primary cursor-pointer hover:text-fd-primary/80"
             :title="$t('CONTACT_PANEL.CLICK_TO_EDIT')"
             @click="startEditingName"
           >
@@ -238,7 +238,7 @@ export default {
         <p v-if="additionalAttributes.description" class="break-words mb-0.5">
           {{ additionalAttributes.description }}
         </p>
-        <div class="flex flex-col items-start w-full gap-2">
+        <div class="flex flex-col items-start w-full gap-2 text-xs">
           <ContactInfoRow
             :href="contact.email ? `mailto:${contact.email}` : ''"
             :value="contact.email"
@@ -292,7 +292,7 @@ export default {
           <SocialIcons :social-profiles="socialProfiles" />
         </div>
       </div>
-      <div class="flex items-center w-full mt-0.5 gap-2">
+      <div class="flex items-center w-full mt-1 gap-2">
         <ComposeConversation :contact-id="String(contact.id)">
           <template #trigger>
             <NextButton

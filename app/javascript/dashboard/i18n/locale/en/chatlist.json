@@ -68,6 +68,22 @@
       "NEW": "+ New",
       "NOTIFICATIONS": "Notifications"
     },
+    "FRESHDESK_DETAIL": {
+      "ACTIVITIES": "Activities",
+      "AGENT": "Agent",
+      "AUTO_FOLLOW_UP": "Auto-Follow-up",
+      "FORWARD": "Forward",
+      "GROUP": "Group",
+      "NO_ACTIVE_SLA": "No active SLA timers",
+      "NOTE": "Note",
+      "PRIORITY": "Priority",
+      "PROPERTIES": "Properties",
+      "REPLY": "Reply",
+      "STATUS": "Status",
+      "TAGS": "Tags",
+      "TYPE": "Type",
+      "UPDATE": "Update"
+    },
     "FRESHDESK_PANEL": {
       "STATUS_HEADING": "Status",
       "ASSIGNEE_HEADING": "Assignee",

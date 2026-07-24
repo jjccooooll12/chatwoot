@@ -534,6 +534,7 @@ export default {
     );
     emitter.on(BUS_EVENTS.INSERT_INTO_NORMAL_EDITOR, this.addIntoEditor);
     emitter.on(CMD_AI_ASSIST, this.executeCopilotAction);
+    emitter.on('freshdesk:set-reply-mode', this.onFreshdeskSetReplyMode);
   },
   unmounted() {
     document.removeEventListener('paste', this.onPaste);
@@ -545,8 +546,13 @@ export default {
       this.onNewConversationModalActive
     );
     emitter.off(CMD_AI_ASSIST, this.executeCopilotAction);
+    emitter.off('freshdesk:set-reply-mode', this.onFreshdeskSetReplyMode);
   },
   methods: {
+    onFreshdeskSetReplyMode(mode) {
+      this.setReplyMode(mode);
+      this.$nextTick(() => this.messageEditor?.focusEditorInputField());
+    },
     getDraftKey(
       conversationId = this.conversationIdByRoute,
       replyType = this.replyType
@@ -1474,7 +1480,7 @@ export default {
 }
 
 .reply-box {
-  @apply relative mb-2 mx-2 border border-n-weak rounded-xl bg-n-solid-1;
+  @apply relative m-5 mt-4 border border-fd-border rounded-md bg-fd-surface;
 
   &.is-private {
     @apply bg-n-solid-amber dark:border-n-amber-3/10 border-n-amber-12/5;

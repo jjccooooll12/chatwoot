@@ -6,7 +6,7 @@ import { useElementSize } from '@vueuse/core';
 import BackButton from '../BackButton.vue';
 import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
-import Avatar from 'next/avatar/Avatar.vue';
+import ResolveAction from '../../buttons/ResolveAction.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
 import wootConstants from 'dashboard/constants/globals';
@@ -16,6 +16,10 @@ import { useInbox } from 'dashboard/composables/useInbox';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
+import { emitter } from 'shared/helpers/mitt';
+import { getLastMessage } from 'dashboard/helper/conversationHelper';
+import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
+import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 
 const props = defineProps({
   chat: {
@@ -34,6 +38,7 @@ const route = useRoute();
 const conversationHeader = ref(null);
 const { width } = useElementSize(conversationHeader);
 const { isAWebWidgetInbox } = useInbox();
+const { getPlainText } = useMessageFormatter();
 
 const currentChat = computed(() => store.getters.getSelectedChat);
 const accountId = computed(() => store.getters.getCurrentAccountId);
@@ -72,6 +77,19 @@ const currentContact = computed(() =>
   store.getters['contacts/getContact'](props.chat.meta.sender.id)
 );
 
+const lastMessageInChat = computed(() => getLastMessage(props.chat));
+
+const subject = computed(() => {
+  const customAttributes =
+    props.chat.custom_attributes || props.chat.customAttributes || {};
+  const emailSubject = customAttributes.email?.subject;
+  return getPlainText(
+    emailSubject ||
+      lastMessageInChat.value?.content ||
+      t('CHAT_LIST.NO_CONTENT')
+  );
+});
+
 const isSnoozed = computed(
   () => currentChat.value.status === wootConstants.STATUS_TYPE.SNOOZED
 );
@@ -105,77 +123,122 @@ const copyConversationId = async () => {
     // error
   }
 };
+
+const setEditorMode = mode => {
+  emitter.emit('freshdesk:set-reply-mode', mode);
+};
 </script>
 
 <template>
   <div
     ref="conversationHeader"
-    class="flex flex-col gap-3 items-center justify-between flex-1 w-full min-w-0 xl:flex-row px-3 pt-3 pb-2 h-24 xl:h-12"
+    class="flex min-h-[100px] w-full flex-col border-b border-fd-border bg-fd-surface"
   >
-    <div
-      class="flex items-center justify-start w-full xl:w-auto max-w-full min-w-0 xl:flex-1"
-    >
-      <BackButton
-        v-if="showBackButton"
-        :back-url="backButtonUrl"
-        class="ltr:mr-2 rtl:ml-2"
-      />
-      <Avatar
-        :name="currentContact.name"
-        :src="currentContact.thumbnail"
-        :size="32"
-        :status="currentContact.availability_status"
-        hide-offline-status
-      />
-      <div
-        class="flex flex-col items-start min-w-0 ml-2 overflow-hidden rtl:ml-0 rtl:mr-2"
-      >
-        <div class="flex flex-row items-center max-w-full gap-1 p-0 m-0">
-          <span
-            class="text-sm font-medium truncate leading-tight text-n-slate-12"
-          >
-            {{ currentContact.name }}
-          </span>
-          <fluent-icon
-            v-if="!isHMACVerified"
-            v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
-            size="14"
-            class="text-n-amber-10 my-0 mx-0 min-w-[14px] flex-shrink-0"
-            icon="warning"
-          />
-        </div>
-
-        <div
-          class="flex items-center gap-1 overflow-hidden text-xs conversation--header--actions text-n-slate-11 text-ellipsis whitespace-nowrap"
+    <div class="flex h-12 items-center justify-between gap-3 px-3">
+      <div class="flex min-w-0 items-center gap-2">
+        <BackButton
+          v-if="showBackButton"
+          :back-url="backButtonUrl"
+          class="ltr:mr-0 rtl:ml-0"
+        />
+        <button
+          type="button"
+          class="grid size-7 place-content-center rounded-md border border-fd-border text-fd-muted hover:border-fd-primary hover:text-fd-primary"
         >
-          <button
-            type="button"
-            class="truncate text-label-small text-n-slate-11 hover:text-n-slate-12 !p-0 cucursor-pointer"
-            @click="copyConversationId"
-          >
-            {{ `#${chat.id}` }}
-          </button>
-          <span v-if="hasMultipleInboxes">•</span>
-          <InboxName v-if="hasMultipleInboxes" :inbox="inbox" class="!mx-0" />
-          <span v-if="isSnoozed">•</span>
-          <span v-if="isSnoozed" class="font-medium text-n-amber-10">
-            {{ snoozedDisplayText }}
-          </span>
-        </div>
+          <span class="i-lucide-star size-3.5" />
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary"
+          @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
+        >
+          <span class="i-lucide-reply size-3.5" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.REPLY') }}
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary"
+          @click="setEditorMode(REPLY_EDITOR_MODES.NOTE)"
+        >
+          <span class="i-lucide-file-text size-3.5" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.NOTE') }}
+        </button>
+        <button
+          type="button"
+          class="hidden h-8 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary md:inline-flex"
+          @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
+        >
+          <span class="i-lucide-forward size-3.5" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.FORWARD') }}
+        </button>
+        <ResolveAction
+          :conversation-id="currentChat.id"
+          :status="currentChat.status"
+        />
+      </div>
+
+      <div class="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          class="hidden h-8 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary lg:inline-flex"
+        >
+          <span class="i-lucide-alarm-clock size-3.5" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.ACTIVITIES') }}
+        </button>
+        <ConversationCallButton :inbox="inbox" :chat="currentChat" />
+        <MoreActions :conversation-id="currentChat.id" />
       </div>
     </div>
-    <div
-      class="flex flex-row items-center justify-start xl:justify-end flex-shrink-0 gap-2 w-full xl:w-auto header-actions-wrap"
-    >
+
+    <div class="flex min-h-12 items-start justify-between gap-3 px-5 pb-4">
+      <div class="flex min-w-0 items-start gap-4">
+        <span
+          class="mt-1 grid size-5 shrink-0 place-content-center rounded bg-fd-muted text-white"
+        >
+          <span class="i-lucide-check size-3.5" />
+        </span>
+        <div class="min-w-0">
+          <div
+            class="mb-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-fd-muted"
+          >
+            <button
+              type="button"
+              class="text-fd-primary hover:underline"
+              @click="copyConversationId"
+            >
+              {{ `#${chat.id}` }}
+            </button>
+            <span v-if="hasMultipleInboxes">
+              {{ t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
+            </span>
+            <InboxName v-if="hasMultipleInboxes" :inbox="inbox" class="!mx-0" />
+            <span v-if="isSnoozed">
+              {{ t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
+            </span>
+            <span v-if="isSnoozed" class="font-medium text-n-amber-10">
+              {{ snoozedDisplayText }}
+            </span>
+            <fluent-icon
+              v-if="!isHMACVerified"
+              v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
+              size="14"
+              class="text-n-amber-10"
+              icon="warning"
+            />
+          </div>
+          <h1 class="m-0 truncate text-xl font-semibold leading-7 text-fd-text">
+            {{ subject }}
+          </h1>
+        </div>
+      </div>
+
       <SLACardLabel
         v-if="hasSlaPolicyId"
         :chat="chat"
         show-extended-info
         :parent-width="width"
-        class="hidden md:flex"
+        class="mt-0.5 hidden md:flex"
       />
-      <ConversationCallButton :inbox="inbox" :chat="currentChat" />
-      <MoreActions :conversation-id="currentChat.id" />
     </div>
   </div>
 </template>

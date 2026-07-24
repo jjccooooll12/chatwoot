@@ -3,6 +3,7 @@ import { mapGetters } from 'vuex';
 import ConversationHeader from './ConversationHeader.vue';
 import DashboardAppFrame from '../DashboardApp/Frame.vue';
 import EmptyState from './EmptyState/EmptyState.vue';
+import FreshdeskTicketProperties from './FreshdeskTicketProperties.vue';
 import MessagesView from './MessagesView.vue';
 
 export default {
@@ -10,6 +11,7 @@ export default {
     ConversationHeader,
     DashboardAppFrame,
     EmptyState,
+    FreshdeskTicketProperties,
     MessagesView,
   },
   props: {
@@ -94,7 +96,7 @@ export default {
 
 <template>
   <div
-    class="conversation-details-wrap flex flex-col min-w-0 w-full bg-n-surface-1 relative"
+    class="conversation-details-wrap flex flex-col min-w-0 w-full bg-fd-background relative"
     :class="{
       'border-l rtl:border-l-0 rtl:border-r border-n-weak': !isOnExpandedLayout,
     }"
@@ -123,11 +125,14 @@ export default {
       />
     </woot-tabs>
     <div v-show="!activeIndex" class="flex h-full min-h-0 m-0">
-      <MessagesView
-        v-if="currentChat.id"
-        :inbox-id="inboxId"
-        :is-inbox-view="isInboxView"
-      />
+      <div class="flex min-w-0 flex-1 flex-col bg-fd-surface">
+        <MessagesView
+          v-if="currentChat.id"
+          :inbox-id="inboxId"
+          :is-inbox-view="isInboxView"
+        />
+      </div>
+      <FreshdeskTicketProperties v-if="currentChat.id" :chat="currentChat" />
       <EmptyState
         v-if="!currentChat.id && !isInboxView"
         :is-on-expanded-layout="isOnExpandedLayout"

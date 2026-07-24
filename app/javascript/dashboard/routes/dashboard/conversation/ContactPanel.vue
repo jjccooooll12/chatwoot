@@ -132,13 +132,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="w-full">
+  <div class="w-full bg-fd-surface text-fd-text">
     <SidebarActionsHeader
       :title="$t('CONVERSATION.SIDEBAR.CONTACT')"
       @close="closeContactPanel"
     />
     <ContactInfo :contact="contact" :channel-type="channelType" />
-    <div class="px-2 pb-8 list-group">
+    <div class="px-2 pb-8 list-group [&_.accordion]:border-fd-border">
       <Draggable
         :list="conversationSidebarItems"
         animation="200"
