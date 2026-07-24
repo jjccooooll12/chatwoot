@@ -992,7 +992,9 @@ watch(conversationFilters, (newVal, oldVal) => {
     />
     <TeleportWithDirection v-if="showAdvancedFilters" to="body">
       <div class="fixed inset-0 z-50 flex justify-end bg-black/20">
-        <aside class="h-full w-[360px] max-w-full bg-fd-surface shadow-2xl">
+        <aside
+          class="h-full w-[440px] max-w-[calc(100vw-1rem)] bg-fd-surface shadow-2xl"
+        >
           <ConversationFilter
             v-model="appliedFilter"
             :folder-name="activeFolderName"

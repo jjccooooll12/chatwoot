@@ -112,7 +112,7 @@ const outsideClickHandler = [
     class="z-40 grid w-full gap-6 border border-n-weak bg-n-alpha-3 p-6 shadow-lg backdrop-blur-[100px]"
     :class="
       isSidePanel
-        ? 'h-full max-w-full content-start overflow-y-auto rounded-none border-y-0 border-r-0'
+        ? 'h-full max-w-full content-start overflow-x-hidden overflow-y-auto rounded-none border-y-0 border-r-0'
         : 'max-w-3xl overflow-visible rounded-xl lg:w-[750px]'
     "
   >
@@ -128,7 +128,7 @@ const outsideClickHandler = [
         />
       </div>
     </div>
-    <ul class="grid gap-4 list-none">
+    <ul class="grid min-w-0 gap-4 list-none">
       <template v-for="(filter, index) in filters" :key="filter.id">
         <ConditionRow
           v-if="index === 0"
@@ -155,11 +155,11 @@ const outsideClickHandler = [
         />
       </template>
     </ul>
-    <div class="flex gap-2 justify-between">
+    <div class="flex flex-wrap gap-2 justify-between">
       <Button sm ghost blue @click="addFilter">
         {{ $t('FILTER.ADD_NEW_FILTER') }}
       </Button>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap justify-end gap-2">
         <Button sm faded slate @click="resetFilter">
           {{ t('FILTER.CLEAR_BUTTON_LABEL') }}
         </Button>
