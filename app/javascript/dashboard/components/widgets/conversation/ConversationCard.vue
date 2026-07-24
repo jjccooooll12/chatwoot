@@ -395,7 +395,10 @@ watch(() => props.inbox.id, fetchAssignableAgents);
         </p>
       </div>
 
-      <div class="grid w-40 shrink-0 gap-2 text-xs text-fd-muted" @click.stop>
+      <div
+        class="grid shrink-0 gap-2 text-xs text-fd-muted sm:grid-cols-[9rem_11rem_8rem] sm:items-start sm:gap-3"
+        @click.stop
+      >
         <label class="grid gap-1">
           <span class="sr-only">{{
             $t('CHAT_LIST.FRESHDESK_CARD.PRIORITY')
@@ -452,6 +455,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           <span class="sr-only">
             {{ $t('CHAT_LIST.FRESHDESK_CARD.STATUS_LABEL') }}
           </span>
+          <span class="font-medium text-fd-text">{{ currentStatusLabel }}</span>
           <select
             class="h-8 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs font-medium text-fd-text outline-none focus:border-fd-primary"
             :value="chat.status"
