@@ -43,8 +43,14 @@ jobs:
           context: .
           file: docker/Dockerfile
           push: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # Durable build cache lives in GHCR (registry), so the expensive
+          # grpc/gem layer survives GitHub's 7-day / 10 GB gha-cache eviction and
+          # cold 22-min builds stop happening. gha is kept as a transitional read
+          # source so this first registry build is still warm.
+          cache-from: |
+            type=registry,ref=ghcr.io/jjccooooll12/chatwoot-custom:buildcache
+            type=gha
+          cache-to: type=registry,ref=ghcr.io/jjccooooll12/chatwoot-custom:buildcache,mode=max
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.UPSTREAM_VERSION }}-fd.${{ github.run_number }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.UPSTREAM_VERSION }}-fd-${{ github.sha }}
