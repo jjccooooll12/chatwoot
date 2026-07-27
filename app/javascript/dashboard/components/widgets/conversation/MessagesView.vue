@@ -8,6 +8,7 @@ import { useSnakeCase } from 'dashboard/composables/useTransformKeys';
 // components
 import ReplyBox from './ReplyBox.vue';
 import MessageList from 'next/message/MessageList.vue';
+import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
 import ConversationLabelSuggestion from './conversation/LabelSuggestion.vue';
 import Banner from 'dashboard/components/ui/Banner.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
@@ -51,6 +52,7 @@ export default {
   setup() {
     const conversationPanelRef = ref(null);
     const resizableEditorWrapperRef = ref(null);
+    const replyBoxRef = ref(null);
     const messagesViewRef = useTemplateRef('messagesViewRef');
     const topBannerRef = useTemplateRef('topBannerRef');
     const { height: containerHeight } = useElementSize(messagesViewRef);
@@ -70,6 +72,7 @@ export default {
       isLabelSuggestionFeatureEnabled,
       conversationPanelRef,
       resizableEditorWrapperRef,
+      replyBoxRef,
       messagesViewRef,
       topBannerRef,
       containerHeight,
@@ -98,9 +101,14 @@ export default {
     ...mapGetters({
       currentChat: 'getSelectedChat',
       currentUserId: 'getCurrentUserID',
+      currentUser: 'getCurrentUser',
       listLoadingStatus: 'getAllMessagesLoaded',
       currentAccountId: 'getCurrentAccountId',
     }),
+    composerAvatarInitial() {
+      const user = this.currentUser || {};
+      return (user.name || user.email || 'U').charAt(0).toUpperCase();
+    },
     isOpen() {
       return this.currentChat?.status === wootConstants.STATUS_TYPE.OPEN;
     },
@@ -270,6 +278,7 @@ export default {
       this.composerOpen = false;
       this.showActivities = false;
       this.resetReplyEditorHeight();
+      this.queueScrollToTop();
     },
   },
 
@@ -314,7 +323,7 @@ export default {
 
       this.labelSuggestions = await this.getLabelSuggestions();
 
-      // once the labels are fetched, we need to scroll to bottom
+      // once the labels are fetched, we need to adjust the scroll
       // but we need to wait for the DOM to be updated
       // so we use the nextTick method
       this.$nextTick(() => {
@@ -322,6 +331,11 @@ export default {
         // it is triggered by the SCROLL_TO_MESSAGE method
         // see setActiveChat on ConversationView.vue for more info
         const { messageId } = this.$route.query;
+
+        if (this.isAnEmailChannel) {
+          this.queueScrollToTop();
+          return;
+        }
 
         // only trigger the scroll to bottom if the user has not scrolled
         // and there's no active messageId that is selected in view
@@ -354,14 +368,33 @@ export default {
       // Collapse the composer after sending, like Freshdesk.
       this.composerOpen = false;
     },
-    onOpenComposer() {
+    onOpenComposer(mode) {
       this.composerOpen = true;
       this.$nextTick(() => {
-        this.scrollToBottom();
+        if (
+          mode === REPLY_EDITOR_MODES.REPLY ||
+          mode === REPLY_EDITOR_MODES.NOTE
+        ) {
+          this.replyBoxRef?.setReplyMode?.(mode);
+        }
         this.resizableEditorWrapperRef?.expandEditorFull?.();
+        this.scrollToComposer();
       });
     },
+    // Bottom compact-composer tabs open the full editor in the chosen mode.
+    // Forward has no dedicated editor mode yet, so it opens a reply.
+    startCompose(mode) {
+      this.onOpenComposer(
+        mode === REPLY_EDITOR_MODES.NOTE
+          ? REPLY_EDITOR_MODES.NOTE
+          : REPLY_EDITOR_MODES.REPLY
+      );
+    },
     onCloseComposer() {
+      this.replyBoxRef?.saveDraft?.(
+        this.currentChat.id,
+        this.$store.getters['draftMessages/getReplyEditorMode']
+      );
       this.composerOpen = false;
     },
     onScrollToMessage({ messageId = '' } = {}) {
@@ -381,7 +414,7 @@ export default {
       this.conversationPanel = this.$el.querySelector('.conversation-panel');
       this.setScrollParams();
       this.conversationPanel.addEventListener('scroll', this.handleScroll);
-      this.$nextTick(() => this.scrollToBottom());
+      this.queueScrollToTop();
       this.isLoadingPrevious = false;
     },
     removeScrollListener() {
@@ -419,6 +452,33 @@ export default {
         this.$el.scrollHeight,
         relevantMessages
       );
+    },
+    scrollToTop() {
+      if (!this.conversationPanel) {
+        return;
+      }
+      this.isProgrammaticScroll = true;
+      this.conversationPanel.scrollTop = 0;
+    },
+    scrollToComposer() {
+      if (!this.conversationPanel) {
+        return;
+      }
+      this.isProgrammaticScroll = true;
+      requestAnimationFrame(() => {
+        const composer = this.$el.querySelector('[data-freshdesk-composer]');
+        const top = composer?.offsetTop ?? this.conversationPanel.scrollHeight;
+        this.conversationPanel.scrollTo({ top, behavior: 'smooth' });
+      });
+    },
+    queueScrollToTop() {
+      this.$nextTick(() => {
+        this.scrollToTop();
+        requestAnimationFrame(() => {
+          this.scrollToTop();
+          setTimeout(() => this.scrollToTop(), 80);
+        });
+      });
     },
     setScrollParams() {
       this.heightBeforeLoad = this.conversationPanel.scrollHeight;
@@ -509,7 +569,7 @@ export default {
     </div>
     <MessageList
       ref="conversationPanelRef"
-      class="conversation-panel flex-shrink flex-grow basis-px flex flex-col overflow-y-auto relative h-full m-0 bg-fd-surface px-5 pb-4"
+      class="conversation-panel flex-shrink flex-grow basis-px flex flex-col overflow-y-auto relative h-full m-0 bg-fd-surface px-[clamp(0.75rem,1.4vw,1.25rem)] pb-4"
       :current-user-id="currentUserId"
       :first-unread-id="unReadMessages[0]?.id"
       :is-an-email-channel="isAnEmailChannel"
@@ -523,8 +583,12 @@ export default {
                keep the `first:mt-auto` trick that bottom-aligns messages. -->
           <!-- eslint-disable-next-line vue/require-toggle-inside-transition -->
           <li
-            class="min-h-[4rem] flex flex-shrink-0 flex-grow-0 items-center flex-auto justify-center max-w-full mt-0 mr-0 mb-1 ml-0 relative last:mb-0"
-            :class="{ 'first:mt-auto': !isAnEmailChannel }"
+            v-if="shouldShowSpinner || !isAnEmailChannel"
+            class="flex flex-shrink-0 flex-grow-0 items-center justify-center max-w-full mt-0 mr-0 mb-1 ml-0 relative last:mb-0"
+            :class="[
+              shouldShowSpinner ? 'min-h-[4rem]' : 'min-h-0',
+              { 'flex-auto first:mt-auto': !isAnEmailChannel },
+            ]"
           >
             <Spinner v-if="shouldShowSpinner" class="text-n-brand" />
           </li>
@@ -549,6 +613,90 @@ export default {
           :chat-labels="currentChat.labels"
           :conversation-id="currentChat.id"
         />
+        <li
+          v-show="composerOpen"
+          data-freshdesk-composer
+          class="list-none border-t border-n-weak bg-fd-surface"
+        >
+          <div
+            class="sticky top-0 z-20 flex items-center justify-end bg-fd-surface px-3 pt-1"
+          >
+            <button
+              type="button"
+              class="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
+              :title="$t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER')"
+              @click="onCloseComposer"
+            >
+              <span class="i-lucide-x size-3.5" />
+              {{ $t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER') }}
+            </button>
+          </div>
+          <ResizableEditorWrapper
+            ref="resizableEditorWrapperRef"
+            :container-height="Math.max(0, containerHeight - topBannerHeight)"
+          >
+            <ReplyBox
+              ref="replyBoxRef"
+              @toggle-editor-size="toggleReplyEditorSize"
+            />
+          </ResizableEditorWrapper>
+        </li>
+        <li v-show="!composerOpen" class="list-none px-5 pb-4 pt-2">
+          <div class="flex items-start gap-3">
+            <span
+              class="mt-0.5 grid size-8 shrink-0 place-content-center rounded-full bg-[#e9ddff] text-xs font-semibold text-[#6e55c9]"
+            >
+              {{ composerAvatarInitial }}
+            </span>
+            <div
+              class="min-w-0 flex-1 rounded-lg border border-fd-border bg-fd-surface"
+            >
+              <div
+                class="flex items-center gap-1 border-b border-fd-border px-2 py-1.5"
+              >
+                <button
+                  type="button"
+                  class="inline-flex h-7 items-center gap-1.5 rounded-md bg-fd-blueSoft px-2.5 text-xs font-semibold text-fd-blue"
+                  @click="startCompose('REPLY')"
+                >
+                  <span class="i-lucide-mail size-3.5" />
+                  {{ $t('CHAT_LIST.FRESHDESK_DETAIL.REPLY') }}
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-fd-muted hover:bg-n-slate-2 hover:text-fd-text"
+                  @click="startCompose('NOTE')"
+                >
+                  <span class="i-lucide-file-text size-3.5" />
+                  {{ $t('CHAT_LIST.FRESHDESK_DETAIL.NOTE') }}
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-fd-muted hover:bg-n-slate-2 hover:text-fd-text"
+                  @click="startCompose('FORWARD')"
+                >
+                  <span class="i-lucide-forward size-3.5" />
+                  {{ $t('CHAT_LIST.FRESHDESK_DETAIL.FORWARD') }}
+                </button>
+              </div>
+              <div
+                class="flex cursor-text items-center gap-2 px-3 py-2.5"
+                @click="startCompose('REPLY')"
+              >
+                <span class="flex-1 truncate text-sm text-fd-muted">
+                  {{ $t('CHAT_LIST.FRESHDESK_DETAIL.COMPOSER_PLACEHOLDER') }}
+                </span>
+                <button
+                  type="button"
+                  class="grid size-8 shrink-0 place-content-center rounded-md bg-fd-primary text-white hover:opacity-90"
+                  @click.stop="startCompose('REPLY')"
+                >
+                  <span class="i-lucide-send size-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </li>
       </template>
     </MessageList>
     <div class="flex relative flex-col border-t border-fd-border bg-fd-surface">
@@ -566,25 +714,6 @@ export default {
             alt="Someone is typing"
           />
         </div>
-      </div>
-      <div v-show="composerOpen" class="flex flex-col border-t border-n-weak">
-        <div class="flex items-center justify-end bg-fd-surface px-3 pt-1">
-          <button
-            type="button"
-            class="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
-            :title="$t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER')"
-            @click="onCloseComposer"
-          >
-            <span class="i-lucide-x size-3.5" />
-            {{ $t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER') }}
-          </button>
-        </div>
-        <ResizableEditorWrapper
-          ref="resizableEditorWrapperRef"
-          :container-height="Math.max(0, containerHeight - topBannerHeight)"
-        >
-          <ReplyBox @toggle-editor-size="toggleReplyEditorSize" />
-        </ResizableEditorWrapper>
       </div>
     </div>
   </div>
