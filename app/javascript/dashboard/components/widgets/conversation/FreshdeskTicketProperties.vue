@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
-import Icon from 'dashboard/components-next/icon/Icon.vue';
 import ConversationLabels from 'dashboard/routes/dashboard/conversation/labels/LabelBox.vue';
 import wootConstants from 'dashboard/constants/globals';
 
@@ -49,12 +48,6 @@ const statusOptions = computed(() => [
   { key: wootConstants.STATUS_TYPE.PENDING, label: 'Pending' },
   { key: wootConstants.STATUS_TYPE.RESOLVED, label: 'Closed' },
 ]);
-
-const currentStatusLabel = computed(
-  () =>
-    statusOptions.value.find(option => option.key === props.chat.status)
-      ?.label || props.chat.status
-);
 
 const typeOptions = [
   { key: '', label: '--' },
@@ -181,15 +174,6 @@ onMounted(() => {
   <aside
     class="hidden w-[248px] shrink-0 overflow-y-auto border-l border-fd-border bg-fd-surface lg:block"
   >
-    <div class="border-b border-fd-border px-3 py-5">
-      <div class="flex items-center justify-between">
-        <span class="text-base font-medium text-fd-text">
-          {{ currentStatusLabel }}
-        </span>
-        <Icon icon="i-lucide-panel-right-close" class="size-4 text-fd-muted" />
-      </div>
-    </div>
-
     <div class="grid gap-4 px-3 py-4 text-xs">
       <h3 class="m-0 text-xxs font-semibold uppercase text-fd-muted">
         {{ t('CHAT_LIST.FRESHDESK_DETAIL.PROPERTIES') }}

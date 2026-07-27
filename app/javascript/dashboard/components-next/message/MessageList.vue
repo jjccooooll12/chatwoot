@@ -1,10 +1,11 @@
 <script setup>
-import { computed, reactive } from 'vue';
+import { computed, reactive, ref, watch } from 'vue';
 import Message from './Message.vue';
 import { MESSAGE_TYPES } from './constants.js';
 import { useCamelCase } from 'dashboard/composables/useTransformKeys';
 import { useMapGetter } from 'dashboard/composables/store.js';
 import MessageApi from 'dashboard/api/inbox/message.js';
+import { useI18n } from 'vue-i18n';
 
 /**
  * Props definition for the component
@@ -40,6 +41,11 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['retry']);
+const { t } = useI18n();
+
+const EDGE_MESSAGE_COUNT = 3;
+const REVEAL_BATCH_SIZE = 6;
+const revealedMiddleCount = ref(0);
 
 const allMessages = computed(() => {
   return useCamelCase(props.messages, {
@@ -47,6 +53,86 @@ const allMessages = computed(() => {
     stopPaths: ['content_attributes.translations'],
   });
 });
+
+const shouldCollapseMiddle = computed(
+  () =>
+    props.isAnEmailChannel && allMessages.value.length > EDGE_MESSAGE_COUNT * 2
+);
+
+const middleMessages = computed(() => {
+  if (!shouldCollapseMiddle.value) {
+    return [];
+  }
+
+  return allMessages.value.slice(
+    EDGE_MESSAGE_COUNT,
+    allMessages.value.length - EDGE_MESSAGE_COUNT
+  );
+});
+
+const remainingMiddleCount = computed(() =>
+  Math.max(0, middleMessages.value.length - revealedMiddleCount.value)
+);
+
+const displayItems = computed(() => {
+  if (!shouldCollapseMiddle.value) {
+    return allMessages.value.map((message, index) => ({
+      type: 'message',
+      message,
+      index,
+    }));
+  }
+
+  const firstMessages = allMessages.value
+    .slice(0, EDGE_MESSAGE_COUNT)
+    .map((message, index) => ({ type: 'message', message, index }));
+  const revealedMessages = middleMessages.value
+    .slice(0, revealedMiddleCount.value)
+    .map((message, index) => ({
+      type: 'message',
+      message,
+      index: EDGE_MESSAGE_COUNT + index,
+    }));
+  const lastStart = allMessages.value.length - EDGE_MESSAGE_COUNT;
+  const lastMessages = allMessages.value
+    .slice(lastStart)
+    .map((message, index) => ({
+      type: 'message',
+      message,
+      index: lastStart + index,
+    }));
+  const placeholder =
+    remainingMiddleCount.value > 0
+      ? [
+          {
+            type: 'middle-placeholder',
+            id: `middle-placeholder-${remainingMiddleCount.value}`,
+            count: remainingMiddleCount.value,
+          },
+        ]
+      : [];
+
+  return [
+    ...firstMessages,
+    ...revealedMessages,
+    ...placeholder,
+    ...lastMessages,
+  ];
+});
+
+watch(
+  () => props.messages.map(message => message.id).join(','),
+  () => {
+    revealedMiddleCount.value = 0;
+  }
+);
+
+const revealMiddleMessages = () => {
+  revealedMiddleCount.value = Math.min(
+    middleMessages.value.length,
+    revealedMiddleCount.value + REVEAL_BATCH_SIZE
+  );
+};
 
 const currentChat = useMapGetter('getSelectedChat');
 
@@ -163,23 +249,43 @@ const getInReplyToMessage = parentMessage => {
 </script>
 
 <template>
-  <ul class="px-4 bg-n-surface-1">
+  <ul class="bg-n-surface-1" :class="isAnEmailChannel ? 'px-0' : 'px-4'">
     <slot name="beforeAll" />
-    <template v-for="(message, index) in allMessages" :key="message.id">
+    <template v-for="item in displayItems" :key="item.message?.id || item.id">
       <slot
-        v-if="firstUnreadId && message.id === firstUnreadId"
+        v-if="
+          item.type === 'message' &&
+          firstUnreadId &&
+          item.message.id === firstUnreadId
+        "
         name="unreadBadge"
       />
       <Message
-        v-bind="message"
+        v-if="item.type === 'message'"
+        v-bind="item.message"
         :is-email-inbox="isAnEmailChannel"
-        :in-reply-to="getInReplyToMessage(message)"
-        :group-with-next="shouldGroupWithNext(index, allMessages)"
+        :in-reply-to="getInReplyToMessage(item.message)"
+        :group-with-next="shouldGroupWithNext(item.index, allMessages)"
+        :force-email-expanded="isAnEmailChannel"
         :inbox-supports-reply-to="inboxSupportsReplyTo"
         :current-user-id="currentUserId"
         data-clarity-mask="True"
-        @retry="emit('retry', message)"
+        @retry="emit('retry', item.message)"
       />
+      <li v-else class="my-4 flex list-none items-center justify-center">
+        <button
+          type="button"
+          class="inline-flex h-8 items-center gap-2 rounded-full border border-fd-border bg-fd-surface px-4 text-xs font-semibold text-fd-primary shadow-sm hover:bg-fd-blueSoft"
+          @click="revealMiddleMessages"
+        >
+          <span class="i-lucide-messages-square size-3.5" />
+          {{
+            t('CHAT_LIST.FRESHDESK_DETAIL.MIDDLE_CONVERSATIONS', {
+              count: item.count,
+            })
+          }}
+        </button>
+      </li>
     </template>
     <slot name="after" />
   </ul>

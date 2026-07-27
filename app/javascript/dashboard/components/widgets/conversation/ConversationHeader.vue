@@ -2,35 +2,23 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
-import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
-import BackButton from '../BackButton.vue';
-import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
 import ConversationMergePanel from './ConversationMergePanel.vue';
-import ResolveAction from '../../buttons/ResolveAction.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
 import {
   conversationListPageURL,
   frontendURL,
 } from 'dashboard/helper/URLHelper';
-import { useInbox } from 'dashboard/composables/useInbox';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import { emitter } from 'shared/helpers/mitt';
-import { getLastMessage } from 'dashboard/helper/conversationHelper';
-import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
-import { MESSAGE_TYPE } from 'shared/constants/messages';
 
 const props = defineProps({
   chat: {
     type: Object,
     default: () => ({}),
-  },
-  showBackButton: {
-    type: Boolean,
-    default: false,
   },
 });
 
@@ -38,13 +26,9 @@ const { t } = useI18n();
 const store = useStore();
 const route = useRoute();
 const router = useRouter();
-const { isAWebWidgetInbox } = useInbox();
-const { getPlainText } = useMessageFormatter();
 
 const currentChat = computed(() => store.getters.getSelectedChat);
 const accountId = computed(() => store.getters.getCurrentAccountId);
-
-const chatMetadata = computed(() => props.chat.meta);
 
 const backButtonUrl = computed(() => {
   const {
@@ -67,38 +51,10 @@ const backButtonUrl = computed(() => {
   });
 });
 
-const isHMACVerified = computed(() => {
-  if (!isAWebWidgetInbox.value) {
-    return true;
-  }
-  return chatMetadata.value.hmac_verified;
+const userInitial = computed(() => {
+  const user = store.getters.getCurrentUser || {};
+  return (user.name || user.email || 'U').charAt(0).toUpperCase();
 });
-
-const lastMessageInChat = computed(() => getLastMessage(props.chat));
-
-const subject = computed(() => {
-  const additionalAttributes =
-    props.chat.additional_attributes || props.chat.additionalAttributes || {};
-  const emailSubject =
-    additionalAttributes.mail_subject || additionalAttributes.mailSubject;
-  return getPlainText(
-    emailSubject ||
-      lastMessageInChat.value?.content ||
-      t('CHAT_LIST.NO_CONTENT')
-  );
-});
-
-const hasAgentReplied = computed(() =>
-  Boolean(props.chat.first_reply_created_at)
-);
-const lastMessageIsIncoming = computed(
-  () => lastMessageInChat.value?.message_type === MESSAGE_TYPE.INCOMING
-);
-// Freshdesk "Customer responded": the latest message is from the customer and
-// an agent had already replied earlier in the thread.
-const customerResponded = computed(
-  () => lastMessageIsIncoming.value && hasAgentReplied.value
-);
 
 const ticketNumber = computed(() => {
   const additionalAttributes =
@@ -110,10 +66,6 @@ const inbox = computed(() => {
   const { inbox_id: inboxId } = props.chat;
   return store.getters['inboxes/getInbox'](inboxId);
 });
-
-const hasMultipleInboxes = computed(
-  () => store.getters['inboxes/getInboxes'].length > 1
-);
 
 const copyConversationId = async () => {
   try {
@@ -143,12 +95,7 @@ watch(
   }
 );
 
-const deleteDialogRef = ref(null);
 const showMergePanel = ref(false);
-
-const onDeleteClick = () => {
-  deleteDialogRef.value?.open();
-};
 
 const openMergePanel = () => {
   showMergePanel.value = true;
@@ -181,160 +128,160 @@ const onTicketMerged = async mergedConversation => {
 
   await store.dispatch('getConversation', props.chat.id);
 };
-
-// Deleting the ticket also soft-deletes its inbound emails in Outlook
-// (handled server-side in Conversations::DeleteService).
-const confirmDeleteConversation = async () => {
-  const number = ticketNumber.value;
-  try {
-    await store.dispatch('deleteConversation', props.chat.id);
-    deleteDialogRef.value?.close();
-    useAlert(
-      t('CONVERSATION.SUCCESS_DELETE_TICKET', { conversationId: number })
-    );
-    router.push(backButtonUrl.value);
-  } catch (error) {
-    useAlert(t('CONVERSATION.FAIL_DELETE_CONVERSATION'));
-  }
-};
 </script>
 
 <template>
-  <div
-    class="flex min-h-[100px] w-full flex-col border-b border-fd-border bg-fd-surface"
-  >
-    <div class="flex h-12 items-center justify-between gap-3 px-3">
-      <div class="flex min-w-0 items-center gap-2">
-        <BackButton
-          v-if="showBackButton"
-          :back-url="backButtonUrl"
-          class="ltr:mr-0 rtl:ml-0"
-        />
+  <div class="flex w-full flex-col bg-fd-surface">
+    <div
+      class="flex h-12 items-center justify-between gap-3 border-b border-fd-border bg-[#f7f3ff] px-3"
+    >
+      <div
+        class="flex min-w-0 items-center gap-1.5 text-xs font-medium text-fd-muted"
+      >
+        <span class="i-lucide-asterisk size-3 text-fd-primary" />
         <button
           type="button"
-          class="grid size-8 place-content-center rounded-md border border-n-slate-7 bg-fd-surface text-fd-muted shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2 hover:text-fd-text"
+          class="truncate text-fd-primary hover:underline"
+          @click="router.push(backButtonUrl)"
         >
-          <span class="i-lucide-star size-3.5" />
+          {{ t('CHAT_LIST.FRESHDESK_CARD.ALL_TICKETS') }}
         </button>
+        <span class="i-lucide-chevron-right size-3 text-fd-muted" />
         <button
           type="button"
-          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-n-slate-7 bg-fd-surface px-3 text-sm font-medium text-fd-text shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2"
-          @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
+          class="truncate text-fd-text hover:text-fd-primary"
+          @click="copyConversationId"
         >
-          <span class="i-lucide-reply size-3.5" />
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.REPLY') }}
+          {{ ticketNumber }}
         </button>
-        <button
-          type="button"
-          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-n-slate-7 bg-fd-surface px-3 text-sm font-medium text-fd-text shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2"
-          @click="setEditorMode(REPLY_EDITOR_MODES.NOTE)"
-        >
-          <span class="i-lucide-file-text size-3.5" />
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.NOTE') }}
-        </button>
-        <button
-          type="button"
-          class="hidden h-8 items-center gap-1.5 rounded-md border border-n-slate-7 bg-fd-surface px-3 text-sm font-medium text-fd-text shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2 md:inline-flex"
-          @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
-        >
-          <span class="i-lucide-forward size-3.5" />
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.FORWARD') }}
-        </button>
-        <button
-          type="button"
-          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-n-slate-7 bg-fd-surface px-3 text-sm font-medium text-fd-text shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2"
-          @click="openMergePanel"
-        >
-          <span class="i-lucide-git-merge size-3.5" />
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.BUTTON') }}
-        </button>
-        <ResolveAction
-          :conversation-id="currentChat.id"
-          :status="currentChat.status"
-        />
       </div>
 
       <div class="flex shrink-0 items-center gap-2">
         <button
           type="button"
-          class="hidden h-8 items-center gap-1.5 rounded-md border bg-fd-surface px-3 text-sm font-medium shadow-sm hover:bg-n-slate-2 lg:inline-flex"
+          class="inline-flex h-7 items-center gap-1 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2"
+        >
+          <span class="i-lucide-plus-square size-3.5 text-fd-muted" />
+          {{ t('CHAT_LIST.FRESHDESK_TOPBAR.NEW') }}
+          <span class="i-lucide-chevron-down size-3 text-fd-muted" />
+        </button>
+        <button
+          type="button"
+          class="hidden h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2 md:inline-flex"
+        >
+          <span class="i-lucide-search size-3.5 text-fd-muted" />
+          {{ t('CHAT_LIST.FRESHDESK_TOPBAR.SEARCH') }}
+        </button>
+        <button
+          type="button"
+          class="grid size-7 place-content-center rounded-md text-fd-muted hover:bg-n-slate-2 hover:text-fd-text"
+          :title="t('CHAT_LIST.FRESHDESK_TOPBAR.NOTIFICATIONS')"
+        >
+          <span class="i-lucide-bell size-4" />
+        </button>
+        <button
+          type="button"
+          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
+          :title="t('CHAT_LIST.FRESHDESK_TOPBAR.HELP')"
+        >
+          <span class="i-lucide-circle-help size-4" />
+        </button>
+        <button
+          type="button"
+          class="hidden h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2 lg:inline-flex"
+        >
+          <span class="i-lucide-layout-grid size-3.5 text-fd-muted" />
+          {{ t('CHAT_LIST.FRESHDESK_TOPBAR.APPS') }}
+        </button>
+        <span
+          class="grid size-7 place-content-center rounded-full bg-[#e9ddff] text-xs font-semibold text-[#6e55c9]"
+        >
+          {{ userInitial }}
+        </span>
+      </div>
+    </div>
+
+    <div
+      class="flex h-11 items-center justify-between gap-3 bg-fd-surface px-3"
+    >
+      <div class="flex min-w-0 items-center gap-1.5">
+        <button
+          type="button"
+          class="inline-flex h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2"
+          @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
+        >
+          <span class="i-lucide-reply size-3.5 text-fd-muted" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.REPLY') }}
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2"
+          @click="setEditorMode(REPLY_EDITOR_MODES.NOTE)"
+        >
+          <span class="i-lucide-file-text size-3.5 text-fd-muted" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.NOTE') }}
+        </button>
+        <button
+          type="button"
+          class="hidden h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2 md:inline-flex"
+          @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
+        >
+          <span class="i-lucide-forward size-3.5 text-fd-muted" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.FORWARD') }}
+        </button>
+        <button
+          type="button"
+          class="hidden h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2 xl:inline-flex"
+          @click="openMergePanel"
+        >
+          <span class="i-lucide-git-merge size-3.5 text-fd-muted" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.BUTTON') }}
+        </button>
+        <MoreActions class="freshdesk-toolbar-more" />
+      </div>
+
+      <div class="flex shrink-0 items-center gap-1.5">
+        <button
+          type="button"
+          class="hidden h-7 items-center gap-1.5 rounded-md border bg-fd-surface px-2.5 text-xs font-semibold shadow-sm hover:bg-n-slate-2 lg:inline-flex"
           :class="
             activitiesVisible
               ? 'border-fd-primary text-fd-primary'
-              : 'border-n-slate-7 text-fd-text hover:border-n-slate-8'
+              : 'border-fd-border text-fd-text'
           "
           @click="toggleActivities"
         >
-          <span class="i-lucide-alarm-clock size-3.5" />
+          <span class="i-lucide-alarm-clock size-3.5 text-fd-muted" />
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.ACTIVITIES') }}
         </button>
         <ConversationCallButton :inbox="inbox" :chat="currentChat" />
         <button
           type="button"
-          class="grid size-8 place-content-center rounded-md border border-n-slate-7 bg-fd-surface text-fd-muted shadow-sm hover:border-n-ruby-9 hover:bg-n-ruby-2 hover:text-n-ruby-11"
-          :title="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
-          @click="onDeleteClick"
+          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
         >
-          <span class="i-lucide-trash-2 size-4" />
+          <span class="i-lucide-chevron-left size-3.5" />
         </button>
-        <MoreActions :conversation-id="currentChat.id" />
+        <button
+          type="button"
+          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
+        >
+          <span class="i-lucide-ellipsis size-3.5" />
+        </button>
+        <button
+          type="button"
+          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
+        >
+          <span class="i-lucide-chevron-right size-3.5" />
+        </button>
+        <button
+          type="button"
+          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
+        >
+          <span class="i-lucide-panel-right-close size-3.5" />
+        </button>
       </div>
     </div>
 
-    <div class="flex min-h-12 items-start justify-between gap-3 px-5 pb-4">
-      <div class="flex min-w-0 items-start gap-4">
-        <span
-          class="mt-1 grid size-5 shrink-0 place-content-center rounded bg-fd-muted text-white"
-        >
-          <span class="i-lucide-check size-3.5" />
-        </span>
-        <div class="min-w-0">
-          <div
-            class="mb-1 flex min-w-0 flex-wrap items-center gap-1.5 text-xs text-fd-muted"
-          >
-            <button
-              type="button"
-              class="text-fd-primary hover:underline"
-              @click="copyConversationId"
-            >
-              {{ `#${ticketNumber}` }}
-            </button>
-            <span v-if="hasMultipleInboxes">
-              {{ t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
-            </span>
-            <InboxName v-if="hasMultipleInboxes" :inbox="inbox" class="!mx-0" />
-            <fluent-icon
-              v-if="!isHMACVerified"
-              v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
-              size="14"
-              class="text-n-amber-10"
-              icon="warning"
-            />
-          </div>
-          <h1 class="m-0 truncate text-xl font-semibold leading-7 text-fd-text">
-            {{ subject }}
-          </h1>
-          <span
-            v-if="customerResponded"
-            class="mt-1 inline-flex w-fit rounded bg-fd-blueSoft px-1.5 py-0.5 text-xxs font-medium leading-4 text-fd-blue"
-          >
-            {{ t('CHAT_LIST.FRESHDESK_CARD.STATUS.CUSTOMER_RESPONDED') }}
-          </span>
-        </div>
-      </div>
-    </div>
-    <Dialog
-      ref="deleteDialogRef"
-      type="alert"
-      :title="
-        $t('CONVERSATION.DELETE_CONVERSATION.TITLE', {
-          conversationId: ticketNumber,
-        })
-      "
-      :description="$t('CONVERSATION.DELETE_CONVERSATION.DESCRIPTION')"
-      :confirm-button-label="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
-      @confirm="confirmDeleteConversation"
-    />
     <ConversationMergePanel
       v-if="showMergePanel"
       :chat="currentChat"

@@ -8,7 +8,7 @@ const props = defineProps({
   containerHeight: { type: Number, default: 0 },
 });
 
-const DEFAULT_HEIGHT = 120;
+const DEFAULT_HEIGHT = 360;
 const MIN_HEIGHT = 80;
 const MIN_MESSAGES_HEIGHT = 200;
 const EXPAND_RATIO = 0.5;
@@ -89,11 +89,14 @@ const resetEditorHeight = () => {
   editorHeight.value = sizeBounds.value.default;
 };
 
-// Freshdesk: opening the composer fills most of the panel (the thread keeps a
-// scrollable strip above it).
+// Freshdesk: opening the composer gives the inline editor a large writing area
+// without taking it out of the conversation scroll flow.
 const expandEditorFull = () => {
   measureSurroundingHeight();
-  editorHeight.value = sizeBounds.value.max;
+  editorHeight.value = Math.max(
+    sizeBounds.value.default,
+    sizeBounds.value.expanded
+  );
 };
 
 const toggleEditorExpand = () => {
@@ -146,7 +149,7 @@ defineExpose({ toggleEditorExpand, resetEditorHeight, expandEditorFull });
     }"
   >
     <div
-      class="group absolute inset-x-0 -top-4 z-10 flex h-4 cursor-row-resize select-none items-center justify-center bg-gradient-to-b from-transparent from-10% dark:to-n-surface-1/80 to-n-surface-1/90 backdrop-blur-[0.01875rem]"
+      class="group absolute inset-x-0 top-0 z-10 flex h-4 cursor-row-resize select-none items-center justify-center bg-gradient-to-b from-transparent from-10% dark:to-n-surface-1/80 to-n-surface-1/90 backdrop-blur-[0.01875rem]"
       @mousedown="onResizeStart"
       @touchstart.prevent="onResizeStart"
       @dblclick="resetEditorHeight"

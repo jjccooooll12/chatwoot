@@ -1,5 +1,6 @@
 <script setup>
-import { computed, useTemplateRef, ref, onMounted } from 'vue';
+import { computed, useTemplateRef, ref, onMounted, watch } from 'vue';
+import { useWindowSize } from '@vueuse/core';
 import { Letter } from 'vue-letter';
 import { sanitizeTextForRender } from '@chatwoot/utils';
 import { allowedCssProperties } from 'lettersanitizer';
@@ -17,13 +18,24 @@ import { useMessageContext } from '../../provider.js';
 import { MESSAGE_TYPES } from 'next/message/constants.js';
 import { useTranslations } from 'dashboard/composables/useTranslations';
 
-const { content, contentAttributes, attachments, messageType, sender } =
-  useMessageContext();
+const {
+  content,
+  contentAttributes,
+  attachments,
+  messageType,
+  sender,
+  forceEmailExpanded,
+} = useMessageContext();
+const { width: windowWidth } = useWindowSize();
 
 const displayName = computed(
   () => sender.value?.name || contentAttributes.value?.email?.from?.[0] || ''
 );
 const senderThumbnail = computed(() => sender.value?.thumbnail);
+const clampedAvatarSize = computed(() => {
+  const width = windowWidth.value || 1440;
+  return Math.min(24, Math.max(20, Math.round(width * 0.018)));
+});
 
 const isExpandable = ref(false);
 const isExpanded = ref(false);
@@ -33,7 +45,19 @@ const contentContainer = useTemplateRef('contentContainer');
 
 onMounted(() => {
   isExpandable.value = contentContainer.value?.scrollHeight > 400;
+  if (forceEmailExpanded?.value) {
+    isExpanded.value = true;
+  }
 });
+
+watch(
+  () => forceEmailExpanded?.value,
+  value => {
+    if (value) {
+      isExpanded.value = true;
+    }
+  }
+);
 
 const isOutgoing = computed(() => messageType.value === MESSAGE_TYPES.OUTGOING);
 
@@ -109,17 +133,17 @@ const handleSeeOriginal = () => {
 
 <template>
   <BaseBubble class="w-full" hide-meta data-bubble-name="email">
-    <div class="flex w-full gap-3 py-1">
+    <div class="flex w-full gap-3 pb-1">
       <Avatar
         :name="displayName"
         :src="senderThumbnail"
-        :size="32"
+        :size="clampedAvatarSize"
         rounded-full
-        class="mt-0.5 shrink-0"
+        class="shrink-0"
       />
       <div
         class="min-w-0 flex-1 text-fd-text"
-        :class="isOutgoing ? 'rounded-lg bg-n-slate-2 px-3.5 py-3' : 'py-0.5'"
+        :class="isOutgoing ? 'rounded-lg bg-n-slate-2 px-3.5 py-3' : 'pb-0.5'"
       >
         <EmailMeta class="mb-2" />
         <section ref="contentContainer">

@@ -96,6 +96,7 @@ import { useBranding } from 'shared/composables/useBranding';
  * @property {boolean} [groupWithNext=false] - Whether the message should be grouped with the next message
  * @property {Object|null} [inReplyTo=null] - The message to which this message is a reply
  * @property {boolean} [isEmailInbox=false] - Whether the message is from an email inbox
+ * @property {boolean} [forceEmailExpanded=false] - Whether an email should open expanded
  * @property {number} conversationId - The ID of the conversation to which the message belongs
  * @property {number} inboxId - The ID of the inbox to which the message belongs
  */
@@ -129,6 +130,7 @@ const props = defineProps({
   inboxId: { type: Number, default: null }, // eslint-disable-line vue/no-unused-properties
   inboxSupportsReplyTo: { type: Object, default: () => ({}) },
   inReplyTo: { type: Object, default: null }, // eslint-disable-line vue/no-unused-properties
+  forceEmailExpanded: { type: Boolean, default: false }, // eslint-disable-line vue/no-unused-properties
   isEmailInbox: { type: Boolean, default: false },
   private: { type: Boolean, default: false },
   additionalAttributes: { type: Object, default: () => ({}) }, // eslint-disable-line vue/no-unused-properties
