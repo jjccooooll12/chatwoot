@@ -641,7 +641,7 @@ export default {
             />
           </ResizableEditorWrapper>
         </li>
-        <li v-show="!composerOpen" class="list-none px-5 pb-4 pt-2">
+        <li v-show="!composerOpen" class="list-none px-5 pb-2 pt-2">
           <div class="flex items-start gap-3">
             <span
               class="mt-0.5 grid size-8 shrink-0 place-content-center rounded-full bg-[#e9ddff] text-xs font-semibold text-[#6e55c9]"
