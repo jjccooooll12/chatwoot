@@ -11,6 +11,7 @@ class DeviseOverrides::SessionsController < DeviseTokenAuth::SessionsController
   end
 
   def create
+    resolve_login_identifier
     return handle_mfa_verification if mfa_verification_request?
     return handle_sso_authentication if sso_authentication_request?
 
@@ -35,6 +36,18 @@ class DeviseOverrides::SessionsController < DeviseTokenAuth::SessionsController
       I18n.t('devise_token_auth.sessions.not_confirmed', email: @resource.email),
       error_code: 'user_not_confirmed'
     )
+  end
+
+  # Agents created without an email sign in with their name (used as a username).
+  # If the submitted identifier isn't a known email, resolve it to the matching
+  # user's email so devise-token-auth (which authenticates by email) can proceed.
+  def resolve_login_identifier
+    return if params[:sso_auth_token].present? || params[:mfa_token].present?
+    return if params[:email].blank?
+    return if User.from_email(params[:email].to_s.strip.downcase)
+
+    user = User.find_by_login_name(params[:email])
+    params[:email] = user.email if user
   end
 
   def find_user_for_authentication

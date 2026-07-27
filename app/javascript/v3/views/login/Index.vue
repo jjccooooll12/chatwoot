@@ -3,7 +3,7 @@
 import { login } from '../../api/auth';
 import { mapGetters } from 'vuex';
 import { useAlert } from 'dashboard/composables';
-import { required, email } from '@vuelidate/validators';
+import { required } from '@vuelidate/validators';
 import { useVuelidate } from '@vuelidate/core';
 import { SESSION_STORAGE_KEYS } from 'dashboard/constants/sessionStorage';
 import SessionStorage from 'shared/helpers/sessionStorage';
@@ -84,7 +84,6 @@ export default {
         },
         email: {
           required,
-          email,
         },
       },
     };

@@ -174,6 +174,15 @@ class User < ApplicationRecord
     find_by(email: email&.downcase)
   end
 
+  # Resolve a login handle (an agent's name used as a username) to a user, so
+  # name-based agents can sign in without an email address. Case-insensitive
+  # exact match on name.
+  def self.find_by_login_name(login)
+    return if login.blank?
+
+    where('lower(name) = ?', login.to_s.strip.downcase).first
+  end
+
   # 2FA/MFA Methods
   # Delegated to Mfa::ManagementService for better separation of concerns
   def mfa_service

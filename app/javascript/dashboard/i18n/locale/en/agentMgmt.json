@@ -40,6 +40,11 @@
           "LABEL": "Email Address",
           "PLACEHOLDER": "Please enter an email address of the agent"
         },
+        "PASSWORD": {
+          "LABEL": "Password",
+          "PLACEHOLDER": "Set a password for the agent",
+          "ERROR": "Password must be at least 6 characters"
+        },
         "SUBMIT": "Add Agent"
       },
       "API": {
