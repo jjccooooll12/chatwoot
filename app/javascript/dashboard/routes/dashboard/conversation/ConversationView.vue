@@ -142,27 +142,36 @@ export default {
         return;
       }
       const chat = this.findConversation();
-      if (!chat) {
-        this.$store
-          .dispatch('getConversation', this.conversationId)
-          .then(conversation => {
-            // Opened by ticket number: canonicalise the URL to the display id so
-            // the rest of the UI (which keys conversations by display id) resolves it.
-            if (
-              conversation &&
-              String(conversation.id) !== String(this.conversationId)
-            ) {
-              this.$router.replace({
-                params: { conversation_id: String(conversation.id) },
-              });
-            }
-          });
+      if (chat) {
+        this.canonicaliseToTicketNumber(chat);
+        return;
+      }
+      // Not in the loaded list — fetch it (resolves by display id OR ticket
+      // number, see conversations_controller), then canonicalise the URL.
+      this.$store
+        .dispatch('getConversation', this.conversationId)
+        .then(conversation => this.canonicaliseToTicketNumber(conversation));
+    },
+    // Keep the customer-facing ticket number in the URL
+    // (…/conversations/2607241) even when navigation used the internal display id.
+    canonicaliseToTicketNumber(chat) {
+      const ticketNumber = chat?.additional_attributes?.ticket_number;
+      if (
+        ticketNumber &&
+        String(ticketNumber) !== String(this.conversationId)
+      ) {
+        this.$router.replace({
+          params: { conversation_id: String(ticketNumber) },
+        });
       }
     },
     findConversation() {
-      const conversationId = parseInt(this.conversationId, 10);
-      const [chat] = this.chatList.filter(c => c.id === conversationId);
-      return chat;
+      const param = String(this.conversationId);
+      return this.chatList.find(
+        chat =>
+          String(chat.id) === param ||
+          String(chat.additional_attributes?.ticket_number) === param
+      );
     },
     setActiveChat() {
       if (this.conversationId) {
