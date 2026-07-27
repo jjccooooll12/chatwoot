@@ -404,7 +404,9 @@ class Message < ApplicationRecord
     return if conversation.muted?
     return unless incoming?
 
-    conversation.open! if conversation.snoozed?
+    # A customer reply moves a waiting ticket back to Open so an agent picks it
+    # up (and the auto follow-up reminders stop, since they only run on pending).
+    conversation.open! if conversation.snoozed? || conversation.pending?
 
     reopen_resolved_conversation if conversation.resolved?
   end
