@@ -92,6 +92,7 @@
       "NO_TIMELINE": "No recent activity",
       "REPORTED_VIA_EMAIL": "reported via email",
       "REPLIED_VIA_EMAIL": "replied via email",
+      "ADDED_PRIVATE_NOTE": "added a private note",
       "STATUS_LINE": "Status",
       "AUTO_FOLLOW_UP": "Auto-Follow-up",
       "FORWARD": "Forward",

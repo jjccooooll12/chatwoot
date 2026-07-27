@@ -4,12 +4,22 @@ import BaseBubble from 'next/message/bubbles/Base.vue';
 import FormattedContent from './FormattedContent.vue';
 import AttachmentChips from 'next/message/chips/AttachmentChips.vue';
 import TranslationToggle from 'dashboard/components-next/message/TranslationToggle.vue';
+import PrivateNoteMeta from 'next/message/bubbles/PrivateNoteMeta.vue';
 import { MESSAGE_TYPES } from '../../constants';
 import { useMessageContext } from '../../provider.js';
 import { useTranslations } from 'dashboard/composables/useTranslations';
+import { useInbox } from 'dashboard/composables/useInbox';
 
-const { content, attachments, contentAttributes, messageType } =
+const { content, attachments, contentAttributes, messageType, isPrivate } =
   useMessageContext();
+const { isAnEmailChannel } = useInbox();
+
+// A private note on an email ticket gets its own Freshdesk-style header
+// (sender + "added a private note" + time) instead of the generic bottom
+// meta line, matching how email messages render their own header.
+const isPrivateEmailNote = computed(
+  () => isPrivate.value && isAnEmailChannel.value
+);
 
 const { hasTranslations, translationContent } =
   useTranslations(contentAttributes);
@@ -42,7 +52,12 @@ const handleSeeOriginal = () => {
 </script>
 
 <template>
-  <BaseBubble class="px-4 py-3" data-bubble-name="text">
+  <BaseBubble
+    class="px-4 py-3"
+    :hide-meta="isPrivateEmailNote"
+    data-bubble-name="text"
+  >
+    <PrivateNoteMeta v-if="isPrivateEmailNote" class="mb-2" />
     <div class="gap-3 flex flex-col">
       <span v-if="isEmpty" class="text-n-slate-11">
         {{ $t('CONVERSATION.NO_CONTENT') }}

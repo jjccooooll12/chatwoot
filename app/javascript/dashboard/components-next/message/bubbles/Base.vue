@@ -24,8 +24,16 @@ const {
   id,
   sender,
   senderType,
+  isEmailInbox,
 } = useMessageContext();
 const { t } = useI18n();
+
+// Private notes on an email ticket use Freshdesk's own card treatment (full
+// width, a distinct peach highlight, no speech-bubble corner/max-width) —
+// other channels keep the existing amber chat-bubble styling untouched.
+const isPrivateEmailNote = computed(
+  () => variant.value === MESSAGE_VARIANTS.PRIVATE && isEmailInbox.value
+);
 
 const isCaptainMessage = computed(
   () =>
@@ -75,6 +83,10 @@ const flexOrientationClass = computed(() => {
 });
 
 const messageClass = computed(() => {
+  if (isPrivateEmailNote.value) {
+    return ['bg-[#feecd5] dark:bg-[#302008] text-n-amber-12 rounded-lg w-full'];
+  }
+
   const classToApply = [varaintBaseMap[variant.value]];
 
   if (variant.value !== MESSAGE_VARIANTS.ACTIVITY) {
@@ -122,7 +134,7 @@ const replyToPreview = computed(() => {
     :class="[
       messageClass,
       {
-        'max-w-lg': variant !== MESSAGE_VARIANTS.EMAIL,
+        'max-w-lg': variant !== MESSAGE_VARIANTS.EMAIL && !isPrivateEmailNote,
       },
     ]"
   >
