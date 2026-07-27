@@ -175,13 +175,13 @@ const confirmDeleteConversation = async () => {
         />
         <button
           type="button"
-          class="grid size-7 place-content-center rounded-md border border-fd-border text-fd-muted hover:border-fd-primary hover:text-fd-primary"
+          class="grid size-8 place-content-center rounded-md border border-n-slate-7 bg-fd-surface text-fd-muted shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2 hover:text-fd-text"
         >
           <span class="i-lucide-star size-3.5" />
         </button>
         <button
           type="button"
-          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary"
+          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-n-slate-7 bg-fd-surface px-3 text-sm font-medium text-fd-text shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2"
           @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
         >
           <span class="i-lucide-reply size-3.5" />
@@ -189,7 +189,7 @@ const confirmDeleteConversation = async () => {
         </button>
         <button
           type="button"
-          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary"
+          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-n-slate-7 bg-fd-surface px-3 text-sm font-medium text-fd-text shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2"
           @click="setEditorMode(REPLY_EDITOR_MODES.NOTE)"
         >
           <span class="i-lucide-file-text size-3.5" />
@@ -197,7 +197,7 @@ const confirmDeleteConversation = async () => {
         </button>
         <button
           type="button"
-          class="hidden h-8 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary md:inline-flex"
+          class="hidden h-8 items-center gap-1.5 rounded-md border border-n-slate-7 bg-fd-surface px-3 text-sm font-medium text-fd-text shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2 md:inline-flex"
           @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
         >
           <span class="i-lucide-forward size-3.5" />
@@ -212,11 +212,11 @@ const confirmDeleteConversation = async () => {
       <div class="flex shrink-0 items-center gap-2">
         <button
           type="button"
-          class="hidden h-8 items-center gap-1.5 rounded-md border bg-fd-surface px-3 text-sm font-medium hover:border-fd-primary hover:text-fd-primary lg:inline-flex"
+          class="hidden h-8 items-center gap-1.5 rounded-md border bg-fd-surface px-3 text-sm font-medium shadow-sm hover:bg-n-slate-2 lg:inline-flex"
           :class="
             activitiesVisible
               ? 'border-fd-primary text-fd-primary'
-              : 'border-fd-border text-fd-text'
+              : 'border-n-slate-7 text-fd-text hover:border-n-slate-8'
           "
           @click="toggleActivities"
         >
@@ -226,7 +226,7 @@ const confirmDeleteConversation = async () => {
         <ConversationCallButton :inbox="inbox" :chat="currentChat" />
         <button
           type="button"
-          class="grid size-8 place-content-center rounded-md border border-fd-border text-fd-muted hover:border-n-ruby-9 hover:text-n-ruby-11"
+          class="grid size-8 place-content-center rounded-md border border-n-slate-7 bg-fd-surface text-fd-muted shadow-sm hover:border-n-ruby-9 hover:bg-n-ruby-2 hover:text-n-ruby-11"
           :title="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
           @click="onDeleteClick"
         >
