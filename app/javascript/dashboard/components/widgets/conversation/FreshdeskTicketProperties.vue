@@ -184,163 +184,167 @@ onMounted(() => {
 
 <template>
   <aside
-    class="hidden w-[248px] shrink-0 overflow-y-auto border-l border-fd-border bg-fd-surface lg:block"
+    class="hidden w-[248px] shrink-0 flex-col border-l border-fd-border bg-fd-surface lg:flex"
   >
-    <div class="grid gap-2.5 px-3 py-4 text-xs">
-      <h3 class="m-0 text-xxs font-semibold uppercase text-fd-muted">
-        {{ t('CHAT_LIST.FRESHDESK_DETAIL.PROPERTIES') }}
-      </h3>
+    <div class="flex-1 overflow-y-auto">
+      <div class="grid gap-2.5 px-3 pb-4 pt-4 text-xs">
+        <h3 class="m-0 text-xxs font-semibold uppercase text-fd-muted">
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.PROPERTIES') }}
+        </h3>
 
-      <label class="grid gap-1.5">
-        <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.TYPE') }}
-        </span>
-        <select
-          v-model="customType"
-          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-        >
-          <option
-            v-for="option in typeOptions"
-            :key="option.key"
-            :value="option.key"
+        <label class="grid gap-1.5">
+          <span class="font-medium text-fd-text">
+            {{ t('CHAT_LIST.FRESHDESK_DETAIL.TYPE') }}
+          </span>
+          <select
+            v-model="customType"
+            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
           >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+            <option
+              v-for="option in typeOptions"
+              :key="option.key"
+              :value="option.key"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
 
-      <label class="grid gap-1.5">
-        <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.AUTO_FOLLOW_UP') }}
-        </span>
-        <select
-          v-model="autoFollowUp"
-          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-          @change="onFollowUpChange"
-        >
-          <option
-            v-for="option in followUpOptions"
-            :key="option.key"
-            :value="option.key"
+        <label class="grid gap-1.5">
+          <span class="font-medium text-fd-text">
+            {{ t('CHAT_LIST.FRESHDESK_DETAIL.AUTO_FOLLOW_UP') }}
+          </span>
+          <select
+            v-model="autoFollowUp"
+            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            @change="onFollowUpChange"
           >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+            <option
+              v-for="option in followUpOptions"
+              :key="option.key"
+              :value="option.key"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
 
-      <div class="grid gap-1.5">
-        <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.PRIORITY') }}
-        </span>
-        <div class="relative">
-          <button
-            type="button"
-            class="flex h-8 w-full items-center gap-2 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-            @click="priorityOpen = !priorityOpen"
-          >
-            <span :class="priorityDotClass(currentPriority)" />
-            <span>{{ priorityMeta[currentPriority].label }}</span>
-            <span
-              class="i-lucide-chevron-down size-3.5 text-fd-muted ltr:ml-auto rtl:mr-auto"
-            />
-          </button>
-          <template v-if="priorityOpen">
+        <div class="grid gap-1.5">
+          <span class="font-medium text-fd-text">
+            {{ t('CHAT_LIST.FRESHDESK_DETAIL.PRIORITY') }}
+          </span>
+          <div class="relative">
             <button
               type="button"
-              tabindex="-1"
-              class="fixed inset-0 z-40 cursor-default"
-              @click="priorityOpen = false"
-            />
-            <ul
-              class="absolute inset-x-0 top-9 z-50 m-0 list-none rounded-md border border-fd-border bg-fd-surface p-1 shadow-lg"
+              class="flex h-8 w-full items-center gap-2 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+              @click="priorityOpen = !priorityOpen"
             >
-              <li v-for="key in priorityKeys" :key="key">
-                <button
-                  type="button"
-                  class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-fd-text hover:bg-n-slate-3"
-                  @click="selectPriority(key)"
-                >
-                  <span :class="priorityDotClass(key)" />
-                  <span>{{ priorityMeta[key].label }}</span>
-                </button>
-              </li>
-            </ul>
-          </template>
+              <span :class="priorityDotClass(currentPriority)" />
+              <span>{{ priorityMeta[currentPriority].label }}</span>
+              <span
+                class="i-lucide-chevron-down size-3.5 text-fd-muted ltr:ml-auto rtl:mr-auto"
+              />
+            </button>
+            <template v-if="priorityOpen">
+              <button
+                type="button"
+                tabindex="-1"
+                class="fixed inset-0 z-40 cursor-default"
+                @click="priorityOpen = false"
+              />
+              <ul
+                class="absolute inset-x-0 top-9 z-50 m-0 list-none rounded-md border border-fd-border bg-fd-surface p-1 shadow-lg"
+              >
+                <li v-for="key in priorityKeys" :key="key">
+                  <button
+                    type="button"
+                    class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-fd-text hover:bg-n-slate-3"
+                    @click="selectPriority(key)"
+                  >
+                    <span :class="priorityDotClass(key)" />
+                    <span>{{ priorityMeta[key].label }}</span>
+                  </button>
+                </li>
+              </ul>
+            </template>
+          </div>
         </div>
+
+        <label class="grid gap-1.5">
+          <span class="font-medium text-fd-text">
+            {{ t('CHAT_LIST.FRESHDESK_DETAIL.STATUS') }}
+          </span>
+          <select
+            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            :value="chat.status"
+            @change="updateStatus"
+          >
+            <option
+              v-for="option in statusOptions"
+              :key="option.key"
+              :value="option.key"
+            >
+              {{ option.label }}
+            </option>
+          </select>
+        </label>
+
+        <label class="grid gap-1.5">
+          <span class="font-medium text-fd-text">
+            {{ t('CHAT_LIST.FRESHDESK_DETAIL.GROUP') }}
+          </span>
+          <select
+            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            :value="assignedTeamId"
+            @change="updateTeam"
+          >
+            <option v-for="team in teamOptions" :key="team.id" :value="team.id">
+              {{ team.name }}
+            </option>
+          </select>
+        </label>
+
+        <label class="grid gap-1.5">
+          <span class="font-medium text-fd-text">
+            {{ t('CHAT_LIST.FRESHDESK_DETAIL.AGENT') }}
+          </span>
+          <select
+            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            :value="assignedAgentId"
+            @change="updateAssignee"
+          >
+            <option
+              v-for="agent in assignableAgents"
+              :key="agent.id || 'none'"
+              :value="agent.id || ''"
+            >
+              {{ agent.id ? shortenAgentName(agent.name) : agent.name }}
+            </option>
+          </select>
+        </label>
+
+        <label class="grid gap-1.5">
+          <span class="font-medium text-fd-text">
+            {{ t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER') }}
+          </span>
+          <input
+            v-model="orderNumber"
+            type="text"
+            :placeholder="
+              t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER_PLACEHOLDER')
+            "
+            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            @blur="onOrderNumberBlur"
+            @keyup.enter="$event.target.blur()"
+          />
+        </label>
       </div>
+    </div>
 
-      <label class="grid gap-1.5">
-        <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.STATUS') }}
-        </span>
-        <select
-          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-          :value="chat.status"
-          @change="updateStatus"
-        >
-          <option
-            v-for="option in statusOptions"
-            :key="option.key"
-            :value="option.key"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
-
-      <label class="grid gap-1.5">
-        <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.GROUP') }}
-        </span>
-        <select
-          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-          :value="assignedTeamId"
-          @change="updateTeam"
-        >
-          <option v-for="team in teamOptions" :key="team.id" :value="team.id">
-            {{ team.name }}
-          </option>
-        </select>
-      </label>
-
-      <label class="grid gap-1.5">
-        <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.AGENT') }}
-        </span>
-        <select
-          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-          :value="assignedAgentId"
-          @change="updateAssignee"
-        >
-          <option
-            v-for="agent in assignableAgents"
-            :key="agent.id || 'none'"
-            :value="agent.id || ''"
-          >
-            {{ agent.id ? shortenAgentName(agent.name) : agent.name }}
-          </option>
-        </select>
-      </label>
-
-      <label class="grid gap-1.5">
-        <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER') }}
-        </span>
-        <input
-          v-model="orderNumber"
-          type="text"
-          :placeholder="
-            t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER_PLACEHOLDER')
-          "
-          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-          @blur="onOrderNumberBlur"
-          @keyup.enter="$event.target.blur()"
-        />
-      </label>
-
+    <div class="shrink-0 border-t border-fd-border px-3 py-2.5">
       <button
         type="button"
-        class="sticky bottom-0 z-10 mt-2 h-9 rounded-md border-t border-fd-border bg-fd-primary px-3 text-sm font-semibold text-white shadow-[0_-4px_8px_-4px_rgba(0,0,0,0.15)] disabled:cursor-wait disabled:opacity-70"
+        class="flex h-7 w-full items-center justify-center rounded-md bg-fd-primary px-3 text-xs font-semibold text-white disabled:cursor-wait disabled:opacity-70"
         :disabled="isSaving"
         @click="saveCustomFields"
       >

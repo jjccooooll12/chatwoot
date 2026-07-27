@@ -24,11 +24,22 @@ const contactId = computed(() => contact.value?.id);
 const conversationsGetter = useMapGetter(
   'contactConversations/getContactConversation'
 );
+// The contactConversations module is a one-off snapshot fetched when the
+// panel mounts, so it goes stale the moment an agent changes a property
+// (status, priority, assignee, ...) on any of these tickets. The main
+// conversations store IS kept live (sockets + every property-update action
+// commit straight into it), so overlay it here to reflect changes instantly
+// without a manual refetch.
+const liveConversationGetter = useMapGetter('getConversationById');
 const recentConversations = computed(() => {
   const list = contactId.value
     ? conversationsGetter.value(contactId.value) || []
     : [];
-  return [...list]
+  const merged = list.map(conversation => {
+    const live = liveConversationGetter.value(conversation.id);
+    return live ? { ...conversation, ...live } : conversation;
+  });
+  return merged
     .sort((a, b) => (b.created_at || 0) - (a.created_at || 0))
     .slice(0, 6);
 });
