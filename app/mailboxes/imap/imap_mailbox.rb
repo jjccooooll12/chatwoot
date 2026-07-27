@@ -5,6 +5,12 @@ class Imap::ImapMailbox
 
   FALLBACK_CONVERSATION_PATTERN = %r{account/(\d+)/conversation/([a-zA-Z0-9-]+)@}
 
+  # Inbound emails from these senders never become (or merge into) a ticket — they
+  # are automated notifications, not customer conversations. A domain entry also
+  # matches its subdomains; an entry with "@" matches an exact address. The team
+  # can extend this at runtime via account.custom_attributes['blocked_ticket_senders'].
+  DEFAULT_BLOCKED_SENDER_DOMAINS = %w[microsoft.com godaddy.com].freeze
+
   def process(mail, channel)
     @inbound_mail = mail
     @channel = channel
@@ -16,6 +22,11 @@ class Imap::ImapMailbox
 
     # Skip processing email if it belongs to any of the edge cases
     return unless incoming_email_from_valid_email?
+
+    if blocked_sender?
+      Rails.logger.info("[ImapMailbox] Skipped filtered sender #{@processed_mail.original_sender} (no ticket created)")
+      return
+    end
 
     ActiveRecord::Base.transaction do
       find_or_create_contact
@@ -37,6 +48,25 @@ class Imap::ImapMailbox
 
   def decorate_mail
     @processed_mail = MailPresenter.new(@inbound_mail, @account)
+  end
+
+  def blocked_sender?
+    sender = original_sender_email.to_s.downcase.strip
+    return false if sender.blank?
+
+    domain = sender.split('@').last.to_s
+    blocked_sender_patterns.any? do |pattern|
+      if pattern.include?('@')
+        sender == pattern
+      else
+        domain == pattern || domain.end_with?(".#{pattern}")
+      end
+    end
+  end
+
+  def blocked_sender_patterns
+    custom = Array(@account.custom_attributes['blocked_ticket_senders'])
+    (DEFAULT_BLOCKED_SENDER_DOMAINS + custom).map { |pattern| pattern.to_s.downcase.strip }.reject(&:blank?).uniq
   end
 
   def find_conversation_by_in_reply_to
