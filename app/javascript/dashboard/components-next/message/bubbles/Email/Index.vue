@@ -143,7 +143,9 @@ const handleSeeOriginal = () => {
       />
       <div
         class="min-w-0 flex-1 text-fd-text"
-        :class="isOutgoing ? 'rounded-lg bg-n-slate-2 px-3.5 py-3' : 'pb-0.5'"
+        :class="
+          isOutgoing ? 'rounded-lg bg-n-slate-2 px-3.5 py-3' : 'px-3.5 pb-0.5'
+        "
       >
         <EmailMeta class="mb-2" />
         <section ref="contentContainer">

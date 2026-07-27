@@ -138,7 +138,7 @@ watch(contactId, fetchConversations);
             >
               {{ subjectOf(conversation) }}
             </a>
-            <p class="m-0 select-text text-xxs text-fd-primary">
+            <p class="m-0 select-text text-xs font-medium text-fd-primary">
               {{ `#${ticketNumberOf(conversation)}` }}
             </p>
             <p class="m-0 mt-0.5 select-text text-xxs text-fd-muted">

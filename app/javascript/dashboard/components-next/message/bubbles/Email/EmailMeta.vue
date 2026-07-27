@@ -32,11 +32,22 @@ const bccEmail = computed(
     []
 );
 
-const displayName = computed(
-  () => sender.value?.name || fromEmail.value[0] || ''
-);
-
 const isOutgoing = computed(() => messageType.value === MESSAGE_TYPES.OUTGOING);
+
+// Agents are shown as "First L." (e.g. "Jason C.") rather than their full name,
+// to keep the thread compact and consistent regardless of how long an agent's
+// full name is. Customer names are always shown in full.
+const shortenAgentName = name => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length < 2) return name;
+  const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
+  return `${parts[0]} ${lastInitial}.`;
+};
+
+const displayName = computed(() => {
+  const name = sender.value?.name || fromEmail.value[0] || '';
+  return isOutgoing.value ? shortenAgentName(name) : name;
+});
 const viaText = computed(() =>
   isOutgoing.value
     ? t('CHAT_LIST.FRESHDESK_DETAIL.REPLIED_VIA_EMAIL')
@@ -74,7 +85,13 @@ const showMeta = computed(
     <div class="flex flex-wrap items-baseline gap-x-1.5">
       <span
         class="text-sm font-semibold"
-        :class="hasError ? 'text-n-ruby-11' : 'text-fd-primary'"
+        :class="
+          hasError
+            ? 'text-n-ruby-11'
+            : isOutgoing
+              ? 'text-fd-primary'
+              : 'text-fd-text'
+        "
       >
         {{ displayName }}
       </span>

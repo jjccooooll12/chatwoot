@@ -78,12 +78,21 @@ export class EmailQuoteExtractor {
   }
 
   /**
-   * Find text nodes that match quote patterns
+   * Find nodes that make up quote-like content.
+   *
+   * Plain-text emails (no gmail_quote/blockquote wrapper — e.g. a reply typed
+   * into a bare mailto: body) put the quote marker ("On ... wrote:") as a text
+   * node directly alongside <br> siblings inside one flat container, alongside
+   * the sender's own new text. Removing the *whole* parent block in that case
+   * would delete genuine new content along with the quote. Instead, when the
+   * marker's block has real content before it, only the marker onward is
+   * removed; the whole block is only removed when there's nothing genuine
+   * ahead of the marker (the normal case for a block that is only a quote).
    * @param {Element} rootElement - Root element to search
-   * @returns {Element[]} Array of parent block elements containing quote-like text
+   * @returns {Node[]} Nodes to remove (elements and/or text nodes)
    */
   static findTextNodeQuotes(rootElement) {
-    const quoteBlocks = [];
+    const nodesToRemove = [];
     const treeWalker = document.createTreeWalker(
       rootElement,
       NodeFilter.SHOW_TEXT,
@@ -102,13 +111,59 @@ export class EmailQuoteExtractor {
 
       if (isQuoteLike) {
         const parentBlock = this.findParentBlock(currentNode);
-        if (parentBlock && !quoteBlocks.includes(parentBlock)) {
-          quoteBlocks.push(parentBlock);
+        if (!parentBlock) continue; // eslint-disable-line no-continue
+
+        if (this.hasGenuineContentBefore(parentBlock, currentNode)) {
+          this.nodesFromMarkerOnward(parentBlock, currentNode).forEach(node => {
+            if (!nodesToRemove.includes(node)) nodesToRemove.push(node);
+          });
+        } else if (!nodesToRemove.includes(parentBlock)) {
+          nodesToRemove.push(parentBlock);
         }
       }
     }
 
-    return quoteBlocks;
+    return nodesToRemove;
+  }
+
+  /**
+   * Whether `block` has any real (non-empty, non-<br>) content before `markerNode`.
+   * @param {Element} block
+   * @param {Node} markerNode
+   * @returns {boolean}
+   */
+  static hasGenuineContentBefore(block, markerNode) {
+    const children = Array.from(block.childNodes);
+    const markerIndex = children.indexOf(markerNode);
+    const before =
+      markerIndex === -1 ? children : children.slice(0, markerIndex);
+
+    return before.some(child => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        return Boolean(child.textContent.trim());
+      }
+      return child.nodeType === Node.ELEMENT_NODE && child.tagName !== 'BR';
+    });
+  }
+
+  /**
+   * Sibling nodes from `markerNode` through the end of `block`, including the
+   * line break immediately preceding the marker (if any) so no dangling blank
+   * line is left where the quote used to start.
+   * @param {Element} block
+   * @param {Node} markerNode
+   * @returns {Node[]}
+   */
+  static nodesFromMarkerOnward(block, markerNode) {
+    const children = Array.from(block.childNodes);
+    const markerIndex = children.indexOf(markerNode);
+    if (markerIndex === -1) return [];
+
+    const startIndex =
+      children[markerIndex - 1]?.tagName === 'BR'
+        ? markerIndex - 1
+        : markerIndex;
+    return children.slice(startIndex);
   }
 
   /**
