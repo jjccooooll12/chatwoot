@@ -138,6 +138,26 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
     @conversation.save!
   end
 
+  def merge_candidates
+    @conversations = merge_candidate_conversations
+  end
+
+  def merge
+    secondary_conversation = find_merge_conversation(params[:secondary_conversation_id])
+    authorize secondary_conversation, :show?
+
+    @conversation = ::Conversations::MergeService.new(
+      account: Current.account,
+      primary_conversation: @conversation,
+      secondary_conversation: secondary_conversation,
+      user: Current.user
+    ).perform
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: I18n.t('conversations.merge.not_found') }, status: :not_found
+  rescue StandardError => e
+    render_could_not_create_error(e.message)
+  end
+
   def destroy
     authorize @conversation, :destroy?
     ::Conversations::DeleteService.new(conversation: @conversation, user: Current.user, ip: request.ip).perform
@@ -235,6 +255,45 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
 
   def conversation_finder
     @conversation_finder ||= ConversationFinder.new(Current.user, params)
+  end
+
+  def merge_candidate_conversations
+    conversations = Current.account.conversations
+                                   .includes(:assignee, :contact, :inbox, :taggings, :contact_inbox)
+                                   .where.not(id: @conversation.id)
+
+    conversations = if params[:q].present?
+                      q = params[:q].to_s.strip.delete_prefix('#')
+                      conversations.where(
+                        'conversations.display_id::text = :q OR conversations.additional_attributes->>\'ticket_number\' = :q',
+                        q: q
+                      )
+                    else
+                      conversations_for_same_customer(conversations)
+                    end
+
+    Conversations::PermissionFilterService.new(
+      conversations,
+      Current.user,
+      Current.account
+    ).perform.sort_on_last_activity_at('desc').limit(10)
+  end
+
+  def conversations_for_same_customer(conversations)
+    email = @conversation.contact.email.to_s.downcase.strip
+    return conversations.where(contact_id: @conversation.contact_id) if email.blank?
+
+    contact_ids = Current.account.contacts.where('LOWER(email) = ?', email).select(:id)
+    conversations.where(contact_id: contact_ids)
+  end
+
+  def find_merge_conversation(identifier)
+    raise ActiveRecord::RecordNotFound if identifier.blank?
+
+    value = identifier.to_s.strip.delete_prefix('#')
+    Current.account.conversations.find_by(display_id: value) ||
+      Current.account.conversations.find_by("conversations.additional_attributes->>'ticket_number' = ?", value) ||
+      raise(ActiveRecord::RecordNotFound)
   end
 
   def assignee?

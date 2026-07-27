@@ -45,26 +45,26 @@
         "NOTE": "This ID is required if you are building an API based integration"
       },
       "AUTO_RESOLVE": {
-        "TITLE": "Auto-resolve conversations",
-        "NOTE": "This configuration would allow you to automatically resolve the conversation after a certain period of inactivity.",
+        "TITLE": "Auto-close conversations",
+        "NOTE": "This configuration would allow you to automatically close the conversation after a certain period of inactivity.",
         "DURATION": {
           "LABEL": "Inactivity duration",
-          "HELP": "Time period of inactivity after which conversation is auto-resolved",
+          "HELP": "Time period of inactivity after which conversation is auto-closed",
           "PLACEHOLDER": "30",
-          "ERROR": "Auto resolve duration should be between 10 minutes and 999 days",
+          "ERROR": "Auto close duration should be between 10 minutes and 999 days",
           "API": {
-            "SUCCESS": "Auto resolve settings updated successfully",
-            "ERROR": "Failed to update auto resolve settings"
+            "SUCCESS": "Auto close settings updated successfully",
+            "ERROR": "Failed to update auto close settings"
           }
         },
         "MESSAGE": {
           "LABEL": "Custom auto-resolution message",
-          "PLACEHOLDER": "Conversation was marked resolved by system due to 15 days of inactivity",
-          "HELP": "Message sent to the customer after conversation is auto-resolved"
+          "PLACEHOLDER": "Conversation was marked closed by system due to 15 days of inactivity",
+          "HELP": "Message sent to the customer after conversation is auto-closed"
         },
         "PREFERENCES": "Preferences",
         "LABEL": {
-          "LABEL": "Add label after auto-resolution",
+          "LABEL": "Add label after auto-close",
           "PLACEHOLDER": "Select a label"
         },
         "IGNORE_WAITING": {
@@ -105,18 +105,18 @@
         }
       },
       "AUTO_RESOLVE_DURATION": {
-        "LABEL": "Inactivity duration for resolution",
-        "HELP": "Duration after a conversation should auto resolve if there is no activity",
+        "LABEL": "Inactivity duration for closing",
+        "HELP": "Duration after a conversation should auto close if there is no activity",
         "PLACEHOLDER": "30",
-        "ERROR": "Auto resolve duration should be between 10 minutes and 999 days",
+        "ERROR": "Auto close duration should be between 10 minutes and 999 days",
         "API": {
-          "SUCCESS": "Auto resolve settings updated successfully",
-          "ERROR": "Failed to update auto resolve settings"
+          "SUCCESS": "Auto close settings updated successfully",
+          "ERROR": "Failed to update auto close settings"
         },
         "UPDATE_BUTTON": "Update",
-        "MESSAGE_LABEL": "Custom resolution message",
-        "MESSAGE_PLACEHOLDER": "Conversation was marked resolved by system due to 15 days of inactivity",
-        "MESSAGE_HELP": "This message is sent to the customer when a conversation is automatically resolved by the system due to inactivity."
+        "MESSAGE_LABEL": "Custom closing message",
+        "MESSAGE_PLACEHOLDER": "Conversation was marked closed by system due to 15 days of inactivity",
+        "MESSAGE_HELP": "This message is sent to the customer when a conversation is automatically closed by the system due to inactivity."
       },
       "FEATURES": {
         "INBOUND_EMAIL_ENABLED": "Conversation continuity with emails is enabled for your account.",
@@ -226,7 +226,7 @@
       "UNMUTE_CONVERSATION": "Unmute conversation",
       "REMOVE_LABEL_FROM_CONVERSATION": "Remove label from the conversation",
       "REOPEN_CONVERSATION": "Reopen conversation",
-      "RESOLVE_CONVERSATION": "Resolve conversation",
+      "RESOLVE_CONVERSATION": "Close conversation",
       "SEND_TRANSCRIPT": "Send an email transcript",
       "SNOOZE_CONVERSATION": "Snooze Conversation",
       "UNTIL_NEXT_REPLY": "Until next reply",

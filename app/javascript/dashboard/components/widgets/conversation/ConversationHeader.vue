@@ -6,9 +6,13 @@ import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import BackButton from '../BackButton.vue';
 import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
+import ConversationMergePanel from './ConversationMergePanel.vue';
 import ResolveAction from '../../buttons/ResolveAction.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
-import { conversationListPageURL } from 'dashboard/helper/URLHelper';
+import {
+  conversationListPageURL,
+  frontendURL,
+} from 'dashboard/helper/URLHelper';
 import { useInbox } from 'dashboard/composables/useInbox';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
@@ -140,9 +144,42 @@ watch(
 );
 
 const deleteDialogRef = ref(null);
+const showMergePanel = ref(false);
 
 const onDeleteClick = () => {
   deleteDialogRef.value?.open();
+};
+
+const openMergePanel = () => {
+  showMergePanel.value = true;
+};
+
+const closeMergePanel = () => {
+  showMergePanel.value = false;
+};
+
+const onTicketMerged = async mergedConversation => {
+  const mergeActivity = mergedConversation?.messages?.[0];
+  if (mergeActivity) {
+    store.dispatch('addMessage', mergeActivity);
+  }
+  store.dispatch('updateConversation', mergedConversation);
+  closeMergePanel();
+  useAlert(t('CONVERSATION.MERGE_SUCCESS'));
+
+  if (
+    mergedConversation?.id &&
+    String(mergedConversation.id) !== String(props.chat.id)
+  ) {
+    await router.push(
+      frontendURL(
+        `accounts/${accountId.value}/conversations/${mergedConversation.id}`
+      )
+    );
+    return;
+  }
+
+  await store.dispatch('getConversation', props.chat.id);
 };
 
 // Deleting the ticket also soft-deletes its inbound emails in Outlook
@@ -202,6 +239,14 @@ const confirmDeleteConversation = async () => {
         >
           <span class="i-lucide-forward size-3.5" />
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.FORWARD') }}
+        </button>
+        <button
+          type="button"
+          class="inline-flex h-8 items-center gap-1.5 rounded-md border border-n-slate-7 bg-fd-surface px-3 text-sm font-medium text-fd-text shadow-sm hover:border-n-slate-8 hover:bg-n-slate-2"
+          @click="openMergePanel"
+        >
+          <span class="i-lucide-git-merge size-3.5" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.BUTTON') }}
         </button>
         <ResolveAction
           :conversation-id="currentChat.id"
@@ -289,6 +334,12 @@ const confirmDeleteConversation = async () => {
       :description="$t('CONVERSATION.DELETE_CONVERSATION.DESCRIPTION')"
       :confirm-button-label="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
       @confirm="confirmDeleteConversation"
+    />
+    <ConversationMergePanel
+      v-if="showMergePanel"
+      :chat="currentChat"
+      @close="closeMergePanel"
+      @merged="onTicketMerged"
     />
   </div>
 </template>

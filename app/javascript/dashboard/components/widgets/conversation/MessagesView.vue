@@ -141,7 +141,11 @@ export default {
       const allMessages = this.currentChat.messages || [];
       const messages = this.showActivities
         ? allMessages
-        : allMessages.filter(m => m.message_type !== MESSAGE_TYPE.ACTIVITY);
+        : allMessages.filter(
+            m =>
+              m.message_type !== MESSAGE_TYPE.ACTIVITY ||
+              m.content_attributes?.activity?.type === 'conversation_merged'
+          );
       if (this.isAWhatsAppChannel) {
         return filterDuplicateSourceMessages(messages);
       }

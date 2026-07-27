@@ -721,10 +721,10 @@
         "ERROR": "Could not update required attributes, please try again"
       },
       "MODAL": {
-        "TITLE": "Resolve conversation",
-        "DESCRIPTION": "Please fill in the following custom attributes before resolving this conversation",
+        "TITLE": "Close conversation",
+        "DESCRIPTION": "Please fill in the following custom attributes before closing this conversation",
         "ACTIONS": {
-          "RESOLVE": "Resolve conversation",
+          "RESOLVE": "Close conversation",
           "CANCEL": "Cancel"
         },
         "PLACEHOLDERS": {
@@ -742,13 +742,13 @@
       "PAYWALL": {
         "TITLE": "Upgrade to use required attributes",
         "AVAILABLE_ON": "The required conversation attributes feature is available on the Business and Enterprise plans.",
-        "UPGRADE_PROMPT": "Upgrade your plan to prompt agents to fill required attributes before conversation resolution.",
+        "UPGRADE_PROMPT": "Upgrade your plan to prompt agents to fill required attributes before closing a conversation.",
         "UPGRADE_NOW": "Upgrade now",
         "CANCEL_ANYTIME": "You can change or cancel your plan anytime"
       },
       "ENTERPRISE_PAYWALL": {
         "AVAILABLE_ON": "The required conversation attributes feature is available on the paid plans.",
-        "UPGRADE_PROMPT": "Upgrade to a paid plan to enforce required attributes before conversation resolution.",
+        "UPGRADE_PROMPT": "Upgrade to a paid plan to enforce required attributes before closing a conversation.",
         "ASK_ADMIN": "Please reach out to your administrator for the upgrade."
       }
     }
@@ -775,9 +775,9 @@
     "TOGGLE_MODAL": "View all shortcuts",
     "TITLE": {
       "OPEN_CONVERSATION": "Open conversation",
-      "RESOLVE_AND_NEXT": "Resolve and move to next",
+      "RESOLVE_AND_NEXT": "Close and move to next",
       "NAVIGATE_DROPDOWN": "Navigate dropdown items",
-      "RESOLVE_CONVERSATION": "Resolve Conversation",
+      "RESOLVE_CONVERSATION": "Close Conversation",
       "GO_TO_CONVERSATION_DASHBOARD": "Go to Conversation Dashboard",
       "ADD_ATTACHMENT": "Add Attachment",
       "GO_TO_CONTACTS_DASHBOARD": "Go to Contacts Dashboard",

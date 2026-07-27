@@ -24,7 +24,7 @@
         "TEXT": "Open"
       },
       "resolved": {
-        "TEXT": "Resolved"
+        "TEXT": "Closed"
       },
       "pending": {
         "TEXT": "Pending"
@@ -100,7 +100,28 @@
       "STATUS": "Status",
       "TAGS": "Tags",
       "TYPE": "Type",
-      "UPDATE": "Update"
+      "UPDATE": "Update",
+      "MERGE": {
+        "BACK_TO_MATCHES": "Back to matching tickets",
+        "BUTTON": "Merge",
+        "CANCEL": "Cancel",
+        "CLOSE": "Close merge panel",
+        "CONFIRM": "Merge",
+        "DESCRIPTION": "Choose a ticket to merge, then select which ticket stays primary. The other ticket will be closed and linked from the primary ticket history.",
+        "EMPTY": "No matching tickets found.",
+        "ERROR": "Could not merge tickets. Please try again.",
+        "LOAD_ERROR": "Could not load tickets.",
+        "LOADING": "Loading tickets...",
+        "MATCHING_TICKETS": "Tickets from this customer",
+        "PRIMARY": "Primary ticket",
+        "PRIMARY_BADGE": "Primary",
+        "SEARCH": "Search",
+        "SEARCH_PLACEHOLDER": "Look up a ticket number",
+        "SEARCH_RESULTS": "Search results",
+        "SELECT_AS_PRIMARY": "Set {ticket} as primary",
+        "SELECT_TICKET": "Select {ticket} to merge",
+        "TITLE": "Merge ticket"
+      }
     },
     "FRESHDESK_PANEL": {
       "STATUS_HEADING": "Status",

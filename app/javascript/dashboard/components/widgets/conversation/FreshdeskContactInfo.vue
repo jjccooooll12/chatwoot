@@ -50,8 +50,14 @@ const ticketNumberOf = conversation => {
   const attrs = conversation.additional_attributes || {};
   return attrs.ticket_number || conversation.display_id || conversation.id;
 };
+const statusLabelMap = computed(() => ({
+  open: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
+  resolved: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),
+  pending: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.pending.TEXT'),
+  snoozed: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.snoozed.TEXT'),
+}));
 const statusLabel = conversation =>
-  t(`CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.${conversation.status}.TEXT`);
+  statusLabelMap.value[conversation.status] || conversation.status;
 const timeLabel = conversation =>
   conversation.created_at
     ? dateFormat(conversation.created_at, 'd MMM yyyy, h:mm a')

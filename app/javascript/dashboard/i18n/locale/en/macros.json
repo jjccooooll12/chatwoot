@@ -103,7 +103,7 @@
       "SEND_EMAIL_TRANSCRIPT": "Send an Email Transcript",
       "MUTE_CONVERSATION": "Mute Conversation",
       "SNOOZE_CONVERSATION": "Snooze Conversation",
-      "RESOLVE_CONVERSATION": "Resolve Conversation",
+      "RESOLVE_CONVERSATION": "Close Conversation",
       "SEND_ATTACHMENT": "Send Attachment",
       "SEND_MESSAGE": "Send a Message",
       "CHANGE_PRIORITY": "Change Priority",

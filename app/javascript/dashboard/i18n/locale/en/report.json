@@ -148,7 +148,7 @@
   },
   "AGENT_REPORTS": {
     "HEADER": "Agents Overview",
-    "DESCRIPTION": "Easily track agent performance with key metrics such as conversations, response times, resolution times, and resolved cases. Click an agent's name to learn more.",
+    "DESCRIPTION": "Easily track agent performance with key metrics such as conversations, response times, resolution times, and closed cases. Click an agent's name to learn more.",
     "LOADING_CHART": "Loading chart data...",
     "NO_ENOUGH_DATA": "We've not received enough data points to generate report, Please try again later.",
     "DOWNLOAD_AGENT_REPORTS": "Download agent reports",
@@ -221,7 +221,7 @@
   },
   "LABEL_REPORTS": {
     "HEADER": "Labels Overview",
-    "DESCRIPTION": "Track label performance with key metrics including conversations, response times, resolution times, and resolved cases. Click a label name for detailed insights.",
+    "DESCRIPTION": "Track label performance with key metrics including conversations, response times, resolution times, and closed cases. Click a label name for detailed insights.",
     "LOADING_CHART": "Loading chart data...",
     "NO_ENOUGH_DATA": "We've not received enough data points to generate report, Please try again later.",
     "DOWNLOAD_LABEL_REPORTS": "Download label reports",
@@ -294,7 +294,7 @@
   },
   "INBOX_REPORTS": {
     "HEADER": "Inbox Overview",
-    "DESCRIPTION": "Quickly view your inbox performance with key metrics like conversations, response times, resolution times, and resolved cases—all in one place. Click an inbox name for more details.",
+    "DESCRIPTION": "Quickly view your inbox performance with key metrics like conversations, response times, resolution times, and closed cases—all in one place. Click an inbox name for more details.",
     "LOADING_CHART": "Loading chart data...",
     "NO_ENOUGH_DATA": "We've not received enough data points to generate report, Please try again later.",
     "DOWNLOAD_INBOX_REPORTS": "Download inbox reports",
@@ -369,7 +369,7 @@
   },
   "TEAM_REPORTS": {
     "HEADER": "Team Overview",
-    "DESCRIPTION": "Get a snapshot of your team's performance with essential metrics, including conversations, response times, resolution times, and resolved cases. Click a team name for more details.",
+    "DESCRIPTION": "Get a snapshot of your team's performance with essential metrics, including conversations, response times, resolution times, and closed cases. Click a team name for more details.",
     "LOADING_CHART": "Loading chart data...",
     "NO_ENOUGH_DATA": "We've not received enough data points to generate report, Please try again later.",
     "DOWNLOAD_TEAM_REPORTS": "Download team reports",
@@ -534,7 +534,7 @@
       },
       "RESOLUTION_RATE": {
         "LABEL": "Resolution Rate",
-        "TOOLTIP": "Total number of conversations resolved by the bot / Total number of conversations handled by the bot * 100"
+        "TOOLTIP": "Total number of conversations closed by the bot / Total number of conversations handled by the bot * 100"
       },
       "HANDOFF_RATE": {
         "LABEL": "Handoff Rate",

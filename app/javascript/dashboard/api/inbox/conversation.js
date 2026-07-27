@@ -120,6 +120,18 @@ class ConversationApi extends ApiClient {
     });
   }
 
+  getMergeCandidates({ conversationId, q = '' }) {
+    return axios.get(`${this.url}/${conversationId}/merge_candidates`, {
+      params: { q },
+    });
+  }
+
+  merge({ conversationId, secondaryConversationId }) {
+    return axios.post(`${this.url}/${conversationId}/merge`, {
+      secondary_conversation_id: secondaryConversationId,
+    });
+  }
+
   fetchParticipants(conversationId) {
     return axios.get(`${this.url}/${conversationId}/participants`);
   }

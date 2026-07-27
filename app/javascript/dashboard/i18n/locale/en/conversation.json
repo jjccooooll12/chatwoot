@@ -112,7 +112,7 @@
       "TRANSCRIPT_SHOW_LESS": "Show less"
     },
     "HEADER": {
-      "RESOLVE_ACTION": "Resolve",
+      "RESOLVE_ACTION": "Close",
       "REOPEN_ACTION": "Reopen",
       "OPEN_ACTION": "Open",
       "MORE_ACTIONS": "More actions",
@@ -181,7 +181,7 @@
     },
     "CARD_CONTEXT_MENU": {
       "PENDING": "Mark as pending",
-      "RESOLVED": "Mark as resolved",
+      "RESOLVED": "Mark as closed",
       "MARK_AS_UNREAD": "Mark as unread",
       "MARK_AS_READ": "Mark as read",
       "REOPEN": "Reopen conversation",
@@ -291,6 +291,7 @@
     "CHANGE_TEAM": "Conversation team changed",
     "SUCCESS_DELETE_CONVERSATION": "Conversation deleted successfully",
     "SUCCESS_DELETE_TICKET": "Ticket #{conversationId} deleted successfully",
+    "MERGE_SUCCESS": "Ticket merged successfully",
     "FAIL_DELETE_CONVERSATION": "Couldn't delete conversation! Try again",
     "FILE_SIZE_LIMIT": "File exceeds the {MAXIMUM_SUPPORTED_FILE_UPLOAD_SIZE} MB attachment limit",
     "FILE_TYPE_NOT_SUPPORTED": "This {fileName} file type is not supported in this conversation",

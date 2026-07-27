@@ -50,6 +50,12 @@ const statusOptions = computed(() => [
   { key: wootConstants.STATUS_TYPE.RESOLVED, label: 'Closed' },
 ]);
 
+const currentStatusLabel = computed(
+  () =>
+    statusOptions.value.find(option => option.key === props.chat.status)
+      ?.label || props.chat.status
+);
+
 const typeOptions = [
   { key: '', label: '--' },
   { key: 'question', label: 'Question' },
@@ -177,8 +183,8 @@ onMounted(() => {
   >
     <div class="border-b border-fd-border px-3 py-5">
       <div class="flex items-center justify-between">
-        <span class="text-base font-medium capitalize text-fd-text">
-          {{ chat.status }}
+        <span class="text-base font-medium text-fd-text">
+          {{ currentStatusLabel }}
         </span>
         <Icon icon="i-lucide-panel-right-close" class="size-4 text-fd-muted" />
       </div>
