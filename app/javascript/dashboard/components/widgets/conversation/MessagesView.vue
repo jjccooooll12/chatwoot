@@ -375,7 +375,10 @@ export default {
           mode === REPLY_EDITOR_MODES.REPLY ||
           mode === REPLY_EDITOR_MODES.NOTE
         ) {
-          this.replyBoxRef?.setReplyMode?.(mode);
+          // Sets the mode AND focuses the editor with the caret at the end of
+          // any existing draft text (same combined handler the header's
+          // Reply/Note buttons already use via the emitter).
+          this.replyBoxRef?.onFreshdeskSetReplyMode?.(mode);
         }
         this.resizableEditorWrapperRef?.expandEditorFull?.();
         this.scrollToComposer();

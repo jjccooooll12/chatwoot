@@ -3,7 +3,6 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
-import ConversationLabels from 'dashboard/routes/dashboard/conversation/labels/LabelBox.vue';
 import wootConstants from 'dashboard/constants/globals';
 import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
@@ -187,17 +186,10 @@ onMounted(() => {
   <aside
     class="hidden w-[248px] shrink-0 overflow-y-auto border-l border-fd-border bg-fd-surface lg:block"
   >
-    <div class="grid gap-4 px-3 py-4 text-xs">
+    <div class="grid gap-2.5 px-3 py-4 text-xs">
       <h3 class="m-0 text-xxs font-semibold uppercase text-fd-muted">
         {{ t('CHAT_LIST.FRESHDESK_DETAIL.PROPERTIES') }}
       </h3>
-
-      <label class="grid gap-1.5">
-        <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.TAGS') }}
-        </span>
-        <ConversationLabels :conversation-id="chat.id" />
-      </label>
 
       <label class="grid gap-1.5">
         <span class="font-medium text-fd-text">
