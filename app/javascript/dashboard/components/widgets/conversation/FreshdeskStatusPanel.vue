@@ -37,11 +37,6 @@ const statusItems = computed(() => [
     label: t('CHAT_LIST.FRESHDESK_PANEL.STATUS.resolved'),
     dot: 'bg-fd-green',
   },
-  {
-    key: 'snoozed',
-    label: t('CHAT_LIST.FRESHDESK_PANEL.STATUS.snoozed'),
-    dot: 'bg-n-slate-8',
-  },
 ]);
 
 const rowClass = active =>

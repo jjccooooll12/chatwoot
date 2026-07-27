@@ -49,7 +49,6 @@ watch(
 );
 
 const currentChat = useMapGetter('getSelectedChat');
-const inboxesList = useMapGetter('inboxes/getInboxes');
 const activeInbox = useMapGetter('getSelectedInbox');
 const accountId = useMapGetter('getCurrentAccountId');
 
@@ -67,10 +66,6 @@ const inbox = computed(() => {
   const inboxId = props.source.inbox_id;
   return inboxId ? store.getters['inboxes/getInbox'](inboxId) : {};
 });
-
-const showInboxName = computed(
-  () => !activeInbox.value && inboxesList.value.length > 1
-);
 
 const conversationPath = computed(() =>
   frontendURL(
@@ -173,7 +168,6 @@ const onDeleteConversation = () => {
     :inbox="inbox"
     :selected="isConversationSelected(source.id)"
     :is-active-chat="isActiveChat"
-    :show-inbox-name="showInboxName"
     @click="onCardClick"
     @contextmenu="openContextMenu"
     @assign-agent="onAssignAgent"

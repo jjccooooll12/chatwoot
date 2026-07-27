@@ -4,7 +4,7 @@ class ConversationPolicy < ApplicationPolicy
   end
 
   def destroy?
-    administrator?
+    administrator? || agent_can_view_conversation?
   end
 
   def show?

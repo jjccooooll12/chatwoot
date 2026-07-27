@@ -283,8 +283,24 @@ const shouldGroupWithNext = computed(() => {
   return props.groupWithNext;
 });
 
+// Email messages render as full-width Freshdesk cards: the avatar + sender
+// header live inside the EmailBubble, so we skip the chat bubble's avatar
+// column and left/right side gaps for them (chat channels are unaffected).
+const isEmailCard = computed(() => {
+  const emailTypes = [MESSAGE_TYPES.INCOMING, MESSAGE_TYPES.OUTGOING];
+  if (
+    props.isEmailInbox &&
+    !props.private &&
+    emailTypes.includes(props.messageType)
+  ) {
+    return true;
+  }
+  return props.contentType === CONTENT_TYPES.INCOMING_EMAIL;
+});
+
 const shouldShowAvatar = computed(() => {
   if (props.messageType === MESSAGE_TYPES.ACTIVITY) return false;
+  if (isEmailCard.value) return false;
   if (orientation.value === ORIENTATION.LEFT) return false;
 
   return true;
@@ -569,8 +585,9 @@ provideMessageContext({
       <div
         class="[grid-area:bubble] flex min-w-0"
         :class="{
-          'ltr:ml-8 rtl:mr-8 justify-end': orientation === ORIENTATION.RIGHT,
-          'ltr:mr-8 rtl:ml-8': orientation === ORIENTATION.LEFT,
+          'ltr:ml-8 rtl:mr-8 justify-end':
+            !isEmailCard && orientation === ORIENTATION.RIGHT,
+          'ltr:mr-8 rtl:ml-8': !isEmailCard && orientation === ORIENTATION.LEFT,
         }"
         @contextmenu="openContextMenu($event)"
       >

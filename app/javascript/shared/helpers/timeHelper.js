@@ -6,6 +6,7 @@ import {
   isYesterday,
   fromUnixTime,
   formatDistanceToNow,
+  formatDistanceToNowStrict,
   differenceInDays,
 } from 'date-fns';
 
@@ -60,6 +61,17 @@ export const relativeDayTimestamp = (time, yesterdayLabel) => {
 export const dynamicTime = time => {
   const unixTime = fromUnixTime(time);
   return formatDistanceToNow(unixTime, { addSuffix: true });
+};
+
+/**
+ * Formats a Unix timestamp into an exact relative time (no "about" prefix),
+ * e.g. "12 hours ago", "5 minutes ago", "3 days ago".
+ * @param {number} time - Unix timestamp.
+ * @returns {string} Relative time with an "ago" suffix.
+ */
+export const dynamicTimeStrict = time => {
+  const unixTime = fromUnixTime(time);
+  return formatDistanceToNowStrict(unixTime, { addSuffix: true });
 };
 
 /**

@@ -89,6 +89,13 @@ const resetEditorHeight = () => {
   editorHeight.value = sizeBounds.value.default;
 };
 
+// Freshdesk: opening the composer fills most of the panel (the thread keeps a
+// scrollable strip above it).
+const expandEditorFull = () => {
+  measureSurroundingHeight();
+  editorHeight.value = sizeBounds.value.max;
+};
+
 const toggleEditorExpand = () => {
   editorHeight.value = clampToBounds(editorHeight.value);
   measureSurroundingHeight();
@@ -124,7 +131,7 @@ useEventListener(document, 'touchend', onResizeEnd);
 useEventListener(document, 'touchcancel', onResizeEnd);
 useEventListener(window, 'blur', onResizeEnd);
 
-defineExpose({ toggleEditorExpand, resetEditorHeight });
+defineExpose({ toggleEditorExpand, resetEditorHeight, expandEditorFull });
 </script>
 
 <template>

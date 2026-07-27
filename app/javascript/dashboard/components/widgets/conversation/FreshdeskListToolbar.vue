@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 
@@ -14,32 +14,55 @@ const emit = defineEmits(['selectAll', 'changeFilter']);
 
 const { t } = useI18n();
 
-const sortOptions = computed(() => [
+const sortOpen = ref(false);
+
+// Freshdesk splits sorting into a field (top section) + a direction (bottom
+// section). Every field below supports both asc & desc (SORT_BY_TYPE), so the
+// two selections always combine into a valid `<field>_<direction>` value.
+const sortFields = computed(() => [
   {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.created_at_desc.TEXT'),
-    value: 'created_at_desc',
+    key: 'last_activity_at',
+    label: t('CHAT_LIST.FRESHDESK_TOOLBAR.SORT_FIELD.LAST_ACTIVITY'),
   },
   {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.created_at_asc.TEXT'),
-    value: 'created_at_asc',
+    key: 'created_at',
+    label: t('CHAT_LIST.FRESHDESK_TOOLBAR.SORT_FIELD.CREATED_AT'),
   },
   {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.last_activity_at_desc.TEXT'),
-    value: 'last_activity_at_desc',
+    key: 'priority',
+    label: t('CHAT_LIST.FRESHDESK_TOOLBAR.SORT_FIELD.PRIORITY'),
   },
   {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.last_activity_at_asc.TEXT'),
-    value: 'last_activity_at_asc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.priority_desc.TEXT'),
-    value: 'priority_desc',
-  },
-  {
-    label: t('CHAT_LIST.SORT_ORDER_ITEMS.unread.TEXT'),
-    value: 'unread',
+    key: 'waiting_since',
+    label: t('CHAT_LIST.FRESHDESK_TOOLBAR.SORT_FIELD.WAITING_SINCE'),
   },
 ]);
+
+const sortDirections = computed(() => [
+  { key: 'asc', label: t('CHAT_LIST.FRESHDESK_TOOLBAR.SORT_DIR.ASCENDING') },
+  { key: 'desc', label: t('CHAT_LIST.FRESHDESK_TOOLBAR.SORT_DIR.DESCENDING') },
+]);
+
+const DIRECTION_RE = /_(asc|desc)$/;
+const activeField = computed(() => {
+  const base = props.activeSortBy.replace(DIRECTION_RE, '');
+  return sortFields.value.some(field => field.key === base)
+    ? base
+    : 'last_activity_at';
+});
+const activeDirection = computed(
+  () => props.activeSortBy.match(DIRECTION_RE)?.[1] || 'desc'
+);
+const activeFieldLabel = computed(
+  () => sortFields.value.find(field => field.key === activeField.value)?.label
+);
+
+const applySort = value => {
+  emit('changeFilter', value, 'sort');
+  sortOpen.value = false;
+};
+const selectField = key => applySort(`${key}_${activeDirection.value}`);
+const selectDirection = key => applySort(`${activeField.value}_${key}`);
 
 const rangeLabel = computed(() => {
   if (!props.conversationCount) {
@@ -71,26 +94,70 @@ const rangeLabel = computed(() => {
         </span>
       </label>
 
-      <label
-        class="inline-flex h-8 items-center gap-2 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs text-fd-muted"
-      >
-        <span class="whitespace-nowrap">
+      <div class="flex items-center gap-1.5">
+        <span class="whitespace-nowrap text-xs text-fd-muted">
           {{ t('CHAT_LIST.FRESHDESK_TOOLBAR.SORT_BY') }}
         </span>
-        <select
-          class="h-7 max-w-44 bg-transparent text-xs font-medium text-fd-text outline-none"
-          :value="activeSortBy"
-          @change="event => emit('changeFilter', event.target.value, 'sort')"
-        >
-          <option
-            v-for="option in sortOptions"
-            :key="option.value"
-            :value="option.value"
+        <div class="relative">
+          <button
+            type="button"
+            class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-fd-border bg-fd-surface px-2.5 text-xs font-medium text-fd-text hover:border-fd-primary"
+            @click="sortOpen = !sortOpen"
           >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+            <span class="whitespace-nowrap">{{ activeFieldLabel }}</span>
+            <span class="i-lucide-chevron-down size-3.5 text-fd-muted" />
+          </button>
+          <template v-if="sortOpen">
+            <button
+              type="button"
+              tabindex="-1"
+              class="fixed inset-0 z-40 cursor-default"
+              @click="sortOpen = false"
+            />
+            <ul
+              class="absolute left-0 top-9 z-50 m-0 w-52 list-none rounded-lg border border-fd-border bg-fd-surface p-1 shadow-lg"
+            >
+              <li v-for="field in sortFields" :key="field.key">
+                <button
+                  type="button"
+                  class="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs"
+                  :class="
+                    field.key === activeField
+                      ? 'bg-fd-blueSoft font-medium text-fd-blue'
+                      : 'text-fd-text hover:bg-n-slate-3'
+                  "
+                  @click="selectField(field.key)"
+                >
+                  <span>{{ field.label }}</span>
+                  <span
+                    v-if="field.key === activeField"
+                    class="i-lucide-check size-3.5 shrink-0"
+                  />
+                </button>
+              </li>
+              <li class="my-1 border-t border-fd-border" role="separator" />
+              <li v-for="dir in sortDirections" :key="dir.key">
+                <button
+                  type="button"
+                  class="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1.5 text-left text-xs"
+                  :class="
+                    dir.key === activeDirection
+                      ? 'bg-fd-blueSoft font-medium text-fd-blue'
+                      : 'text-fd-text hover:bg-n-slate-3'
+                  "
+                  @click="selectDirection(dir.key)"
+                >
+                  <span>{{ dir.label }}</span>
+                  <span
+                    v-if="dir.key === activeDirection"
+                    class="i-lucide-check size-3.5 shrink-0"
+                  />
+                </button>
+              </li>
+            </ul>
+          </template>
+        </div>
+      </div>
     </div>
 
     <span class="whitespace-nowrap text-xs font-medium text-fd-text">

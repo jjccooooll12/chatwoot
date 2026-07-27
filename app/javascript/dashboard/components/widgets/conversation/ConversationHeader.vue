@@ -1,17 +1,14 @@
 <script setup>
-import { computed, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
-import { useElementSize } from '@vueuse/core';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import BackButton from '../BackButton.vue';
 import InboxName from '../InboxName.vue';
 import MoreActions from './MoreActions.vue';
 import ResolveAction from '../../buttons/ResolveAction.vue';
-import SLACardLabel from './components/SLACardLabel.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
-import wootConstants from 'dashboard/constants/globals';
 import { conversationListPageURL } from 'dashboard/helper/URLHelper';
-import { snoozedReopenTime } from 'dashboard/helper/snoozeHelpers';
 import { useInbox } from 'dashboard/composables/useInbox';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
@@ -20,6 +17,7 @@ import { emitter } from 'shared/helpers/mitt';
 import { getLastMessage } from 'dashboard/helper/conversationHelper';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
+import { MESSAGE_TYPE } from 'shared/constants/messages';
 
 const props = defineProps({
   chat: {
@@ -35,8 +33,7 @@ const props = defineProps({
 const { t } = useI18n();
 const store = useStore();
 const route = useRoute();
-const conversationHeader = ref(null);
-const { width } = useElementSize(conversationHeader);
+const router = useRouter();
 const { isAWebWidgetInbox } = useInbox();
 const { getPlainText } = useMessageFormatter();
 
@@ -73,16 +70,13 @@ const isHMACVerified = computed(() => {
   return chatMetadata.value.hmac_verified;
 });
 
-const currentContact = computed(() =>
-  store.getters['contacts/getContact'](props.chat.meta.sender.id)
-);
-
 const lastMessageInChat = computed(() => getLastMessage(props.chat));
 
 const subject = computed(() => {
-  const customAttributes =
-    props.chat.custom_attributes || props.chat.customAttributes || {};
-  const emailSubject = customAttributes.email?.subject;
+  const additionalAttributes =
+    props.chat.additional_attributes || props.chat.additionalAttributes || {};
+  const emailSubject =
+    additionalAttributes.mail_subject || additionalAttributes.mailSubject;
   return getPlainText(
     emailSubject ||
       lastMessageInChat.value?.content ||
@@ -90,16 +84,22 @@ const subject = computed(() => {
   );
 });
 
-const isSnoozed = computed(
-  () => currentChat.value.status === wootConstants.STATUS_TYPE.SNOOZED
+const hasAgentReplied = computed(() =>
+  Boolean(props.chat.first_reply_created_at)
+);
+const lastMessageIsIncoming = computed(
+  () => lastMessageInChat.value?.message_type === MESSAGE_TYPE.INCOMING
+);
+// Freshdesk "Customer responded": the latest message is from the customer and
+// an agent had already replied earlier in the thread.
+const customerResponded = computed(
+  () => lastMessageIsIncoming.value && hasAgentReplied.value
 );
 
-const snoozedDisplayText = computed(() => {
-  const { snoozed_until: snoozedUntil } = currentChat.value;
-  if (snoozedUntil) {
-    return `${t('CONVERSATION.HEADER.SNOOZED_UNTIL')} ${snoozedReopenTime(snoozedUntil)}`;
-  }
-  return t('CONVERSATION.HEADER.SNOOZED_UNTIL_NEXT_REPLY');
+const ticketNumber = computed(() => {
+  const additionalAttributes =
+    props.chat.additional_attributes || props.chat.additionalAttributes || {};
+  return additionalAttributes.ticket_number || props.chat.id;
 });
 
 const inbox = computed(() => {
@@ -111,13 +111,9 @@ const hasMultipleInboxes = computed(
   () => store.getters['inboxes/getInboxes'].length > 1
 );
 
-const hasSlaPolicyId = computed(
-  () => props.chat?.applied_sla?.id && !currentContact.value?.blocked
-);
-
 const copyConversationId = async () => {
   try {
-    await copyTextToClipboard(String(props.chat.id));
+    await copyTextToClipboard(String(ticketNumber.value));
     useAlert(t('CONVERSATION.HEADER.COPY_ID_SUCCESS'));
   } catch (error) {
     // error
@@ -127,11 +123,47 @@ const copyConversationId = async () => {
 const setEditorMode = mode => {
   emitter.emit('freshdesk:set-reply-mode', mode);
 };
+
+// Activity log lines are hidden from the thread by default; this button reveals
+// them. Reset the local pressed state whenever the open ticket changes so it
+// stays in sync with the thread (which also re-hides activities per conversation).
+const activitiesVisible = ref(false);
+const toggleActivities = () => {
+  activitiesVisible.value = !activitiesVisible.value;
+  emitter.emit('freshdesk:toggle-activities');
+};
+watch(
+  () => props.chat.id,
+  () => {
+    activitiesVisible.value = false;
+  }
+);
+
+const deleteDialogRef = ref(null);
+
+const onDeleteClick = () => {
+  deleteDialogRef.value?.open();
+};
+
+// Deleting the ticket also soft-deletes its inbound emails in Outlook
+// (handled server-side in Conversations::DeleteService).
+const confirmDeleteConversation = async () => {
+  const number = ticketNumber.value;
+  try {
+    await store.dispatch('deleteConversation', props.chat.id);
+    deleteDialogRef.value?.close();
+    useAlert(
+      t('CONVERSATION.SUCCESS_DELETE_TICKET', { conversationId: number })
+    );
+    router.push(backButtonUrl.value);
+  } catch (error) {
+    useAlert(t('CONVERSATION.FAIL_DELETE_CONVERSATION'));
+  }
+};
 </script>
 
 <template>
   <div
-    ref="conversationHeader"
     class="flex min-h-[100px] w-full flex-col border-b border-fd-border bg-fd-surface"
   >
     <div class="flex h-12 items-center justify-between gap-3 px-3">
@@ -180,12 +212,26 @@ const setEditorMode = mode => {
       <div class="flex shrink-0 items-center gap-2">
         <button
           type="button"
-          class="hidden h-8 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary lg:inline-flex"
+          class="hidden h-8 items-center gap-1.5 rounded-md border bg-fd-surface px-3 text-sm font-medium hover:border-fd-primary hover:text-fd-primary lg:inline-flex"
+          :class="
+            activitiesVisible
+              ? 'border-fd-primary text-fd-primary'
+              : 'border-fd-border text-fd-text'
+          "
+          @click="toggleActivities"
         >
           <span class="i-lucide-alarm-clock size-3.5" />
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.ACTIVITIES') }}
         </button>
         <ConversationCallButton :inbox="inbox" :chat="currentChat" />
+        <button
+          type="button"
+          class="grid size-8 place-content-center rounded-md border border-fd-border text-fd-muted hover:border-n-ruby-9 hover:text-n-ruby-11"
+          :title="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
+          @click="onDeleteClick"
+        >
+          <span class="i-lucide-trash-2 size-4" />
+        </button>
         <MoreActions :conversation-id="currentChat.id" />
       </div>
     </div>
@@ -206,18 +252,12 @@ const setEditorMode = mode => {
               class="text-fd-primary hover:underline"
               @click="copyConversationId"
             >
-              {{ `#${chat.id}` }}
+              {{ `#${ticketNumber}` }}
             </button>
             <span v-if="hasMultipleInboxes">
               {{ t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
             </span>
             <InboxName v-if="hasMultipleInboxes" :inbox="inbox" class="!mx-0" />
-            <span v-if="isSnoozed">
-              {{ t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
-            </span>
-            <span v-if="isSnoozed" class="font-medium text-n-amber-10">
-              {{ snoozedDisplayText }}
-            </span>
             <fluent-icon
               v-if="!isHMACVerified"
               v-tooltip="$t('CONVERSATION.UNVERIFIED_SESSION')"
@@ -229,16 +269,26 @@ const setEditorMode = mode => {
           <h1 class="m-0 truncate text-xl font-semibold leading-7 text-fd-text">
             {{ subject }}
           </h1>
+          <span
+            v-if="customerResponded"
+            class="mt-1 inline-flex w-fit rounded bg-fd-blueSoft px-1.5 py-0.5 text-xxs font-medium leading-4 text-fd-blue"
+          >
+            {{ t('CHAT_LIST.FRESHDESK_CARD.STATUS.CUSTOMER_RESPONDED') }}
+          </span>
         </div>
       </div>
-
-      <SLACardLabel
-        v-if="hasSlaPolicyId"
-        :chat="chat"
-        show-extended-info
-        :parent-width="width"
-        class="mt-0.5 hidden md:flex"
-      />
     </div>
+    <Dialog
+      ref="deleteDialogRef"
+      type="alert"
+      :title="
+        $t('CONVERSATION.DELETE_CONVERSATION.TITLE', {
+          conversationId: ticketNumber,
+        })
+      "
+      :description="$t('CONVERSATION.DELETE_CONVERSATION.DESCRIPTION')"
+      :confirm-button-label="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
+      @confirm="confirmDeleteConversation"
+    />
   </div>
 </template>

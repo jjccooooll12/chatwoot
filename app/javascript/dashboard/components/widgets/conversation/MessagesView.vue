@@ -33,6 +33,7 @@ import {
 // constants
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { REPLY_POLICY } from 'shared/constants/links';
+import { MESSAGE_TYPE } from 'shared/constants/messages';
 import wootConstants from 'dashboard/constants/globals';
 import { LOCAL_STORAGE_KEYS } from 'dashboard/constants/localStorage';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
@@ -84,6 +85,12 @@ export default {
       isProgrammaticScroll: false,
       messageSentSinceOpened: false,
       labelSuggestions: [],
+      // Freshdesk behaviour: the reply composer stays hidden until the agent
+      // clicks Reply / Note / Forward in the ticket toolbar.
+      composerOpen: false,
+      // Activity log lines (status/priority/assignment changes) are hidden from
+      // the thread by default and only revealed via the toolbar's Activities button.
+      showActivities: false,
     };
   },
 
@@ -131,7 +138,10 @@ export default {
       return '';
     },
     getMessages() {
-      const messages = this.currentChat.messages || [];
+      const allMessages = this.currentChat.messages || [];
+      const messages = this.showActivities
+        ? allMessages
+        : allMessages.filter(m => m.message_type !== MESSAGE_TYPE.ACTIVITY);
       if (this.isAWhatsAppChannel) {
         return filterDuplicateSourceMessages(messages);
       }
@@ -253,6 +263,8 @@ export default {
       this.fetchAllAttachmentsFromCurrentChat();
       this.fetchSuggestions();
       this.messageSentSinceOpened = false;
+      this.composerOpen = false;
+      this.showActivities = false;
       this.resetReplyEditorHeight();
     },
   },
@@ -261,9 +273,11 @@ export default {
     emitter.on(BUS_EVENTS.SCROLL_TO_MESSAGE, this.onScrollToMessage);
     // when a message is sent we set the flag to true this hides the label suggestions,
     // until the chat is changed and the flag is reset in the watch for currentChat
-    emitter.on(BUS_EVENTS.MESSAGE_SENT, () => {
-      this.messageSentSinceOpened = true;
-    });
+    emitter.on(BUS_EVENTS.MESSAGE_SENT, this.onMessageSent);
+    // Freshdesk: the toolbar's Reply / Note / Forward reveals the composer.
+    emitter.on('freshdesk:set-reply-mode', this.onOpenComposer);
+    // Freshdesk: the toolbar's Activities button reveals the hidden activity log.
+    emitter.on('freshdesk:toggle-activities', this.onToggleActivities);
   },
 
   mounted() {
@@ -324,6 +338,27 @@ export default {
     },
     removeBusListeners() {
       emitter.off(BUS_EVENTS.SCROLL_TO_MESSAGE, this.onScrollToMessage);
+      emitter.off(BUS_EVENTS.MESSAGE_SENT, this.onMessageSent);
+      emitter.off('freshdesk:set-reply-mode', this.onOpenComposer);
+      emitter.off('freshdesk:toggle-activities', this.onToggleActivities);
+    },
+    onToggleActivities() {
+      this.showActivities = !this.showActivities;
+    },
+    onMessageSent() {
+      this.messageSentSinceOpened = true;
+      // Collapse the composer after sending, like Freshdesk.
+      this.composerOpen = false;
+    },
+    onOpenComposer() {
+      this.composerOpen = true;
+      this.$nextTick(() => {
+        this.scrollToBottom();
+        this.resizableEditorWrapperRef?.expandEditorFull?.();
+      });
+    },
+    onCloseComposer() {
+      this.composerOpen = false;
     },
     onScrollToMessage({ messageId = '' } = {}) {
       this.$nextTick(() => {
@@ -480,9 +515,12 @@ export default {
     >
       <template #beforeAll>
         <transition name="slide-up">
+          <!-- Email/ticket threads start at the top (Freshdesk); chat threads
+               keep the `first:mt-auto` trick that bottom-aligns messages. -->
           <!-- eslint-disable-next-line vue/require-toggle-inside-transition -->
           <li
-            class="min-h-[4rem] flex flex-shrink-0 flex-grow-0 items-center flex-auto justify-center max-w-full mt-0 mr-0 mb-1 ml-0 relative first:mt-auto last:mb-0"
+            class="min-h-[4rem] flex flex-shrink-0 flex-grow-0 items-center flex-auto justify-center max-w-full mt-0 mr-0 mb-1 ml-0 relative last:mb-0"
+            :class="{ 'first:mt-auto': !isAnEmailChannel }"
           >
             <Spinner v-if="shouldShowSpinner" class="text-n-brand" />
           </li>
@@ -525,12 +563,25 @@ export default {
           />
         </div>
       </div>
-      <ResizableEditorWrapper
-        ref="resizableEditorWrapperRef"
-        :container-height="Math.max(0, containerHeight - topBannerHeight)"
-      >
-        <ReplyBox @toggle-editor-size="toggleReplyEditorSize" />
-      </ResizableEditorWrapper>
+      <div v-show="composerOpen" class="flex flex-col border-t border-n-weak">
+        <div class="flex items-center justify-end bg-fd-surface px-3 pt-1">
+          <button
+            type="button"
+            class="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
+            :title="$t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER')"
+            @click="onCloseComposer"
+          >
+            <span class="i-lucide-x size-3.5" />
+            {{ $t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER') }}
+          </button>
+        </div>
+        <ResizableEditorWrapper
+          ref="resizableEditorWrapperRef"
+          :container-height="Math.max(0, containerHeight - topBannerHeight)"
+        >
+          <ReplyBox @toggle-editor-size="toggleReplyEditorSize" />
+        </ResizableEditorWrapper>
+      </div>
     </div>
   </div>
 </template>

@@ -5,6 +5,7 @@ import { sanitizeTextForRender } from '@chatwoot/utils';
 import { allowedCssProperties } from 'lettersanitizer';
 
 import Icon from 'next/icon/Icon.vue';
+import Avatar from 'next/avatar/Avatar.vue';
 import { EmailQuoteExtractor } from 'dashboard/helper/emailQuoteExtractor.js';
 import FormattedContent from 'next/message/bubbles/Text/FormattedContent.vue';
 import BaseBubble from 'next/message/bubbles/Base.vue';
@@ -16,8 +17,13 @@ import { useMessageContext } from '../../provider.js';
 import { MESSAGE_TYPES } from 'next/message/constants.js';
 import { useTranslations } from 'dashboard/composables/useTranslations';
 
-const { content, contentAttributes, attachments, messageType } =
+const { content, contentAttributes, attachments, messageType, sender } =
   useMessageContext();
+
+const displayName = computed(
+  () => sender.value?.name || contentAttributes.value?.email?.from?.[0] || ''
+);
+const senderThumbnail = computed(() => sender.value?.thumbnail);
 
 const isExpandable = ref(false);
 const isExpanded = ref(false);
@@ -30,7 +36,6 @@ onMounted(() => {
 });
 
 const isOutgoing = computed(() => messageType.value === MESSAGE_TYPES.OUTGOING);
-const isIncoming = computed(() => !isOutgoing.value);
 
 const { hasTranslations, translationContent } =
   useTranslations(contentAttributes);
@@ -103,110 +108,106 @@ const handleSeeOriginal = () => {
 </script>
 
 <template>
-  <BaseBubble
-    class="w-full"
-    :class="{
-      'bg-n-slate-4': isIncoming,
-      'bg-n-solid-blue': isOutgoing,
-    }"
-    data-bubble-name="email"
-  >
-    <EmailMeta
-      class="p-3"
-      :class="{
-        'border-b border-n-strong': isIncoming,
-        'border-b border-n-slate-8/20': isOutgoing,
-      }"
-    />
-    <section ref="contentContainer" class="p-3">
+  <BaseBubble class="w-full" hide-meta data-bubble-name="email">
+    <div class="flex w-full gap-3 py-1">
+      <Avatar
+        :name="displayName"
+        :src="senderThumbnail"
+        :size="32"
+        rounded-full
+        class="mt-0.5 shrink-0"
+      />
       <div
-        :class="{
-          'max-h-[400px] overflow-hidden relative': !isExpanded && isExpandable,
-          'overflow-y-scroll relative': isExpanded,
-        }"
+        class="min-w-0 flex-1 text-fd-text"
+        :class="isOutgoing ? 'rounded-lg bg-n-slate-2 px-3.5 py-3' : 'py-0.5'"
       >
-        <div
-          v-if="isExpandable && !isExpanded"
-          class="absolute left-0 right-0 bottom-0 h-40 px-8 flex items-end"
-          :class="{
-            'bg-gradient-to-t from-n-slate-4 via-n-slate-4 via-20% to-transparent':
-              isIncoming,
-            'bg-gradient-to-t from-n-solid-blue via-n-solid-blue via-20% to-transparent':
-              isOutgoing,
-          }"
-        >
-          <button
-            class="text-n-slate-12 py-2 px-8 mx-auto text-center flex items-center gap-2"
-            @click="isExpanded = true"
+        <EmailMeta class="mb-2" />
+        <section ref="contentContainer">
+          <div
+            :class="{
+              'max-h-[400px] overflow-hidden relative':
+                !isExpanded && isExpandable,
+              'overflow-y-scroll relative': isExpanded,
+            }"
           >
-            <Icon icon="i-lucide-maximize-2" />
-            {{ $t('EMAIL_HEADER.EXPAND') }}
-          </button>
-        </div>
-        <FormattedContent
-          v-if="isOutgoing && content && !hasEmailContent"
-          class="text-n-slate-12"
-          :content="messageContent"
+            <div
+              v-if="isExpandable && !isExpanded"
+              class="absolute bottom-0 left-0 right-0 flex h-40 items-end bg-gradient-to-t from-fd-surface via-fd-surface via-20% to-transparent px-8"
+            >
+              <button
+                class="text-n-slate-12 py-2 px-8 mx-auto text-center flex items-center gap-2"
+                @click="isExpanded = true"
+              >
+                <Icon icon="i-lucide-maximize-2" />
+                {{ $t('EMAIL_HEADER.EXPAND') }}
+              </button>
+            </div>
+            <FormattedContent
+              v-if="isOutgoing && content && !hasEmailContent"
+              class="text-n-slate-12"
+              :content="messageContent"
+            />
+            <template v-else>
+              <Letter
+                v-if="showQuotedMessage"
+                :key="`letter-quoted-${translationKeySuffix}`"
+                class-name="prose prose-bubble !max-w-none letter-render"
+                :allowed-css-properties="[
+                  ...allowedCssProperties,
+                  'transform',
+                  'transform-origin',
+                ]"
+                :html="fullHTML"
+                :text="textToShow"
+              />
+              <Letter
+                v-else
+                :key="`letter-unquoted-${translationKeySuffix}`"
+                class-name="prose prose-bubble !max-w-none letter-render"
+                :html="unquotedHTML"
+                :allowed-css-properties="[
+                  ...allowedCssProperties,
+                  'transform',
+                  'transform-origin',
+                ]"
+                :text="textToShow"
+              />
+            </template>
+            <button
+              v-if="hasQuotedMessage"
+              class="mt-2 flex items-center gap-1 text-xs leading-none text-fd-muted hover:text-fd-text"
+              @click="showQuotedMessage = !showQuotedMessage"
+            >
+              <template v-if="showQuotedMessage">
+                {{ $t('CHAT_LIST.HIDE_QUOTED_TEXT') }}
+              </template>
+              <template v-else>
+                {{ $t('CHAT_LIST.SHOW_QUOTED_TEXT') }}
+              </template>
+              <Icon
+                :icon="
+                  showQuotedMessage
+                    ? 'i-lucide-chevron-up'
+                    : 'i-lucide-chevron-down'
+                "
+              />
+            </button>
+          </div>
+        </section>
+        <TranslationToggle
+          v-if="hasTranslations"
+          class="py-2 px-3"
+          :showing-original="renderOriginal"
+          @toggle="handleSeeOriginal"
         />
-        <template v-else>
-          <Letter
-            v-if="showQuotedMessage"
-            :key="`letter-quoted-${translationKeySuffix}`"
-            class-name="prose prose-bubble !max-w-none letter-render"
-            :allowed-css-properties="[
-              ...allowedCssProperties,
-              'transform',
-              'transform-origin',
-            ]"
-            :html="fullHTML"
-            :text="textToShow"
-          />
-          <Letter
-            v-else
-            :key="`letter-unquoted-${translationKeySuffix}`"
-            class-name="prose prose-bubble !max-w-none letter-render"
-            :html="unquotedHTML"
-            :allowed-css-properties="[
-              ...allowedCssProperties,
-              'transform',
-              'transform-origin',
-            ]"
-            :text="textToShow"
-          />
-        </template>
-        <button
-          v-if="hasQuotedMessage"
-          class="text-n-slate-11 px-1 leading-none text-sm bg-n-alpha-black2 text-center flex items-center gap-1 mt-2"
-          @click="showQuotedMessage = !showQuotedMessage"
+        <section
+          v-if="Array.isArray(attachments) && attachments.length"
+          class="mt-2 space-y-2"
         >
-          <template v-if="showQuotedMessage">
-            {{ $t('CHAT_LIST.HIDE_QUOTED_TEXT') }}
-          </template>
-          <template v-else>
-            {{ $t('CHAT_LIST.SHOW_QUOTED_TEXT') }}
-          </template>
-          <Icon
-            :icon="
-              showQuotedMessage
-                ? 'i-lucide-chevron-up'
-                : 'i-lucide-chevron-down'
-            "
-          />
-        </button>
+          <AttachmentChips :attachments="attachments" class="gap-1" />
+        </section>
       </div>
-    </section>
-    <TranslationToggle
-      v-if="hasTranslations"
-      class="py-2 px-3"
-      :showing-original="renderOriginal"
-      @toggle="handleSeeOriginal"
-    />
-    <section
-      v-if="Array.isArray(attachments) && attachments.length"
-      class="px-4 pb-4 space-y-2"
-    >
-      <AttachmentChips :attachments="attachments" class="gap-1" />
-    </section>
+    </div>
   </BaseBubble>
 </template>
 

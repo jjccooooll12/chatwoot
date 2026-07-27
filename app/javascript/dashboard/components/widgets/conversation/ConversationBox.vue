@@ -3,6 +3,7 @@ import { mapGetters } from 'vuex';
 import ConversationHeader from './ConversationHeader.vue';
 import DashboardAppFrame from '../DashboardApp/Frame.vue';
 import EmptyState from './EmptyState/EmptyState.vue';
+import FreshdeskContactInfo from './FreshdeskContactInfo.vue';
 import FreshdeskTicketProperties from './FreshdeskTicketProperties.vue';
 import MessagesView from './MessagesView.vue';
 
@@ -11,6 +12,7 @@ export default {
     ConversationHeader,
     DashboardAppFrame,
     EmptyState,
+    FreshdeskContactInfo,
     FreshdeskTicketProperties,
     MessagesView,
   },
@@ -133,6 +135,7 @@ export default {
         />
       </div>
       <FreshdeskTicketProperties v-if="currentChat.id" :chat="currentChat" />
+      <FreshdeskContactInfo v-if="currentChat.id" :chat="currentChat" />
       <EmptyState
         v-if="!currentChat.id && !isInboxView"
         :is-on-expanded-layout="isOnExpandedLayout"
