@@ -16,6 +16,7 @@ class ConversationApi extends ApiClient {
     conversationType,
     sortBy,
     updatedWithin,
+    chatLanguage,
   }) {
     return axios.get(this.url, {
       params: {
@@ -28,8 +29,13 @@ class ConversationApi extends ApiClient {
         conversation_type: conversationType,
         sort_by: sortBy,
         updated_within: updatedWithin,
+        chat_language: chatLanguage,
       },
     });
+  }
+
+  getChatLanguageCounts() {
+    return axios.get(`${this.url}/chat_language_counts`);
   }
 
   filter(payload) {

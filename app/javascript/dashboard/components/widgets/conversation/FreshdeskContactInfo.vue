@@ -7,6 +7,7 @@ import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import { frontendURL } from 'dashboard/helper/URLHelper';
 import { dateFormat } from 'shared/helpers/timeHelper';
+import { INBOX_TYPES } from 'dashboard/helper/inbox';
 
 const props = defineProps({
   chat: { type: Object, required: true },
@@ -38,6 +39,13 @@ const contactUrl = computed(() =>
 const conversationUrl = id =>
   frontendURL(`accounts/${accountId.value}/conversations/${id}`);
 
+const channelIconFor = conversation => {
+  const inbox = store.getters['inboxes/getInbox'](conversation.inbox_id);
+  const channelType = inbox?.channel_type || inbox?.channelType;
+  return channelType === INBOX_TYPES.WEB
+    ? 'i-lucide-message-circle'
+    : 'i-lucide-mail';
+};
 const subjectOf = conversation => {
   const attrs = conversation.additional_attributes || {};
   return (
@@ -128,7 +136,7 @@ watch(contactId, fetchConversations);
           class="flex gap-2"
         >
           <Icon
-            icon="i-lucide-mail"
+            :icon="channelIconFor(conversation)"
             class="mt-0.5 size-3.5 shrink-0 text-fd-muted"
           />
           <div class="min-w-0 flex-1">

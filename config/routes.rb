@@ -144,6 +144,7 @@ Rails.application.routes.draw do
               get :meta
               get :search
               get :unread_counts, to: 'conversations/unread_counts#index'
+              get :chat_language_counts
               post :filter
             end
             scope module: :conversations do

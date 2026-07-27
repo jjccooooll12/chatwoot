@@ -5,6 +5,7 @@ import { useStore } from 'vuex';
 import { getLastMessage } from 'dashboard/helper/conversationHelper';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { MESSAGE_TYPE } from 'shared/constants/messages';
+import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import { dynamicTimeStrict } from 'shared/helpers/timeHelper';
@@ -192,6 +193,15 @@ const assignableAgents = computed(() => {
   ];
 });
 
+// A distinct icon for live-chat tickets vs email, so the two are easy to
+// tell apart at a glance in the list.
+const channelIcon = computed(() => {
+  const channelType = props.inbox?.channel_type || props.inbox?.channelType;
+  return channelType === INBOX_TYPES.WEB
+    ? 'i-lucide-message-circle'
+    : 'i-lucide-mail';
+});
+
 const assigneeId = computed(() => props.assignee.id || '');
 const assigneeLabel = computed(() =>
   props.assignee.name
@@ -318,7 +328,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           <span
             class="inline-flex min-w-0 max-w-full items-center gap-1 truncate"
           >
-            <Icon icon="i-lucide-mail" class="size-3 shrink-0 text-fd-muted" />
+            <Icon :icon="channelIcon" class="size-3 shrink-0 text-fd-muted" />
             <span class="truncate">{{ currentContact.name }}</span>
           </span>
           <span class="text-fd-muted">

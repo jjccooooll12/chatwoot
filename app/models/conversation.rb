@@ -70,6 +70,21 @@ class Conversation < ApplicationRecord
   private_constant :CONVERSATION_UPDATED_ADDITIONAL_ATTRIBUTE_KEYS, :FILTERED_UNREAD_COUNT_ADDITIONAL_ATTRIBUTE_KEYS,
                    :FILTERED_UNREAD_COUNT_UPDATE_KEYS
 
+  # The Freshdesk-skin "CHATS" sidebar buckets live-chat tickets by the
+  # visitor's browser language, which the widget already captures automatically
+  # (additional_attributes['browser_language'], a 2-letter code from the
+  # Accept-Language header — see Api::V1::Widget::BaseController). Any code not
+  # in this map (including "en" and no value at all) falls into "us".
+  CHAT_LANGUAGE_CODES = {
+    'italian' => 'it',
+    'french' => 'fr',
+    'spanish' => 'es',
+    'german' => 'de',
+    'dutch' => 'nl',
+    'polish' => 'pl'
+  }.freeze
+  CHAT_LANGUAGES = (['us'] + CHAT_LANGUAGE_CODES.keys).freeze
+
   validates :account_id, presence: true
   validates :inbox_id, presence: true
   validates :contact_id, presence: true

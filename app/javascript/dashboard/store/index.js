@@ -24,6 +24,7 @@ import conversationPage from './modules/conversationPage';
 import conversations from './modules/conversations';
 import conversationSearch from './modules/conversationSearch';
 import conversationStats from './modules/conversationStats';
+import chatLanguageStats from './modules/chatLanguageStats';
 import conversationTypingStatus from './modules/conversationTypingStatus';
 import conversationUnreadCounts from './modules/conversationUnreadCounts';
 import conversationWatchers from './modules/conversationWatchers';
@@ -90,6 +91,7 @@ export default createStore({
     conversations,
     conversationSearch,
     conversationStats,
+    chatLanguageStats,
     conversationTypingStatus,
     conversationUnreadCounts,
     conversationWatchers,

@@ -3,7 +3,7 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   include DateRangeHelper
   include HmacConcern
 
-  before_action :conversation, except: [:index, :meta, :search, :create, :filter]
+  before_action :conversation, except: [:index, :meta, :search, :create, :filter, :chat_language_counts]
   before_action :inbox, :contact, :contact_inbox, only: [:create]
 
   ATTACHMENT_RESULTS_PER_PAGE = 100
@@ -17,6 +17,25 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   def meta
     result = conversation_finder.perform_meta_only
     @conversations_count = result[:count]
+  end
+
+  # Counts of OPEN live-chat tickets per language, for the Freshdesk-skin
+  # "CHATS" sidebar. Scoped to inboxes the current agent can access.
+  def chat_language_counts
+    raw_counts = Current.account.conversations
+                         .joins(:inbox)
+                         .where(status: :open, inboxes: { channel_type: 'Channel::WebWidget' })
+                         .where(inbox_id: Current.user.assigned_inboxes.select(:id))
+                         .group("LOWER(conversations.additional_attributes ->> 'browser_language')")
+                         .count
+
+    bucket_counts = Hash.new(0)
+    raw_counts.each do |code, count|
+      bucket = Conversation::CHAT_LANGUAGE_CODES.key(code) || 'us'
+      bucket_counts[bucket] += count
+    end
+
+    render json: Conversation::CHAT_LANGUAGES.index_with { |language| bucket_counts[language] }
   end
 
   def search

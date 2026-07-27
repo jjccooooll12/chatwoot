@@ -340,7 +340,7 @@ onMounted(() => {
 
       <button
         type="button"
-        class="mt-2 h-9 rounded-md bg-fd-primary px-3 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-70"
+        class="sticky bottom-0 z-10 mt-2 h-9 rounded-md border-t border-fd-border bg-fd-primary px-3 text-sm font-semibold text-white shadow-[0_-4px_8px_-4px_rgba(0,0,0,0.15)] disabled:cursor-wait disabled:opacity-70"
         :disabled="isSaving"
         @click="saveCustomFields"
       >

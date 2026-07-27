@@ -84,6 +84,7 @@ class ConversationFinder
     filter_by_status unless params[:q]
     filter_by_team
     filter_by_labels
+    filter_by_chat_language
     filter_by_query
     filter_by_source_id
   end
@@ -175,6 +176,30 @@ class ConversationFinder
     return unless params[:labels]
 
     @conversations = @conversations.tagged_with(params[:labels], any: true)
+  end
+
+  # The Freshdesk-skin "CHATS" sidebar filters live-chat tickets by the
+  # visitor's browser language (see Conversation::CHAT_LANGUAGE_CODES).
+  def filter_by_chat_language
+    bucket = params[:chat_language]
+    return unless bucket
+
+    # browser_language only ever exists on live-chat conversations, so a
+    # missing value defaults to "us" (see Conversation::CHAT_LANGUAGE_CODES) —
+    # explicitly scope to the web-widget channel too, or that default would
+    # incorrectly sweep in every email ticket as well.
+    @conversations = @conversations.joins(:inbox).where(inboxes: { channel_type: 'Channel::WebWidget' })
+
+    code = Conversation::CHAT_LANGUAGE_CODES[bucket]
+    @conversations = if code
+                       @conversations.where("LOWER(conversations.additional_attributes ->> 'browser_language') = ?", code)
+                     else
+                       @conversations.where(
+                         "LOWER(conversations.additional_attributes ->> 'browser_language') IS NULL OR " \
+                         "LOWER(conversations.additional_attributes ->> 'browser_language') NOT IN (?)",
+                         Conversation::CHAT_LANGUAGE_CODES.values
+                       )
+                     end
   end
 
   def filter_by_source_id

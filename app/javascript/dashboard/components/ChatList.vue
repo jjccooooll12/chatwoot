@@ -77,6 +77,10 @@ const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
 const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
 const showAdvancedFilters = ref(false);
+// "CHATS" sidebar language filter — empty means no filter applied. Unlike the
+// Assignee tabs (always exactly one active) this is an optional toggle: click
+// the same language again to clear it.
+const activeChatLanguage = ref('');
 // chatsOnView is to store the chats that are currently visible on the screen,
 // which mirrors the conversationList.
 const chatsOnView = ref([]);
@@ -100,6 +104,9 @@ const participatingChatsList = useMapGetter('getParticipatingChats');
 const chatListLoading = useMapGetter('getChatListLoadingStatus');
 const activeInbox = useMapGetter('getSelectedInbox');
 const conversationStats = useMapGetter('conversationStats/getStats');
+const chatLanguageCounts = useMapGetter(
+  'chatLanguageStats/getChatLanguageCounts'
+);
 const appliedFilters = useMapGetter('getAppliedConversationFiltersV2');
 const folders = useMapGetter('customViews/getConversationCustomViews');
 const agentList = useMapGetter('agents/getAgents');
@@ -188,6 +195,26 @@ const assigneeTabItems = computed(() => {
   }));
 });
 
+// All 7 buckets, each with a flag for quick visual scanning. Per-user
+// visibility (which ones actually render) is applied in FreshdeskStatusPanel.
+const ALL_CHAT_LANGUAGE_ITEMS = [
+  { key: 'us', flag: '🇺🇸' },
+  { key: 'italian', flag: '🇮🇹' },
+  { key: 'french', flag: '🇫🇷' },
+  { key: 'spanish', flag: '🇪🇸' },
+  { key: 'german', flag: '🇩🇪' },
+  { key: 'dutch', flag: '🇳🇱' },
+  { key: 'polish', flag: '🇵🇱' },
+];
+const chatLanguageItems = computed(() =>
+  ALL_CHAT_LANGUAGE_ITEMS.map(({ key, flag }) => ({
+    key,
+    flag,
+    name: t(`CHAT_LIST.FRESHDESK_PANEL.CHAT_LANGUAGES.${key}`),
+    count: chatLanguageCounts.value[key] || 0,
+  }))
+);
+
 const currentPageFilterKey = computed(() => {
   return hasAppliedFiltersOrActiveFolders.value
     ? 'appliedFilters'
@@ -250,6 +277,7 @@ const conversationFilters = computed(() => {
     labels: props.label ? [props.label] : undefined,
     teamId: props.teamId || undefined,
     conversationType: props.conversationType || undefined,
+    chatLanguage: activeChatLanguage.value || undefined,
   };
 });
 
@@ -609,6 +637,16 @@ function updateAssigneeTab(selectedTab) {
   }
 }
 
+// Toggling the same language again clears the filter and returns to the
+// normal (all-channel) view.
+function updateChatLanguage(selectedLanguage) {
+  resetBulkActions();
+  emitter.emit('clearSearchInput');
+  activeChatLanguage.value =
+    activeChatLanguage.value === selectedLanguage ? '' : selectedLanguage;
+  fetchConversations();
+}
+
 function onBasicFilterChange(value, type) {
   if (type === 'status') {
     activeStatus.value = value;
@@ -798,6 +836,7 @@ function toggleSelectAll(check) {
 useEmitter('fetch_conversation_stats', () => {
   if (hasAppliedFiltersOrActiveFolders.value) return;
   store.dispatch('conversationStats/get', conversationFilters.value);
+  store.dispatch('chatLanguageStats/get');
 });
 
 onMounted(() => {
@@ -805,6 +844,7 @@ onMounted(() => {
   setFiltersFromUISettings();
   store.dispatch('setChatStatusFilter', activeStatus.value);
   store.dispatch('setChatSortFilter', activeSortBy.value);
+  store.dispatch('chatLanguageStats/get');
   resetAndFetchData();
   if (hasActiveFolders.value) {
     store.dispatch('campaigns/get');
@@ -996,9 +1036,12 @@ watch(conversationFilters, (newVal, oldVal) => {
       :active-status="activeStatus"
       :active-assignee-tab="activeAssigneeTab"
       :assignee-tab-items="assigneeTabItems"
+      :active-chat-language="activeChatLanguage"
+      :chat-language-items="chatLanguageItems"
       :applied-filter-count="hasAppliedFilters ? 1 : 0"
       @change-status="value => onBasicFilterChange(value, 'status')"
       @change-assignee="updateAssigneeTab"
+      @change-chat-language="updateChatLanguage"
       @open-filters="onToggleAdvanceFiltersModal"
     />
   </div>

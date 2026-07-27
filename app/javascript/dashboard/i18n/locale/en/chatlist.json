@@ -136,6 +136,9 @@
     "FRESHDESK_PANEL": {
       "STATUS_HEADING": "Status",
       "ASSIGNEE_HEADING": "Assignee",
+      "CHATS_HEADING": "Chats",
+      "CHAT_LANGUAGE_SETTINGS": "Choose visible languages",
+      "NO_CHAT_LANGUAGES_VISIBLE": "No languages selected",
       "MORE_FILTERS": "More filters",
       "STATUS": {
         "all": "All",
@@ -143,6 +146,15 @@
         "pending": "Pending",
         "resolved": "Closed",
         "snoozed": "Snoozed"
+      },
+      "CHAT_LANGUAGES": {
+        "us": "U.S.",
+        "italian": "Italian",
+        "french": "French",
+        "spanish": "Spanish",
+        "german": "German",
+        "dutch": "Dutch",
+        "polish": "Polish"
       }
     },
     "VIEW_FILTER": "View",
