@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { MESSAGE_STATUS, MESSAGE_TYPES } from '../../constants';
 import { useMessageContext } from '../../provider.js';
 import { dynamicTimeStrict, dateFormat } from 'shared/helpers/timeHelper';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 const { t } = useI18n();
 const { contentAttributes, status, sender, createdAt, messageType } =
@@ -37,13 +38,6 @@ const isOutgoing = computed(() => messageType.value === MESSAGE_TYPES.OUTGOING);
 // Agents are shown as "First L." (e.g. "Jason C.") rather than their full name,
 // to keep the thread compact and consistent regardless of how long an agent's
 // full name is. Customer names are always shown in full.
-const shortenAgentName = name => {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length < 2) return name;
-  const lastInitial = parts[parts.length - 1].charAt(0).toUpperCase();
-  return `${parts[0]} ${lastInitial}.`;
-};
-
 const displayName = computed(() => {
   const name = sender.value?.name || fromEmail.value[0] || '';
   return isOutgoing.value ? shortenAgentName(name) : name;

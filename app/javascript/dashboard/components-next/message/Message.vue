@@ -300,6 +300,14 @@ const isEmailCard = computed(() => {
   return props.contentType === CONTENT_TYPES.INCOMING_EMAIL;
 });
 
+// Private notes on an email inbox span the same full width as regular email
+// cards (left-aligned, no side margins), matching the rest of the ticket
+// thread. This only affects width/margins — the note bubble keeps its own
+// avatar, background and everything else exactly as it already renders.
+const isFullWidthThreadCard = computed(
+  () => isEmailCard.value || (props.isEmailInbox && props.private)
+);
+
 const shouldShowAvatar = computed(() => {
   if (props.messageType === MESSAGE_TYPES.ACTIVITY) return false;
   if (isEmailCard.value) return false;
@@ -569,7 +577,7 @@ provideMessageContext({
         gridClass,
         {
           'gap-y-2': contentAttributes.externalError,
-          'w-full': variant === MESSAGE_VARIANTS.EMAIL,
+          'w-full': isFullWidthThreadCard,
         },
       ]"
       class="gap-x-2"
@@ -588,8 +596,9 @@ provideMessageContext({
         class="[grid-area:bubble] flex min-w-0"
         :class="{
           'ltr:ml-8 rtl:mr-8 justify-end':
-            !isEmailCard && orientation === ORIENTATION.RIGHT,
-          'ltr:mr-8 rtl:ml-8': !isEmailCard && orientation === ORIENTATION.LEFT,
+            !isFullWidthThreadCard && orientation === ORIENTATION.RIGHT,
+          'ltr:mr-8 rtl:ml-8':
+            !isFullWidthThreadCard && orientation === ORIENTATION.LEFT,
         }"
         @contextmenu="openContextMenu($event)"
       >

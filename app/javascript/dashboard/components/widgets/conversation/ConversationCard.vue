@@ -8,6 +8,7 @@ import { MESSAGE_TYPE } from 'shared/constants/messages';
 import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import { dynamicTimeStrict } from 'shared/helpers/timeHelper';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 import UnreadBadge from 'dashboard/components-next/Conversation/ConversationCard/UnreadBadge.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 
@@ -192,8 +193,10 @@ const assignableAgents = computed(() => {
 });
 
 const assigneeId = computed(() => props.assignee.id || '');
-const assigneeLabel = computed(
-  () => props.assignee.name || t('CHAT_LIST.FRESHDESK_CARD.UNASSIGNED')
+const assigneeLabel = computed(() =>
+  props.assignee.name
+    ? shortenAgentName(props.assignee.name)
+    : t('CHAT_LIST.FRESHDESK_CARD.UNASSIGNED')
 );
 
 const onThumbnailHover = () => {

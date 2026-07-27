@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import ConversationLabels from 'dashboard/routes/dashboard/conversation/labels/LabelBox.vue';
 import wootConstants from 'dashboard/constants/globals';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 const props = defineProps({
   chat: {
@@ -324,7 +325,7 @@ onMounted(() => {
             :key="agent.id || 'none'"
             :value="agent.id || ''"
           >
-            {{ agent.name }}
+            {{ agent.id ? shortenAgentName(agent.name) : agent.name }}
           </option>
         </select>
       </label>

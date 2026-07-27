@@ -145,7 +145,7 @@ const handleSeeOriginal = () => {
         class="min-w-0 flex-1 text-fd-text"
         :class="
           isOutgoing
-            ? 'rounded-lg bg-n-slate-2 py-3 pl-3.5 pr-[calc(0.875rem+var(--conv-gutter))] mr-[calc(var(--conv-gutter)*-1)]'
+            ? 'rounded-lg bg-n-slate-2 pt-3.5 pb-6 pl-3.5 pr-[calc(0.875rem+var(--conv-gutter))] mr-[calc(var(--conv-gutter)*-1)]'
             : 'px-3.5 pb-0.5'
         "
       >

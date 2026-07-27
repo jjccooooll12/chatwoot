@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { frontendURL } from 'dashboard/helper/URLHelper';
 import ConversationApi from 'dashboard/api/inbox/conversation';
 import { dateFormat } from 'shared/helpers/timeHelper';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 const props = defineProps({
   chat: {
@@ -79,7 +80,9 @@ const subjectOf = conversation => {
 };
 
 const assigneeOf = conversation =>
-  conversation.meta?.assignee?.name || t('CHAT_LIST.FRESHDESK_CARD.UNASSIGNED');
+  conversation.meta?.assignee?.name
+    ? shortenAgentName(conversation.meta.assignee.name)
+    : t('CHAT_LIST.FRESHDESK_CARD.UNASSIGNED');
 
 const statusLabelMap = computed(() => ({
   open: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
