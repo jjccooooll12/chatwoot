@@ -26,7 +26,7 @@ class Conversations::AutoFollowUpService
 
     if Time.current >= reopen_at
       reopen_for_human
-    elsif due_for_nudge?
+    elsif due_for_nudge? && !handled_by_a_human?
       send_nudge
     end
   end
@@ -35,6 +35,14 @@ class Conversations::AutoFollowUpService
 
   def eligible?
     conversation.pending? && conversation.custom_attributes['freshdesk_auto_follow_up'] == 'yes'
+  end
+
+  # An assigned agent or an applied tag signals a human is already on this
+  # ticket, so the automated reminder email is redundant — skip sending it
+  # (the reopen-at-deadline handoff still applies, since that's a status
+  # change, not an email to the customer).
+  def handled_by_a_human?
+    conversation.assignee_id.present? || conversation.cached_label_list_array.any?
   end
 
   def priority

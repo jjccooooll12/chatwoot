@@ -97,6 +97,8 @@
       "FORWARD": "Forward",
       "GROUP": "Group",
       "MIDDLE_CONVERSATIONS": "{count} conversations in the middle",
+      "ORDER_NUMBER": "Order Number",
+      "ORDER_NUMBER_PLACEHOLDER": "Enter order number",
       "NO_ACTIVE_SLA": "No active SLA timers",
       "NOTE": "Note",
       "PEACH_LABELS": "Peach Labels",

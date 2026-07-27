@@ -5,6 +5,7 @@ import { useStore } from 'vuex';
 import MoreActions from './MoreActions.vue';
 import ConversationMergePanel from './ConversationMergePanel.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
 import {
   conversationListPageURL,
   frontendURL,
@@ -14,6 +15,7 @@ import { useI18n } from 'vue-i18n';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import { emitter } from 'shared/helpers/mitt';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
+import wootConstants from 'dashboard/constants/globals';
 
 const props = defineProps({
   chat: {
@@ -95,6 +97,27 @@ watch(
   }
 );
 
+const deleteDialogRef = ref(null);
+const onDeleteClick = () => {
+  deleteDialogRef.value?.open();
+};
+
+// Deleting the ticket also soft-deletes its inbound emails in Outlook
+// (handled server-side in Conversations::DeleteService).
+const confirmDeleteConversation = async () => {
+  const number = ticketNumber.value;
+  try {
+    await store.dispatch('deleteConversation', props.chat.id);
+    deleteDialogRef.value?.close();
+    useAlert(
+      t('CONVERSATION.SUCCESS_DELETE_TICKET', { conversationId: number })
+    );
+    router.push(backButtonUrl.value);
+  } catch (error) {
+    useAlert(t('CONVERSATION.FAIL_DELETE_CONVERSATION'));
+  }
+};
+
 const showMergePanel = ref(false);
 
 const openMergePanel = () => {
@@ -105,12 +128,27 @@ const closeMergePanel = () => {
   showMergePanel.value = false;
 };
 
-const onTicketMerged = async mergedConversation => {
+const onTicketMerged = async (
+  mergedConversation,
+  { secondaryConversation } = {}
+) => {
   const mergeActivity = mergedConversation?.messages?.[0];
   if (mergeActivity) {
     store.dispatch('addMessage', mergeActivity);
   }
   store.dispatch('updateConversation', mergedConversation);
+
+  // The merge response only returns the primary (surviving) conversation, but
+  // the backend has already resolved the secondary one — patch it locally too
+  // so its row shows Closed immediately, without the user refreshing the page.
+  if (secondaryConversation?.id) {
+    store.dispatch('updateConversation', {
+      id: secondaryConversation.id,
+      status: wootConstants.STATUS_TYPE.RESOLVED,
+      updated_at: Date.now() / 1000,
+    });
+  }
+
   closeMergePanel();
   useAlert(t('CONVERSATION.MERGE_SUCCESS'));
 
@@ -263,9 +301,11 @@ const onTicketMerged = async mergedConversation => {
         </button>
         <button
           type="button"
-          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
+          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:border-n-ruby-9 hover:bg-n-ruby-2 hover:text-n-ruby-11"
+          :title="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
+          @click="onDeleteClick"
         >
-          <span class="i-lucide-ellipsis size-3.5" />
+          <span class="i-lucide-trash-2 size-3.5" />
         </button>
         <button
           type="button"
@@ -287,6 +327,18 @@ const onTicketMerged = async mergedConversation => {
       :chat="currentChat"
       @close="closeMergePanel"
       @merged="onTicketMerged"
+    />
+    <Dialog
+      ref="deleteDialogRef"
+      type="alert"
+      :title="
+        $t('CONVERSATION.DELETE_CONVERSATION.TITLE', {
+          conversationId: ticketNumber,
+        })
+      "
+      :description="$t('CONVERSATION.DELETE_CONVERSATION.DESCRIPTION')"
+      :confirm-button-label="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
+      @confirm="confirmDeleteConversation"
     />
   </div>
 </template>

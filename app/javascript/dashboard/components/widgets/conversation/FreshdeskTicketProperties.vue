@@ -18,6 +18,8 @@ const store = useStore();
 
 const customType = ref('');
 const autoFollowUp = ref('no');
+const orderNumber = ref('');
+const lastSavedOrderNumber = ref('');
 const isSaving = ref(false);
 const priorityOpen = ref(false);
 
@@ -52,9 +54,8 @@ const statusOptions = computed(() => [
 const typeOptions = [
   { key: '', label: '--' },
   { key: 'question', label: 'Question' },
-  { key: 'incident', label: 'Incident' },
-  { key: 'problem', label: 'Problem' },
-  { key: 'task', label: 'Task' },
+  { key: 'lead', label: 'Lead' },
+  { key: 'request', label: 'Request' },
 ];
 
 const followUpOptions = [
@@ -92,6 +93,8 @@ const syncCustomFields = () => {
   customType.value = customAttributes.freshdesk_type || '';
   autoFollowUp.value =
     customAttributes.freshdesk_auto_follow_up === 'yes' ? 'yes' : 'no';
+  orderNumber.value = customAttributes.freshdesk_order_number || '';
+  lastSavedOrderNumber.value = orderNumber.value;
 };
 
 const updateStatus = event => {
@@ -138,10 +141,19 @@ const saveCustomFields = async () => {
     customAttributes: {
       freshdesk_type: customType.value,
       freshdesk_auto_follow_up: autoFollowUp.value,
+      freshdesk_order_number: orderNumber.value,
     },
   });
   isSaving.value = false;
   useAlert(t('CONVERSATION_CUSTOM_ATTRIBUTES.UPDATE.SUCCESS'));
+};
+
+// Order number persists as soon as the agent leaves the field — no need to hit
+// the Update button for this one.
+const onOrderNumberBlur = async () => {
+  if (orderNumber.value === lastSavedOrderNumber.value) return;
+  lastSavedOrderNumber.value = orderNumber.value;
+  await saveCustomFields();
 };
 
 // Turning follow-up on requires a priority (it drives the reopen timer); default
@@ -178,25 +190,6 @@ onMounted(() => {
       <h3 class="m-0 text-xxs font-semibold uppercase text-fd-muted">
         {{ t('CHAT_LIST.FRESHDESK_DETAIL.PROPERTIES') }}
       </h3>
-
-      <label class="grid gap-1.5">
-        <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.STATUS') }}
-        </span>
-        <select
-          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-          :value="chat.status"
-          @change="updateStatus"
-        >
-          <option
-            v-for="option in statusOptions"
-            :key="option.key"
-            :value="option.key"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
 
       <label class="grid gap-1.5">
         <span class="font-medium text-fd-text">
@@ -242,7 +235,7 @@ onMounted(() => {
         </select>
       </label>
 
-      <div v-if="autoFollowUp === 'yes'" class="grid gap-1.5">
+      <div class="grid gap-1.5">
         <span class="font-medium text-fd-text">
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.PRIORITY') }}
         </span>
@@ -285,6 +278,40 @@ onMounted(() => {
 
       <label class="grid gap-1.5">
         <span class="font-medium text-fd-text">
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.STATUS') }}
+        </span>
+        <select
+          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+          :value="chat.status"
+          @change="updateStatus"
+        >
+          <option
+            v-for="option in statusOptions"
+            :key="option.key"
+            :value="option.key"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+      </label>
+
+      <label class="grid gap-1.5">
+        <span class="font-medium text-fd-text">
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.GROUP') }}
+        </span>
+        <select
+          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+          :value="assignedTeamId"
+          @change="updateTeam"
+        >
+          <option v-for="team in teamOptions" :key="team.id" :value="team.id">
+            {{ team.name }}
+          </option>
+        </select>
+      </label>
+
+      <label class="grid gap-1.5">
+        <span class="font-medium text-fd-text">
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.AGENT') }}
         </span>
         <select
@@ -304,17 +331,18 @@ onMounted(() => {
 
       <label class="grid gap-1.5">
         <span class="font-medium text-fd-text">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.GROUP') }}
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER') }}
         </span>
-        <select
+        <input
+          v-model="orderNumber"
+          type="text"
+          :placeholder="
+            t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER_PLACEHOLDER')
+          "
           class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-          :value="assignedTeamId"
-          @change="updateTeam"
-        >
-          <option v-for="team in teamOptions" :key="team.id" :value="team.id">
-            {{ team.name }}
-          </option>
-        </select>
+          @blur="onOrderNumberBlur"
+          @keyup.enter="$event.target.blur()"
+        />
       </label>
 
       <button

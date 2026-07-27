@@ -569,7 +569,7 @@ export default {
     </div>
     <MessageList
       ref="conversationPanelRef"
-      class="conversation-panel flex-shrink flex-grow basis-px flex flex-col overflow-y-auto relative h-full m-0 bg-fd-surface px-[clamp(0.75rem,1.4vw,1.25rem)] pb-4"
+      class="conversation-panel flex-shrink flex-grow basis-px flex flex-col overflow-y-auto relative h-full m-0 bg-fd-surface px-[var(--conv-gutter)] pb-4 [--conv-gutter:clamp(0.75rem,1.4vw,1.25rem)]"
       :current-user-id="currentUserId"
       :first-unread-id="unReadMessages[0]?.id"
       :is-an-email-channel="isAnEmailChannel"

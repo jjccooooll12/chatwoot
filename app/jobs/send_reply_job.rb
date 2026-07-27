@@ -17,6 +17,11 @@ class SendReplyJob < ApplicationJob
 
   def perform(message_id)
     message = Message.find(message_id)
+    # Private notes are internal-only and must never reach a customer on any
+    # channel. This is a hard, top-level guard — it runs before any channel is
+    # even resolved, so no per-channel service can be a bypass.
+    return if message.private?
+
     channel_name = message.conversation.inbox.channel.class.to_s
 
     return send_on_facebook_page(message) if channel_name == 'Channel::FacebookPage'
