@@ -48,7 +48,12 @@ const subjectOf = conversation => {
 };
 const ticketNumberOf = conversation => {
   const attrs = conversation.additional_attributes || {};
-  return attrs.ticket_number || conversation.display_id || conversation.id;
+  return (
+    conversation.ticket_number ||
+    attrs.ticket_number ||
+    conversation.display_id ||
+    conversation.id
+  );
 };
 const statusLabelMap = computed(() => ({
   open: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
@@ -126,26 +131,27 @@ watch(contactId, fetchConversations);
             icon="i-lucide-mail"
             class="mt-0.5 size-3.5 shrink-0 text-fd-muted"
           />
-          <a :href="conversationUrl(conversation.id)" class="min-w-0 flex-1">
-            <p
+          <div class="min-w-0 flex-1">
+            <a
+              :href="conversationUrl(conversation.id)"
               class="m-0 line-clamp-2 text-xs font-medium leading-4 text-fd-text hover:text-fd-primary"
             >
               {{ subjectOf(conversation) }}
-            </p>
-            <p class="m-0 text-xxs text-fd-primary">
+            </a>
+            <p class="m-0 select-text text-xxs text-fd-primary">
               {{ `#${ticketNumberOf(conversation)}` }}
             </p>
-            <p class="m-0 mt-0.5 text-xxs text-fd-muted">
+            <p class="m-0 mt-0.5 select-text text-xxs text-fd-muted">
               {{ timeLabel(conversation) }}
             </p>
-            <p class="m-0 text-xxs text-fd-muted">
+            <p class="m-0 select-text text-xxs text-fd-muted">
               {{
                 `${t('CHAT_LIST.FRESHDESK_DETAIL.STATUS_LINE')}: ${statusLabel(
                   conversation
                 )}`
               }}
             </p>
-          </a>
+          </div>
         </li>
       </ul>
     </div>
