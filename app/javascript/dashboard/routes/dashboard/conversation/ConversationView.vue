@@ -143,7 +143,20 @@ export default {
       }
       const chat = this.findConversation();
       if (!chat) {
-        this.$store.dispatch('getConversation', this.conversationId);
+        this.$store
+          .dispatch('getConversation', this.conversationId)
+          .then(conversation => {
+            // Opened by ticket number: canonicalise the URL to the display id so
+            // the rest of the UI (which keys conversations by display id) resolves it.
+            if (
+              conversation &&
+              String(conversation.id) !== String(this.conversationId)
+            ) {
+              this.$router.replace({
+                params: { conversation_id: String(conversation.id) },
+              });
+            }
+          });
       }
     },
     findConversation() {

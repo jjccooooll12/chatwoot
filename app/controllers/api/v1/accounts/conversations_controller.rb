@@ -189,7 +189,11 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   end
 
   def conversation
-    @conversation ||= Current.account.conversations.find_by!(display_id: params[:id])
+    # Resolve by display_id first, then fall back to the customer-facing ticket
+    # number so agents can open a ticket via its number in the URL.
+    @conversation ||= Current.account.conversations.find_by(display_id: params[:id]) ||
+                      Current.account.conversations.find_by("conversations.additional_attributes->>'ticket_number' = ?", params[:id].to_s) ||
+                      raise(ActiveRecord::RecordNotFound)
     authorize @conversation, :show?
   end
 

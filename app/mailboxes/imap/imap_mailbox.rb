@@ -86,8 +86,19 @@ class Imap::ImapMailbox
     message_to_return
   end
 
+  # Merge an inbound email into an existing ticket when its subject carries the
+  # ticket number (e.g. "[#2607261]"), even if it lost its threading headers or
+  # is a brand-new email that just references the number.
+  def find_conversation_by_ticket_number
+    match = Mailbox::ConversationFinderStrategies::TicketNumberStrategy::TICKET_PATTERN.match(@processed_mail.subject.to_s)
+    return if match.nil?
+
+    @inbox.conversations.find_by("additional_attributes->>'ticket_number' = ?", match[1])
+  end
+
   def find_or_create_conversation
-    @conversation = find_conversation_by_in_reply_to || find_conversation_by_reference_ids || ::Conversation.create!(
+    @conversation = find_conversation_by_in_reply_to || find_conversation_by_reference_ids ||
+                    find_conversation_by_ticket_number || ::Conversation.create!(
       {
         account_id: @account.id,
         inbox_id: @inbox.id,

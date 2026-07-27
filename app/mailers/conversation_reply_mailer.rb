@@ -114,16 +114,21 @@ class ConversationReplyMailer < ApplicationMailer
     should_use_conversation_email_address? ? parse_email(@account.support_email) : parse_email(inbox_from_email_address)
   end
 
+  # Every outgoing subject is "Re: Peach Labels - Ticket [#<num>] <original>", so
+  # the ticket number rides in every message (used for grouping/merging) and the
+  # customer's own subject is preserved. Repeated "Re:" and our own prefix are
+  # stripped so the subject never compounds across a thread.
   def mail_subject
-    subject = @conversation.additional_attributes['mail_subject']
-    return "[##{@conversation.display_id}] #{I18n.t('conversations.reply.email_subject')}" if subject.nil?
+    base = "Re: Peach Labels - Ticket [##{@conversation.ticket_number}]"
+    core = core_mail_subject
+    core.present? ? "#{base} #{core}" : base
+  end
 
-    chat_count = @conversation.messages.chat.count
-    if chat_count > 1
-      "Re: #{subject}"
-    else
-      subject
-    end
+  def core_mail_subject
+    subject = @conversation.additional_attributes['mail_subject'].to_s
+    subject = subject.sub(/\A\s*(re:\s*)+/i, '')
+    subject = subject.sub(/\APeach Labels - Ticket \[#\w+\]\s*/i, '')
+    subject.strip
   end
 
   def reply_email
@@ -154,7 +159,15 @@ class ConversationReplyMailer < ApplicationMailer
     "<conversation/#{@conversation.uuid}/messages/#{last_message&.id}@#{channel_email_domain}>"
   end
 
+  # Auto follow-up reminders are sent as a standalone email (no In-Reply-To /
+  # References), so the customer sees a fresh message rather than a threaded reply.
+  def nudge_message?
+    @message&.additional_attributes&.dig('auto_follow_up_nudge').present?
+  end
+
   def in_reply_to_email
+    return nil if nudge_message?
+
     conversation_reply_email_id || "<account/#{@account.id}/conversation/#{@conversation.uuid}@#{channel_email_domain}>"
   end
 
@@ -170,6 +183,8 @@ class ConversationReplyMailer < ApplicationMailer
   end
 
   def references_header
+    return nil if nudge_message?
+
     build_references_header(@conversation, in_reply_to_email)
   end
 

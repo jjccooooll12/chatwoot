@@ -74,3 +74,10 @@ remove_orphan_conversations_job:
   cron: '0 */12 * * *'
   class: 'Internal::RemoveOrphanConversationsJob'
   queue: housekeeping
+
+# Sends auto follow-up reminders to customers and reopens stale pending tickets.
+# Runs hourly; only touches conversations explicitly marked auto-follow-up = yes.
+auto_follow_up_job:
+  cron: '0 * * * *'
+  class: 'AutoFollowUpJob'
+  queue: scheduled_jobs

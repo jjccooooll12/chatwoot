@@ -7,10 +7,8 @@ import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { MESSAGE_TYPE } from 'shared/constants/messages';
 import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
-import InboxName from '../InboxName.vue';
-import TimeAgo from 'dashboard/components/ui/TimeAgo.vue';
+import { dynamicTimeStrict } from 'shared/helpers/timeHelper';
 import UnreadBadge from 'dashboard/components-next/Conversation/ConversationCard/UnreadBadge.vue';
-import SLACardLabel from './components/SLACardLabel.vue';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 
 const props = defineProps({
@@ -20,7 +18,6 @@ const props = defineProps({
   inbox: { type: Object, default: () => ({}) },
   selected: { type: Boolean, default: false },
   isActiveChat: { type: Boolean, default: false },
-  showInboxName: { type: Boolean, default: false },
   hideThumbnail: { type: Boolean, default: false },
   compact: { type: Boolean, default: false },
 });
@@ -43,28 +40,25 @@ const hovered = ref(false);
 const unreadCount = computed(() => props.chat.unread_count);
 const hasUnread = computed(() => unreadCount.value > 0);
 const lastMessageInChat = computed(() => getLastMessage(props.chat));
-const displayId = computed(() => props.chat.display_id || props.chat.id);
+const displayId = computed(() => {
+  const additionalAttributes =
+    props.chat.additional_attributes || props.chat.additionalAttributes || {};
+  return (
+    additionalAttributes.ticket_number || props.chat.display_id || props.chat.id
+  );
+});
 const createdTimestamp = computed(
   () => props.chat.created_at || props.chat.timestamp
 );
-const appliedSLA = computed(() => props.chat?.applied_sla);
 const isAgentBotAssignee = computed(
   () => props.chat?.meta?.assignee_type === 'AgentBot'
 );
 
-const hasSlaPolicyId = computed(
-  () => props.chat?.applied_sla?.id && !props.currentContact?.blocked
-);
-
-const hasSlaMiss = computed(() => {
-  const status = appliedSLA.value?.sla_status;
-  return status === 'missed' || status === 'active_with_misses';
-});
-
 const subject = computed(() => {
-  const customAttributes =
-    props.chat.custom_attributes || props.chat.customAttributes || {};
-  const emailSubject = customAttributes.email?.subject;
+  const additionalAttributes =
+    props.chat.additional_attributes || props.chat.additionalAttributes || {};
+  const emailSubject =
+    additionalAttributes.mail_subject || additionalAttributes.mailSubject;
   return getPlainText(
     emailSubject ||
       lastMessageInChat.value?.content ||
@@ -103,14 +97,6 @@ const statusOptions = computed(() => [
     key: 'resolved',
     label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),
   },
-  ...(props.chat.status === 'snoozed'
-    ? [
-        {
-          key: 'snoozed',
-          label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.snoozed.TEXT'),
-        },
-      ]
-    : []),
 ]);
 
 const currentStatusLabel = computed(() => {
@@ -141,15 +127,26 @@ const customerResponded = computed(
   () => lastMessageIsIncoming.value && hasAgentReplied.value
 );
 
+// Meta line under the subject: when the customer has replied to us, surface
+// "Customer responded <time> ago" using the latest inbound message time;
+// otherwise fall back to when the ticket was created.
+const activityMeta = computed(() => {
+  if (customerResponded.value) {
+    return {
+      label: t('CHAT_LIST.FRESHDESK_CARD.STATUS.CUSTOMER_RESPONDED'),
+      timeAgo: dynamicTimeStrict(
+        lastMessageInChat.value?.created_at || createdTimestamp.value
+      ),
+    };
+  }
+  return {
+    label: t('CHAT_LIST.FRESHDESK_CARD.CREATED'),
+    timeAgo: dynamicTimeStrict(createdTimestamp.value),
+  };
+});
+
 const statusPills = computed(() => {
   const pills = [];
-  if (hasSlaMiss.value) {
-    pills.push({
-      key: 'overdue',
-      label: t('CHAT_LIST.FRESHDESK_CARD.STATUS.OVERDUE'),
-      class: 'bg-fd-redSoft text-fd-red',
-    });
-  }
 
   if (isNew.value) {
     pills.push({
@@ -195,11 +192,9 @@ const assignableAgents = computed(() => {
 });
 
 const assigneeId = computed(() => props.assignee.id || '');
-const assigneeLabel = computed(() => {
-  const group = props.inbox.name || t('CHAT_LIST.FRESHDESK_CARD.ANY_GROUP');
-  const agent = props.assignee.name || t('CHAT_LIST.FRESHDESK_CARD.UNASSIGNED');
-  return `${group} / ${agent}`;
-});
+const assigneeLabel = computed(
+  () => props.assignee.name || t('CHAT_LIST.FRESHDESK_CARD.UNASSIGNED')
+);
 
 const onThumbnailHover = () => {
   hovered.value = !props.hideThumbnail;
@@ -303,7 +298,6 @@ watch(() => props.inbox.id, fetchAssignableAgents);
             {{ pill.label }}
           </span>
           <UnreadBadge v-if="hasUnread" :count="unreadCount" />
-          <SLACardLabel v-if="hasSlaPolicyId" :chat="chat" show-extended-info />
         </div>
 
         <h4
@@ -319,13 +313,6 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5 text-fd-text"
         >
           <span
-            v-if="showInboxName"
-            class="inline-flex min-w-0 max-w-full items-center gap-1"
-          >
-            <InboxName :inbox="inbox" class="min-w-0" />
-          </span>
-          <span
-            v-else
             class="inline-flex min-w-0 max-w-full items-center gap-1 truncate"
           >
             <Icon icon="i-lucide-mail" class="size-3 shrink-0 text-fd-muted" />
@@ -335,12 +322,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
             {{ $t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
           </span>
           <span class="inline-flex items-center gap-1 text-fd-muted">
-            {{ $t('CHAT_LIST.FRESHDESK_CARD.CREATED') }}
-            <TimeAgo
-              :last-activity-timestamp="createdTimestamp"
-              :created-at-timestamp="createdTimestamp"
-              :conversation-id="chat.id"
-            />
+            {{ activityMeta.label }} {{ activityMeta.timeAgo }}
           </span>
         </div>
       </div>

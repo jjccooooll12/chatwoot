@@ -3,6 +3,7 @@ class Mailbox::ConversationFinder
     Mailbox::ConversationFinderStrategies::ReceiverUuidStrategy,
     Mailbox::ConversationFinderStrategies::InReplyToStrategy,
     Mailbox::ConversationFinderStrategies::ReferencesStrategy,
+    Mailbox::ConversationFinderStrategies::TicketNumberStrategy,
     Mailbox::ConversationFinderStrategies::NewConversationStrategy
   ].freeze
 

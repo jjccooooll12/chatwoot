@@ -5,7 +5,6 @@ import { useI18n } from 'vue-i18n';
 import { useAlert } from 'dashboard/composables';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import ConversationLabels from 'dashboard/routes/dashboard/conversation/labels/LabelBox.vue';
-import SLACardLabel from './components/SLACardLabel.vue';
 import wootConstants from 'dashboard/constants/globals';
 
 const props = defineProps({
@@ -19,25 +18,31 @@ const { t } = useI18n();
 const store = useStore();
 
 const customType = ref('');
-const autoFollowUp = ref('');
+const autoFollowUp = ref('no');
 const isSaving = ref(false);
+const priorityOpen = ref(false);
 
-const currentContact = computed(() => {
-  const senderId = props.chat?.meta?.sender?.id;
-  return senderId ? store.getters['contacts/getContact'](senderId) : {};
-});
-
-const hasSlaPolicyId = computed(
-  () => props.chat?.applied_sla?.id && !currentContact.value?.blocked
-);
-
-const priorityOptions = computed(() => [
-  { key: '', label: t('CONVERSATION.PRIORITY.OPTIONS.NONE') },
-  { key: 'low', label: t('CONVERSATION.PRIORITY.OPTIONS.LOW') },
-  { key: 'medium', label: t('CONVERSATION.PRIORITY.OPTIONS.MEDIUM') },
-  { key: 'high', label: t('CONVERSATION.PRIORITY.OPTIONS.HIGH') },
-  { key: 'urgent', label: t('CONVERSATION.PRIORITY.OPTIONS.URGENT') },
-]);
+// Priority only applies when auto follow-up is on; each level drives the
+// auto-reopen window handled server-side (low 5d / medium 3d / high 48h /
+// urgent 24h). Colored squares mirror the Freshdesk palette.
+const priorityKeys = ['low', 'medium', 'high', 'urgent'];
+const priorityMeta = computed(() => ({
+  low: { label: t('CONVERSATION.PRIORITY.OPTIONS.LOW'), dot: 'bg-n-teal-9' },
+  medium: {
+    label: t('CONVERSATION.PRIORITY.OPTIONS.MEDIUM'),
+    dot: 'bg-n-blue-9',
+  },
+  high: { label: t('CONVERSATION.PRIORITY.OPTIONS.HIGH'), dot: 'bg-n-amber-9' },
+  urgent: {
+    label: t('CONVERSATION.PRIORITY.OPTIONS.URGENT'),
+    dot: 'bg-n-ruby-9',
+  },
+}));
+const currentPriority = computed(() => props.chat.priority || 'low');
+const priorityDotClass = key => [
+  'size-2.5 shrink-0 rounded-sm',
+  priorityMeta.value[key]?.dot,
+];
 
 const statusOptions = computed(() => [
   { key: wootConstants.STATUS_TYPE.OPEN, label: 'Open' },
@@ -54,10 +59,8 @@ const typeOptions = [
 ];
 
 const followUpOptions = [
-  { key: '', label: '--' },
-  { key: 'none', label: 'None' },
-  { key: 'tomorrow', label: 'Tomorrow' },
-  { key: 'next_week', label: 'Next week' },
+  { key: 'no', label: 'No' },
+  { key: 'yes', label: 'Yes' },
 ];
 
 const teamOptions = computed(() => [
@@ -88,7 +91,8 @@ const assignedTeamId = computed(() => String(props.chat?.meta?.team?.id || 0));
 const syncCustomFields = () => {
   const customAttributes = props.chat?.custom_attributes || {};
   customType.value = customAttributes.freshdesk_type || '';
-  autoFollowUp.value = customAttributes.freshdesk_auto_follow_up || '';
+  autoFollowUp.value =
+    customAttributes.freshdesk_auto_follow_up === 'yes' ? 'yes' : 'no';
 };
 
 const updateStatus = event => {
@@ -100,11 +104,12 @@ const updateStatus = event => {
   useAlert(t('CONVERSATION.CHANGE_STATUS'));
 };
 
-const updatePriority = event => {
+const selectPriority = key => {
   store.dispatch('assignPriority', {
     conversationId: props.chat.id,
-    priority: event.target.value || null,
+    priority: key,
   });
+  priorityOpen.value = false;
 };
 
 const updateAssignee = event => {
@@ -140,6 +145,18 @@ const saveCustomFields = async () => {
   useAlert(t('CONVERSATION_CUSTOM_ATTRIBUTES.UPDATE.SUCCESS'));
 };
 
+// Turning follow-up on requires a priority (it drives the reopen timer); default
+// to Low if none is set yet. Persist immediately so the server-side job sees it.
+const onFollowUpChange = async () => {
+  if (autoFollowUp.value === 'yes' && !props.chat.priority) {
+    store.dispatch('assignPriority', {
+      conversationId: props.chat.id,
+      priority: 'low',
+    });
+  }
+  await saveCustomFields();
+};
+
 watch(() => props.chat.id, syncCustomFields, { immediate: true });
 watch(() => props.chat.custom_attributes, syncCustomFields, { deep: true });
 
@@ -164,14 +181,6 @@ onMounted(() => {
           {{ chat.status }}
         </span>
         <Icon icon="i-lucide-panel-right-close" class="size-4 text-fd-muted" />
-      </div>
-      <div class="mt-4 grid gap-3 text-xs text-fd-text">
-        <div v-if="hasSlaPolicyId" class="grid gap-2">
-          <SLACardLabel :chat="chat" show-extended-info />
-        </div>
-        <p v-else class="m-0 text-fd-muted">
-          {{ t('CHAT_LIST.FRESHDESK_DETAIL.NO_ACTIVE_SLA') }}
-        </p>
       </div>
     </div>
 
@@ -231,6 +240,7 @@ onMounted(() => {
         <select
           v-model="autoFollowUp"
           class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+          @change="onFollowUpChange"
         >
           <option
             v-for="option in followUpOptions"
@@ -242,24 +252,46 @@ onMounted(() => {
         </select>
       </label>
 
-      <label class="grid gap-1.5">
+      <div v-if="autoFollowUp === 'yes'" class="grid gap-1.5">
         <span class="font-medium text-fd-text">
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.PRIORITY') }}
         </span>
-        <select
-          class="h-8 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-          :value="chat.priority || ''"
-          @change="updatePriority"
-        >
-          <option
-            v-for="option in priorityOptions"
-            :key="option.key"
-            :value="option.key"
+        <div class="relative">
+          <button
+            type="button"
+            class="flex h-8 w-full items-center gap-2 rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            @click="priorityOpen = !priorityOpen"
           >
-            {{ option.label }}
-          </option>
-        </select>
-      </label>
+            <span :class="priorityDotClass(currentPriority)" />
+            <span>{{ priorityMeta[currentPriority].label }}</span>
+            <span
+              class="i-lucide-chevron-down size-3.5 text-fd-muted ltr:ml-auto rtl:mr-auto"
+            />
+          </button>
+          <template v-if="priorityOpen">
+            <button
+              type="button"
+              tabindex="-1"
+              class="fixed inset-0 z-40 cursor-default"
+              @click="priorityOpen = false"
+            />
+            <ul
+              class="absolute inset-x-0 top-9 z-50 m-0 list-none rounded-md border border-fd-border bg-fd-surface p-1 shadow-lg"
+            >
+              <li v-for="key in priorityKeys" :key="key">
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-fd-text hover:bg-n-slate-3"
+                  @click="selectPriority(key)"
+                >
+                  <span :class="priorityDotClass(key)" />
+                  <span>{{ priorityMeta[key].label }}</span>
+                </button>
+              </li>
+            </ul>
+          </template>
+        </div>
+      </div>
 
       <label class="grid gap-1.5">
         <span class="font-medium text-fd-text">

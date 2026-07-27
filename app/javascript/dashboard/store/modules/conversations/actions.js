@@ -38,9 +38,11 @@ const actions = {
       const response = await ConversationApi.show(conversationId);
       commit(types.UPDATE_CONVERSATION, response.data);
       commit(`contacts/${types.SET_CONTACT_ITEM}`, response.data.meta.sender);
+      return response.data;
     } catch (error) {
       // Ignore error
     }
+    return undefined;
   },
 
   fetchAllConversations: async ({ commit, state, dispatch }) => {

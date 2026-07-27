@@ -128,6 +128,7 @@ class Conversation < ApplicationRecord
   before_save :ensure_snooze_until_reset
   before_create :determine_conversation_status
   before_create :ensure_waiting_since
+  before_create :assign_ticket_number
 
   after_update_commit :execute_after_update_commit_callbacks
   after_create_commit :notify_conversation_creation
@@ -136,6 +137,13 @@ class Conversation < ApplicationRecord
   after_destroy_commit :notify_conversation_deletion
 
   delegate :auto_resolve_after, to: :account
+
+  # Customer-facing ticket number in the form yymmdd + that day's counter
+  # (e.g. 2607261). Falls back to display_id for tickets created before the
+  # scheme existed / not yet backfilled.
+  def ticket_number
+    additional_attributes&.dig('ticket_number').presence || display_id.to_s
+  end
 
   def can_reply?
     Conversations::MessageWindowService.new(self).can_reply?
@@ -274,6 +282,23 @@ class Conversation < ApplicationRecord
 
   def ensure_waiting_since
     self.waiting_since = created_at
+  end
+
+  # Assigns a yymmdd + daily-counter ticket number (e.g. 2607261). The counter is
+  # the nth conversation created for this account on the current (UTC) day. A
+  # uniqueness retry guards against the rare concurrent-create collision.
+  def assign_ticket_number
+    return if additional_attributes['ticket_number'].present?
+
+    now = Time.current
+    prefix = now.strftime('%y%m%d')
+    counter = account.conversations.where(created_at: now.beginning_of_day..now.end_of_day).count + 1
+    candidate = "#{prefix}#{counter}"
+    while account.conversations.where("conversations.additional_attributes->>'ticket_number' = ?", candidate).exists?
+      counter += 1
+      candidate = "#{prefix}#{counter}"
+    end
+    self.additional_attributes = additional_attributes.merge('ticket_number' => candidate)
   end
 
   def validate_additional_attributes
