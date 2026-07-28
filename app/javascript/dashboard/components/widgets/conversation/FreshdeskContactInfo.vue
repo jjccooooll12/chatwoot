@@ -98,7 +98,7 @@ watch(contactId, fetchConversations);
 
 <template>
   <aside
-    class="hidden w-[248px] shrink-0 overflow-y-auto border-l border-fd-border bg-fd-surface xl:block"
+    class="hidden w-[276px] shrink-0 overflow-y-auto border-l border-fd-border bg-fd-surface xl:block"
   >
     <div class="border-b border-fd-border px-3 py-4">
       <div class="mb-3 flex items-center justify-between">
@@ -153,17 +153,17 @@ watch(contactId, fetchConversations);
           <div class="min-w-0 flex-1">
             <a
               :href="conversationUrl(conversation.id)"
-              class="m-0 line-clamp-2 text-xs font-medium leading-4 text-fd-text hover:text-fd-primary"
+              class="m-0 line-clamp-2 text-sm font-medium leading-5 text-fd-text hover:text-fd-primary"
             >
               {{ subjectOf(conversation) }}
             </a>
-            <p class="m-0 select-text text-xs font-medium text-fd-primary">
+            <p class="m-0 select-text text-sm font-medium text-fd-primary">
               {{ `#${ticketNumberOf(conversation)}` }}
             </p>
-            <p class="m-0 mt-0.5 select-text text-xxs text-fd-muted">
+            <p class="m-0 mt-0.5 select-text text-xs text-fd-muted">
               {{ timeLabel(conversation) }}
             </p>
-            <p class="m-0 select-text text-xxs text-fd-muted">
+            <p class="m-0 select-text text-xs text-fd-muted">
               {{
                 `${t('CHAT_LIST.FRESHDESK_DETAIL.STATUS_LINE')}: ${statusLabel(
                   conversation

@@ -181,7 +181,7 @@ onMounted(() => {
 
 <template>
   <aside
-    class="hidden w-[248px] shrink-0 flex-col border-l border-fd-border bg-fd-surface lg:flex"
+    class="hidden w-[220px] shrink-0 flex-col border-l border-fd-border bg-fd-surface lg:flex"
   >
     <div class="flex-1 overflow-y-auto">
       <div class="grid gap-1.5 px-3 pb-4 pt-4 text-xs">
