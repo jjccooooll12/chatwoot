@@ -314,6 +314,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
       :class="{
         'ring-2 ring-fd-primary/30': isActiveChat,
         'border-fd-primary bg-fd-surface': selected,
+        'opacity-40 grayscale hover:opacity-100 hover:grayscale-0': isResolved,
       }"
     >
       <div
@@ -331,7 +332,6 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           :size="40"
           :status="currentContact.availability_status"
           hide-offline-status
-          :class="{ 'grayscale opacity-60': isResolved }"
         />
       </div>
 
@@ -349,8 +349,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
         </div>
 
         <h4
-          class="conversation--user m-0 truncate text-[13px] font-semibold leading-5"
-          :class="isResolved ? 'text-fd-muted' : 'text-fd-text'"
+          class="conversation--user m-0 truncate text-[13px] font-semibold leading-5 text-fd-text"
         >
           {{ subject }}
           <span class="font-medium text-fd-muted">
@@ -359,8 +358,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
         </h4>
 
         <div
-          class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5"
-          :class="isResolved ? 'text-fd-muted' : 'text-fd-text'"
+          class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5 text-fd-text"
         >
           <span
             class="inline-flex min-w-0 max-w-full items-center gap-1 truncate"
