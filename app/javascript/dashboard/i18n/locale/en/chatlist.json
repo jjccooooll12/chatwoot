@@ -48,6 +48,7 @@
       "STATUS": {
         "NEW": "New",
         "CUSTOMER_RESPONDED": "Customer responded",
+        "AGENT_RESPONDED": "Agent responded",
         "OVERDUE": "Overdue"
       }
     },

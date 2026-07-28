@@ -129,13 +129,30 @@ const customerResponded = computed(
   () => lastMessageIsIncoming.value && hasAgentReplied.value
 );
 
-// Meta line under the subject: when the customer has replied to us, surface
-// "Customer responded <time> ago" using the latest inbound message time;
-// otherwise fall back to when the ticket was created.
+// The latest real (non-activity — getLastMessage already skips those)
+// message is the agent's own reply, and we're now waiting on the customer.
+const agentResponded = computed(
+  () =>
+    hasAgentReplied.value &&
+    lastMessageInChat.value?.message_type === MESSAGE_TYPE.OUTGOING
+);
+
+// Meta line under the subject: surface who spoke last and when, "Customer
+// responded"/"Agent responded" <time> ago using the latest message's own
+// time; only fall back to when the ticket was created if nobody has replied
+// at all yet.
 const activityMeta = computed(() => {
   if (customerResponded.value) {
     return {
       label: t('CHAT_LIST.FRESHDESK_CARD.STATUS.CUSTOMER_RESPONDED'),
+      timeAgo: dynamicTimeStrict(
+        lastMessageInChat.value?.created_at || createdTimestamp.value
+      ),
+    };
+  }
+  if (agentResponded.value) {
+    return {
+      label: t('CHAT_LIST.FRESHDESK_CARD.STATUS.AGENT_RESPONDED'),
       timeAgo: dynamicTimeStrict(
         lastMessageInChat.value?.created_at || createdTimestamp.value
       ),
