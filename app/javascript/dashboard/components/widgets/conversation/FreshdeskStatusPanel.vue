@@ -28,11 +28,13 @@ const { uiSettings, updateUISettings } = useUISettings();
 // onto Chatwoot's `resolved` (labelled "Closed" here). No "All" pill: with
 // multi-select, combining every status IS "all", so a separate option would
 // be redundant.
+// Same mapping as the status dot/pill on the ticket card (ConversationCard.vue):
+// open = green (active work), pending = amber (waiting), closed = red.
 const statusItems = computed(() => [
   {
     key: 'open',
     label: t('CHAT_LIST.FRESHDESK_PANEL.STATUS.open'),
-    dot: 'bg-fd-blue',
+    dot: 'bg-fd-green',
   },
   {
     key: 'pending',
@@ -42,7 +44,7 @@ const statusItems = computed(() => [
   {
     key: 'resolved',
     label: t('CHAT_LIST.FRESHDESK_PANEL.STATUS.resolved'),
-    dot: 'bg-fd-green',
+    dot: 'bg-fd-red',
   },
 ]);
 
