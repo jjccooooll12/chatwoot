@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import MoreActions from './MoreActions.vue';
+import FreshdeskTopBarActions from 'dashboard/components/FreshdeskTopBarActions.vue';
 import ConversationMergePanel from './ConversationMergePanel.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
@@ -51,11 +52,6 @@ const backButtonUrl = computed(() => {
     conversationType: conversationTypeMap[name],
     customViewId,
   });
-});
-
-const userInitial = computed(() => {
-  const user = store.getters.getCurrentUser || {};
-  return (user.name || user.email || 'U').charAt(0).toUpperCase();
 });
 
 const ticketNumber = computed(() => {
@@ -194,49 +190,7 @@ const onTicketMerged = async (
         </button>
       </div>
 
-      <div class="flex shrink-0 items-center gap-2">
-        <button
-          type="button"
-          class="inline-flex h-7 items-center gap-1 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2"
-        >
-          <span class="i-lucide-plus-square size-3.5 text-fd-muted" />
-          {{ t('CHAT_LIST.FRESHDESK_TOPBAR.NEW') }}
-          <span class="i-lucide-chevron-down size-3 text-fd-muted" />
-        </button>
-        <button
-          type="button"
-          class="hidden h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-3 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2 md:inline-flex"
-        >
-          <span class="i-lucide-search size-3.5 text-fd-muted" />
-          {{ t('CHAT_LIST.FRESHDESK_TOPBAR.SEARCH') }}
-        </button>
-        <button
-          type="button"
-          class="grid size-7 place-content-center rounded-md text-fd-muted hover:bg-n-slate-2 hover:text-fd-text"
-          :title="t('CHAT_LIST.FRESHDESK_TOPBAR.NOTIFICATIONS')"
-        >
-          <span class="i-lucide-bell size-4" />
-        </button>
-        <button
-          type="button"
-          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
-          :title="t('CHAT_LIST.FRESHDESK_TOPBAR.HELP')"
-        >
-          <span class="i-lucide-circle-help size-4" />
-        </button>
-        <button
-          type="button"
-          class="hidden h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2 lg:inline-flex"
-        >
-          <span class="i-lucide-layout-grid size-3.5 text-fd-muted" />
-          {{ t('CHAT_LIST.FRESHDESK_TOPBAR.APPS') }}
-        </button>
-        <span
-          class="grid size-7 place-content-center rounded-full bg-[#e9ddff] text-xs font-semibold text-[#6e55c9]"
-        >
-          {{ userInitial }}
-        </span>
-      </div>
+      <FreshdeskTopBarActions />
     </div>
 
     <div

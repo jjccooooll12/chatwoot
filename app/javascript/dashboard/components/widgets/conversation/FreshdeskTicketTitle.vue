@@ -2,6 +2,8 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useWindowSize } from '@vueuse/core';
+import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
+import { getLastMessage } from 'dashboard/helper/conversationHelper';
 
 const props = defineProps({
   chat: {
@@ -11,25 +13,24 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const { getPlainText } = useMessageFormatter();
 const { width: windowWidth } = useWindowSize();
 
-const senderName = computed(() => {
-  const sender = props.chat.meta?.sender || {};
-  return (
-    sender.name || sender.email || t('CHAT_LIST.FRESHDESK_CARD.UNASSIGNED')
+const lastMessageInChat = computed(() => getLastMessage(props.chat));
+
+// Same precedence as ConversationCard.vue's subject computed — the locked-in
+// ticket subject, falling back to the last message so it's never blank.
+const title = computed(() => {
+  const additionalAttributes =
+    props.chat.additional_attributes || props.chat.additionalAttributes || {};
+  const emailSubject =
+    additionalAttributes.mail_subject || additionalAttributes.mailSubject;
+  return getPlainText(
+    emailSubject ||
+      lastMessageInChat.value?.content ||
+      t('CHAT_LIST.NO_CONTENT')
   );
 });
-
-const accountName = computed(() =>
-  t('CHAT_LIST.FRESHDESK_DETAIL.PEACH_LABELS')
-);
-
-const title = computed(() =>
-  t('CHAT_LIST.FRESHDESK_DETAIL.CONTACT_FORM_TITLE', {
-    customer: senderName.value,
-    account: accountName.value,
-  })
-);
 
 const clampedIconSize = computed(() => {
   const width = windowWidth.value || 1440;

@@ -2,12 +2,10 @@
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { formatNumber } from '@chatwoot/utils';
-import { useMapGetter } from 'dashboard/composables/store';
 
 import ConversationBasicFilter from './widgets/conversation/ConversationBasicFilter.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
-import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
-import Avatar from 'next/avatar/Avatar.vue';
+import FreshdeskTopBarActions from './FreshdeskTopBarActions.vue';
 
 const props = defineProps({
   pageTitle: { type: String, required: true },
@@ -44,14 +42,6 @@ const activeStatusesLabel = computed(() =>
 
 const allCount = computed(() => props.conversationStats?.allCount || 0);
 const formattedAllCount = computed(() => formatNumber(allCount.value));
-const currentUser = useMapGetter('getCurrentUser');
-const currentUserAvailability = useMapGetter('getCurrentUserAvailability');
-const notificationMetadata = useMapGetter('notifications/getMeta');
-const unreadNotificationCount = computed(() => {
-  const count = notificationMetadata.value?.unreadCount || 0;
-  if (!count) return '';
-  return count < 100 ? `${count}` : '99+';
-});
 </script>
 
 <template>
@@ -155,59 +145,7 @@ const unreadNotificationCount = computed(() => {
         :is-on-expanded-layout="isOnExpandedLayout"
         @change-filter="onBasicFilterChange"
       />
-      <ComposeConversation align="end">
-        <template #trigger="{ isOpen }">
-          <NextButton
-            :label="$t('CHAT_LIST.FRESHDESK_TOPBAR.NEW')"
-            icon="i-lucide-plus"
-            sm
-            class="!bg-fd-action !text-white hover:enabled:!brightness-110"
-            :class="{ '!brightness-110': isOpen }"
-          />
-        </template>
-      </ComposeConversation>
-      <RouterLink
-        :to="{ name: 'search' }"
-        class="grid size-8 place-content-center rounded-lg border border-fd-border bg-fd-surface text-fd-muted hover:border-fd-primary hover:text-fd-primary"
-        :title="$t('COMBOBOX.SEARCH_PLACEHOLDER')"
-      >
-        <span class="i-lucide-search size-4" />
-      </RouterLink>
-      <RouterLink
-        :to="{ name: 'notifications_index' }"
-        class="relative grid size-8 place-content-center rounded-lg border border-fd-border bg-fd-surface text-fd-muted hover:border-fd-primary hover:text-fd-primary"
-        :title="$t('CHAT_LIST.FRESHDESK_TOPBAR.NOTIFICATIONS')"
-      >
-        <span class="i-lucide-bell size-4" />
-        <span
-          v-if="unreadNotificationCount"
-          class="absolute -right-1 -top-1 grid min-h-4 min-w-4 place-items-center rounded-full bg-fd-red px-1 text-[9px] font-semibold leading-none text-white"
-        >
-          {{ unreadNotificationCount }}
-        </span>
-      </RouterLink>
-      <button
-        type="button"
-        class="hidden size-8 place-content-center rounded-lg border border-fd-border bg-fd-surface text-fd-muted hover:border-fd-primary hover:text-fd-primary md:grid"
-        :title="$t('CHAT_LIST.FRESHDESK_TOPBAR.HELP')"
-      >
-        <span class="i-lucide-circle-help size-4" />
-      </button>
-      <button
-        type="button"
-        class="hidden h-8 items-center gap-1.5 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs font-medium text-fd-text hover:border-fd-primary hover:text-fd-primary lg:inline-flex"
-        :title="$t('CHAT_LIST.FRESHDESK_TOPBAR.APPS')"
-      >
-        <span class="i-lucide-grid-3x3 size-4" />
-        {{ $t('CHAT_LIST.FRESHDESK_TOPBAR.APPS') }}
-      </button>
-      <Avatar
-        :size="32"
-        :name="currentUser.available_name"
-        :src="currentUser.avatar_url"
-        :status="currentUserAvailability"
-        class="ml-0.5 hidden shrink-0 md:flex"
-      />
+      <FreshdeskTopBarActions />
     </div>
   </div>
 </template>

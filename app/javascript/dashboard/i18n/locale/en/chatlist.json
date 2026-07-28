@@ -78,7 +78,8 @@
       "HELP": "Help",
       "NEW": "+ New",
       "NOTIFICATIONS": "Notifications",
-      "SEARCH": "Search"
+      "SEARCH": "Search",
+      "SEARCH_PLACEHOLDER": "Search tickets, contacts..."
     },
     "FRESHDESK_DETAIL": {
       "ACTIVITIES": "Activities",

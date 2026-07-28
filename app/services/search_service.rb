@@ -30,11 +30,28 @@ class SearchService
     @search_query ||= params[:q].to_s.strip
   end
 
+  # Matches on the ticket id/contact fields already indexed for search, the
+  # locked-in ticket subject, and (via EXISTS, so a ticket with several hits
+  # still only appears once) any non-activity message in the thread — private
+  # notes included, since agents look up order numbers jotted there too.
+  # message_type 2 is 'activity' (system log lines like "assigned to X"),
+  # excluded because it's noise nobody is actually searching for.
   def filter_conversations
     conversations_query = current_account.conversations.where(inbox_id: accessable_inbox_ids)
                                          .joins('INNER JOIN contacts ON conversations.contact_id = contacts.id')
-                                         .where("cast(conversations.display_id as text) ILIKE :search OR contacts.name ILIKE :search OR contacts.email
-                            ILIKE :search OR contacts.phone_number ILIKE :search OR contacts.identifier ILIKE :search", search: "%#{search_query}%")
+                                         .where("cast(conversations.display_id as text) ILIKE :search
+                            OR contacts.name ILIKE :search
+                            OR contacts.email ILIKE :search
+                            OR contacts.phone_number ILIKE :search
+                            OR contacts.identifier ILIKE :search
+                            OR conversations.additional_attributes ->> 'mail_subject' ILIKE :search
+                            OR conversations.additional_attributes ->> 'ticket_number' ILIKE :search
+                            OR EXISTS (
+                              SELECT 1 FROM messages
+                              WHERE messages.conversation_id = conversations.id
+                              AND messages.message_type != 2
+                              AND messages.content ILIKE :search
+                            )", search: "%#{search_query}%")
 
     if current_account.feature_enabled?('advanced_search')
       conversations_query = apply_time_filter(conversations_query,
