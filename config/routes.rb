@@ -649,11 +649,11 @@ Rails.application.routes.draw do
   post 'webhooks/line/:line_channel_id', to: 'webhooks/line#process_payload'
   post 'webhooks/telegram/:bot_token', to: 'webhooks/telegram#process_payload'
   post 'webhooks/sms/:phone_number', to: 'webhooks/sms#process_payload'
-  post 'webhooks/twilio_voice/:phone_number', to: 'webhooks/twilio_voice#call_twiml', as: :twilio_voice_call_twiml
-  post 'webhooks/twilio_voice/:phone_number/agent', to: 'webhooks/twilio_voice#agent_twiml', as: :twilio_voice_agent_twiml
-  post 'webhooks/twilio_voice/:phone_number/status', to: 'webhooks/twilio_voice#status', as: :twilio_voice_status
-  post 'webhooks/twilio_voice/:phone_number/conference_status', to: 'webhooks/twilio_voice#conference_status', as: :twilio_voice_conference_status
-  post 'webhooks/twilio_voice/:phone_number/recording_status', to: 'webhooks/twilio_voice#recording_status', as: :twilio_voice_recording_status
+  post 'webhooks/twilio_voice/:phone_number', to: 'webhooks/twilio_voice#call_twiml', as: :voice_webhook_call
+  post 'webhooks/twilio_voice/:phone_number/agent', to: 'webhooks/twilio_voice#agent_twiml', as: :voice_webhook_agent
+  post 'webhooks/twilio_voice/:phone_number/status', to: 'webhooks/twilio_voice#status', as: :voice_webhook_status
+  post 'webhooks/twilio_voice/:phone_number/conference_status', to: 'webhooks/twilio_voice#conference_status', as: :voice_webhook_conference_status
+  post 'webhooks/twilio_voice/:phone_number/recording_status', to: 'webhooks/twilio_voice#recording_status', as: :voice_webhook_recording_status
   get 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#verify'
   post 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#process_payload'
   get 'webhooks/instagram', to: 'webhooks/instagram#verify'

@@ -136,9 +136,9 @@ class Webhooks::TwilioVoiceController < ApplicationController
         voice_call.conference_sid,
         start_conference_on_enter: false,
         record: 'record-from-start',
-        recording_status_callback: twilio_voice_recording_status_url(phone_number: params[:phone_number]),
+        recording_status_callback: voice_webhook_recording_status_url(phone_number: params[:phone_number]),
         recording_status_callback_event: 'completed',
-        status_callback: twilio_voice_conference_status_url(phone_number: params[:phone_number]),
+        status_callback: voice_webhook_conference_status_url(phone_number: params[:phone_number]),
         status_callback_event: 'start end'
       )
     end
@@ -151,7 +151,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
     response.record(
       max_length: 120,
       play_beep: true,
-      recording_status_callback: twilio_voice_recording_status_url(phone_number: params[:phone_number]),
+      recording_status_callback: voice_webhook_recording_status_url(phone_number: params[:phone_number]),
       recording_status_callback_event: 'completed'
     )
     response
