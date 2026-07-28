@@ -84,7 +84,10 @@ const flexOrientationClass = computed(() => {
 
 const messageClass = computed(() => {
   if (isPrivateEmailNote.value) {
-    return ['bg-[#feecd5] dark:bg-[#302008] text-n-amber-12 rounded-lg w-full'];
+    // Peach background lives on the content column only (Text/Index.vue),
+    // not here — same as how bubbles/Email/Index.vue scopes its own
+    // background to the text column, leaving the avatar unpainted.
+    return ['w-full'];
   }
 
   const classToApply = [varaintBaseMap[variant.value]];

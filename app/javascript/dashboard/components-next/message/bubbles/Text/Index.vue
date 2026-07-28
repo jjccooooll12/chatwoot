@@ -73,10 +73,10 @@ const handleSeeOriginal = () => {
     :hide-meta="isPrivateEmailNote"
     data-bubble-name="text"
   >
-    <!-- Same card layout as a regular email message (bubbles/Email/Index.vue,
-    incoming/non-outgoing branch) — left avatar flush at the edge, padding
-    lives on the content column only, not the avatar. Only the background
-    differs. -->
+    <!-- Same card layout as a regular email message (bubbles/Email/Index.vue)
+    — left avatar flush at the edge on an unpainted row, background/rounding/
+    padding live on the content column only (matching its outgoing/colored-
+    card branch: pt-3.5 pb-6 px-3.5). Only the background color differs. -->
     <div v-if="isPrivateEmailNote" class="flex w-full gap-3 pb-1">
       <Avatar
         :name="sender?.name"
@@ -85,7 +85,9 @@ const handleSeeOriginal = () => {
         rounded-full
         class="shrink-0"
       />
-      <div class="min-w-0 flex-1 px-3.5 pb-0.5">
+      <div
+        class="min-w-0 flex-1 rounded-lg bg-[#feecd5] px-3.5 pb-6 pt-3.5 text-n-amber-12 dark:bg-[#302008]"
+      >
         <PrivateNoteMeta class="mb-2" />
         <div class="gap-3 flex flex-col">
           <span v-if="isEmpty" class="text-n-slate-11">
