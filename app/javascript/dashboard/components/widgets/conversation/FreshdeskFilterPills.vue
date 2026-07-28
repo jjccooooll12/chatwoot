@@ -20,14 +20,8 @@ const activeItems = computed(() =>
 const addableItems = computed(() =>
   props.items.filter(item => !props.activeKeys.includes(item.key))
 );
-// At least one pill must always stay selected — there's no "All" fallback
-// once every pill is removed, so removal is blocked below that floor.
-const canRemove = computed(() => props.activeKeys.length > 1);
 
-const remove = key => {
-  if (!canRemove.value) return;
-  emit('toggle', key);
-};
+const remove = key => emit('toggle', key);
 const add = key => {
   emit('toggle', key);
   if (addableItems.value.length <= 1) {
@@ -38,11 +32,13 @@ const add = key => {
 
 <template>
   <div class="flex flex-wrap items-center gap-1.5 px-2">
+    <span v-if="!activeItems.length" class="text-xs italic text-fd-muted">
+      {{ t('CHAT_LIST.FRESHDESK_PANEL.NO_FILTER') }}
+    </span>
     <span
       v-for="item in activeItems"
       :key="item.key"
-      class="inline-flex items-center gap-1 rounded-full bg-fd-primary/10 py-1 pl-2 text-xs font-medium text-fd-primary"
-      :class="canRemove ? 'pr-1' : 'pr-2'"
+      class="inline-flex items-center gap-1 rounded-full bg-fd-primary/10 py-1 pl-2 pr-1 text-xs font-medium text-fd-primary"
     >
       <span
         v-if="item.dot"
@@ -51,7 +47,6 @@ const add = key => {
       />
       <span class="truncate">{{ item.label }}</span>
       <button
-        v-if="canRemove"
         type="button"
         class="grid size-3.5 shrink-0 place-content-center rounded-full text-fd-primary/70 hover:bg-fd-primary/20 hover:text-fd-primary"
         :title="t('CHAT_LIST.FRESHDESK_PANEL.REMOVE_FILTER')"

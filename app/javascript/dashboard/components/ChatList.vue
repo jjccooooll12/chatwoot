@@ -256,6 +256,11 @@ const conversationCustomAttributes = useFunctionGetter(
 );
 
 const activeAssigneeTabCount = computed(() => {
+  // No pills selected means no assignee filter at all — the true total is
+  // conversationStats' allCount, not a sum over zero buckets.
+  if (!activeAssigneeTypes.value.length) {
+    return conversationStats.value.allCount || 0;
+  }
   return activeAssigneeTypes.value.reduce((sum, key) => {
     const item = assigneeTabItems.value.find(i => i.key === key);
     return sum + (item?.count || 0);
@@ -289,7 +294,12 @@ const conversationFilters = computed(() => {
   return {
     inboxId: props.conversationInbox ? props.conversationInbox : undefined,
     assigneeType: activeAssigneeTypes.value,
-    status: activeStatuses.value,
+    // An empty array is indistinguishable from "not sent" once serialized
+    // (axios drops empty-array params), and ConversationFinder defaults a
+    // missing status to "open" for backward compatibility with other
+    // callers — so send the existing 'all' bypass explicitly instead of
+    // relying on the array falling through empty.
+    status: activeStatuses.value.length ? activeStatuses.value : 'all',
     sortBy: activeSortBy.value,
     page: conversationListPagination.value,
     labels: props.label ? [props.label] : undefined,
@@ -373,6 +383,9 @@ const conversationList = computed(() => {
       localConversationList = filterByAssigneeTab(
         participatingChatsList.value(filters)
       );
+    } else if (!activeAssigneeTypes.value.length) {
+      // No pills selected — no assignee filter at all.
+      localConversationList = [...allChatList.value(filters)];
     } else if (activeAssigneeTypes.value.length === 1) {
       // Exactly one type active — same single-getter path as before.
       const [type] = activeAssigneeTypes.value;
@@ -439,11 +452,13 @@ function setFiltersFromUISettings() {
   const { conversations_filter_by: filterBy = {} } = uiSettings.value;
   const { status, order_by: orderBy } = filterBy;
   // `status` used to be persisted as a single string before multi-select
-  // pills; fall back to the default for that legacy shape too.
-  activeStatuses.value =
-    Array.isArray(status) && status.length
-      ? status
-      : [wootConstants.STATUS_TYPE.OPEN];
+  // pills; fall back to the default for that legacy shape (and for a first
+  // run with nothing persisted yet). An explicitly empty array, though, is
+  // the user deliberately clearing every pill — respect it as "no filter"
+  // rather than snapping back to the default.
+  activeStatuses.value = Array.isArray(status)
+    ? status
+    : [wootConstants.STATUS_TYPE.OPEN];
   activeSortBy.value = Object.values(wootConstants.SORT_BY_TYPE).includes(
     orderBy
   )
@@ -665,13 +680,13 @@ function loadMoreConversations() {
   }
 }
 
-// Adds/removes a pill; always leaves at least one type active. Reuses the
-// already-fetched cache (instant switch) when this exact combination has
-// been paged before, matching the previous single-tab behaviour.
+// Adds/removes a pill; clearing every pill means no assignee filter at all
+// (shows everyone's conversations). Reuses the already-fetched cache
+// (instant switch) when this exact combination has been paged before,
+// matching the previous single-tab behaviour.
 function toggleAssigneeType(type) {
   const current = activeAssigneeTypes.value;
   const isActive = current.includes(type);
-  if (isActive && current.length === 1) return;
 
   resetBulkActions();
   emitter.emit('clearSearchInput');
@@ -695,11 +710,11 @@ function updateChatLanguage(selectedLanguage) {
 
 // Status changes always do a full reset+refetch (same as before multi-select
 // — status never relied on the per-tab instant-switch cache), and persist
-// the new combination so it survives a reload.
+// the new combination so it survives a reload. Clearing every pill means no
+// status filter at all (shows every status).
 function toggleStatus(status) {
   const current = activeStatuses.value;
   const isActive = current.includes(status);
-  if (isActive && current.length === 1) return;
 
   activeStatuses.value = isActive
     ? current.filter(item => item !== status)
