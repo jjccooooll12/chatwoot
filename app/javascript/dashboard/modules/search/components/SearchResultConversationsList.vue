@@ -47,7 +47,7 @@ const conversationsWithSubject = computed(() => {
     :show-title="showTitle"
     :is-fetching="isFetching"
   >
-    <ul v-if="conversations.length" class="space-y-3 list-none">
+    <ul v-if="conversations.length" class="space-y-4 list-none">
       <li
         v-for="conversation in conversationsWithSubject"
         :key="conversation.id"
