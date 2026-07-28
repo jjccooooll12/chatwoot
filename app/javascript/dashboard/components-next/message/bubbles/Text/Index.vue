@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue';
+import { useWindowSize } from '@vueuse/core';
 import BaseBubble from 'next/message/bubbles/Base.vue';
+import Avatar from 'next/avatar/Avatar.vue';
 import FormattedContent from './FormattedContent.vue';
 import AttachmentChips from 'next/message/chips/AttachmentChips.vue';
 import TranslationToggle from 'dashboard/components-next/message/TranslationToggle.vue';
@@ -10,16 +12,30 @@ import { useMessageContext } from '../../provider.js';
 import { useTranslations } from 'dashboard/composables/useTranslations';
 import { useInbox } from 'dashboard/composables/useInbox';
 
-const { content, attachments, contentAttributes, messageType, isPrivate } =
-  useMessageContext();
+const {
+  content,
+  attachments,
+  contentAttributes,
+  messageType,
+  isPrivate,
+  sender,
+} = useMessageContext();
 const { isAnEmailChannel } = useInbox();
 
 // A private note on an email ticket gets its own Freshdesk-style header
-// (sender + "added a private note" + time) instead of the generic bottom
-// meta line, matching how email messages render their own header.
+// (sender + "added a private note" + time) and left-side avatar, matching
+// the exact card layout regular email messages use (bubbles/Email/Index.vue)
+// — only the background differs.
 const isPrivateEmailNote = computed(
   () => isPrivate.value && isAnEmailChannel.value
 );
+
+const senderThumbnail = computed(() => sender.value?.thumbnail);
+const { width: windowWidth } = useWindowSize();
+const clampedAvatarSize = computed(() => {
+  const width = windowWidth.value || 1440;
+  return Math.min(24, Math.max(20, Math.round(width * 0.018)));
+});
 
 const { hasTranslations, translationContent } =
   useTranslations(contentAttributes);
@@ -53,12 +69,41 @@ const handleSeeOriginal = () => {
 
 <template>
   <BaseBubble
-    class="px-4 py-3"
+    :class="isPrivateEmailNote ? 'w-full' : 'px-4 py-3'"
     :hide-meta="isPrivateEmailNote"
     data-bubble-name="text"
   >
-    <PrivateNoteMeta v-if="isPrivateEmailNote" class="mb-2" />
-    <div class="gap-3 flex flex-col">
+    <!-- Same card layout as a regular email message (bubbles/Email/Index.vue)
+    — left avatar + header/content column — only the background differs. -->
+    <div
+      v-if="isPrivateEmailNote"
+      class="flex w-full gap-3 px-3.5 pb-0.5 pt-3.5"
+    >
+      <Avatar
+        :name="sender?.name"
+        :src="senderThumbnail"
+        :size="clampedAvatarSize"
+        rounded-full
+        class="shrink-0"
+      />
+      <div class="min-w-0 flex-1">
+        <PrivateNoteMeta class="mb-2" />
+        <div class="gap-3 flex flex-col">
+          <span v-if="isEmpty" class="text-n-slate-11">
+            {{ $t('CONVERSATION.NO_CONTENT') }}
+          </span>
+          <FormattedContent v-if="renderContent" :content="renderContent" />
+          <TranslationToggle
+            v-if="hasTranslations"
+            class="-mt-3"
+            :showing-original="renderOriginal"
+            @toggle="handleSeeOriginal"
+          />
+          <AttachmentChips :attachments="attachments" class="gap-2" />
+        </div>
+      </div>
+    </div>
+    <div v-else class="gap-3 flex flex-col">
       <span v-if="isEmpty" class="text-n-slate-11">
         {{ $t('CONVERSATION.NO_CONTENT') }}
       </span>

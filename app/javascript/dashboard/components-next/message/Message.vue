@@ -300,17 +300,17 @@ const isEmailCard = computed(() => {
   return props.contentType === CONTENT_TYPES.INCOMING_EMAIL;
 });
 
-// Private notes on an email inbox span the same full width as regular email
-// cards (left-aligned, no side margins), matching the rest of the ticket
-// thread. This only affects width/margins — the note bubble keeps its own
-// avatar, background and everything else exactly as it already renders.
+// Private notes on an email inbox render with the exact same card layout as
+// regular email messages (left-aligned avatar, same width/margins) — only
+// the background differs. The bubble renders its own left-side avatar
+// (Text/Index.vue) instead of this component's chat-style right-side one.
 const isFullWidthThreadCard = computed(
   () => isEmailCard.value || (props.isEmailInbox && props.private)
 );
 
 const shouldShowAvatar = computed(() => {
   if (props.messageType === MESSAGE_TYPES.ACTIVITY) return false;
-  if (isEmailCard.value) return false;
+  if (isFullWidthThreadCard.value) return false;
   if (orientation.value === ORIENTATION.LEFT) return false;
 
   return true;
