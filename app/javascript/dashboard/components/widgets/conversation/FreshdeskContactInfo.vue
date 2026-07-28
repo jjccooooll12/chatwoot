@@ -153,11 +153,11 @@ watch(contactId, fetchConversations);
           <div class="min-w-0 flex-1">
             <a
               :href="conversationUrl(conversation.id)"
-              class="m-0 line-clamp-2 text-sm font-medium leading-5 text-fd-text hover:text-fd-primary"
+              class="m-0 line-clamp-2 text-xs font-medium leading-4 text-fd-text hover:text-fd-primary"
             >
               {{ subjectOf(conversation) }}
             </a>
-            <p class="m-0 select-text text-sm font-medium text-fd-primary">
+            <p class="m-0 select-text text-xs font-medium text-fd-primary">
               {{ `#${ticketNumberOf(conversation)}` }}
             </p>
             <p class="m-0 mt-0.5 select-text text-xs text-fd-muted">
