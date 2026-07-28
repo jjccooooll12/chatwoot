@@ -9,6 +9,12 @@ class ConversationReplyMailer < ApplicationMailer
   default from: ENV.fetch('MAILER_SENDER_EMAIL', 'Chatwoot <accounts@chatwoot.com>')
   layout :choose_layout
 
+  # Mailer views render through their own view-context object — only ivars
+  # are copied over automatically, plain method calls are not. Anything the
+  # ERB templates call as a bare method (email_reply.html.erb) has to be
+  # explicitly exposed this way.
+  helper_method :previous_quotable_message, :quoted_sender_label
+
   def reply_with_summary(conversation, last_queued_id)
     return unless smtp_config_set_or_development?
 
@@ -62,6 +68,22 @@ class ConversationReplyMailer < ApplicationMailer
 
   private
 
+  # The message this reply is quoting below the new text, the same way a
+  # mail client prepends "On ... wrote:" plus the previous message when you
+  # hit reply. Nil for the very first message in a thread (nothing to quote).
+  # Exposed to email_reply.html.erb via helper_method above.
+  def previous_quotable_message
+    return nil unless @message
+
+    @conversation.messages.chat.where.not(id: @message.id).where('id < ?', @message.id).last
+  end
+
+  def quoted_sender_label(quoted_message)
+    quoted_message.sender&.name.presence ||
+      (quoted_message.incoming? ? @contact&.name : @agent&.name).presence ||
+      I18n.t('conversations.reply.email.header.notifications')
+  end
+
   def init_conversation_attributes(conversation)
     @conversation = conversation
     @account = @conversation.account
@@ -87,21 +109,6 @@ class ConversationReplyMailer < ApplicationMailer
 
   def last_outgoing_message
     @conversation.messages.chat.where.not(message_type: :incoming)&.last
-  end
-
-  # The message this reply is quoting below the new text, the same way a
-  # mail client prepends "On ... wrote:" plus the previous message when you
-  # hit reply. Nil for the very first message in a thread (nothing to quote).
-  def previous_quotable_message
-    return nil unless @message
-
-    @conversation.messages.chat.where.not(id: @message.id).where('id < ?', @message.id).last
-  end
-
-  def quoted_sender_label(quoted_message)
-    quoted_message.sender&.name.presence ||
-      (quoted_message.incoming? ? @contact&.name : @agent&.name).presence ||
-      I18n.t('conversations.reply.email.header.notifications')
   end
 
   def sender_name(sender_email)
