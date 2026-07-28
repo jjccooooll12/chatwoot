@@ -167,7 +167,7 @@ const onTicketMerged = async (
 <template>
   <div class="flex w-full flex-col bg-fd-surface">
     <div
-      class="flex h-12 items-center justify-between gap-3 border-b border-fd-border bg-[#f7f3ff] px-3"
+      class="flex h-[3.25rem] items-center justify-between gap-3 border-b border-fd-border bg-[#f7f3ff] px-3"
     >
       <div
         class="flex min-w-0 items-center gap-1.5 text-xs font-medium text-fd-muted"
