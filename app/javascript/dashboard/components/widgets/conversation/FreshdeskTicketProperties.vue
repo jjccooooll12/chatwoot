@@ -187,7 +187,7 @@ onMounted(() => {
     class="hidden w-[248px] shrink-0 flex-col border-l border-fd-border bg-fd-surface lg:flex"
   >
     <div class="flex-1 overflow-y-auto">
-      <div class="grid gap-2.5 px-3 pb-4 pt-4 text-xs">
+      <div class="grid gap-1.5 px-3 pb-4 pt-4 text-xs">
         <h3 class="m-0 text-xxs font-semibold uppercase text-fd-muted">
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.PROPERTIES') }}
         </h3>
