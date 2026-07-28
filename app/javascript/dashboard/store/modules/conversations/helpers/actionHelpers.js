@@ -1,9 +1,26 @@
 import types from '../../../mutation-types';
 
+// The assignee-type filter can now be an array (multi-select pills), but the
+// conversationPage store keys its per-filter page cursor off this value —
+// normalize to the same "sorted, +-joined" string ChatList.vue's
+// assigneeFilterKey computed uses, or array-as-object-key coercion would
+// silently write to a different key than what gets read back.
+const normalizePageFilterKey = filter =>
+  Array.isArray(filter) ? [...filter].sort().join('+') : filter;
+
 export const setPageFilter = ({ dispatch, filter, page, markEndReached }) => {
-  dispatch('conversationPage/setCurrentPage', { filter, page }, { root: true });
+  const normalizedFilter = normalizePageFilterKey(filter);
+  dispatch(
+    'conversationPage/setCurrentPage',
+    { filter: normalizedFilter, page },
+    { root: true }
+  );
   if (markEndReached) {
-    dispatch('conversationPage/setEndReached', { filter }, { root: true });
+    dispatch(
+      'conversationPage/setEndReached',
+      { filter: normalizedFilter },
+      { root: true }
+    );
   }
 };
 

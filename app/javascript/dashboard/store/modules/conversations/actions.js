@@ -59,7 +59,9 @@ const actions = {
         params.assigneeType
       );
     } catch (error) {
-      // Handle error
+      // A failed request must still clear the spinner — buildConversationList
+      // (which normally does this) never runs if the request itself rejects.
+      commit(types.CLEAR_LIST_LOADING_STATUS);
     }
   },
 
@@ -74,7 +76,7 @@ const actions = {
         'appliedFilters'
       );
     } catch (error) {
-      // Handle error
+      commit(types.CLEAR_LIST_LOADING_STATUS);
     }
   },
 

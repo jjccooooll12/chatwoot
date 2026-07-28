@@ -279,7 +279,10 @@ const conversationListPagination = computed(() => {
     return 1;
   }
 
-  return currentPage.value + 1;
+  // currentPage.value is undefined (not 0) the first time a given assignee
+  // combination is viewed — it isn't pre-seeded in conversationPage's
+  // default state the way the old fixed me/unassigned/all keys were.
+  return (currentPage.value || 0) + 1;
 });
 
 const conversationFilters = computed(() => {
