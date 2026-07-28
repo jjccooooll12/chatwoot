@@ -88,7 +88,7 @@ const toggleLanguageVisibility = key => {
 
 <template>
   <aside
-    class="flex w-60 shrink-0 flex-col gap-5 overflow-y-auto border-l border-fd-border bg-fd-surface p-3"
+    class="mt-[102px] flex w-60 shrink-0 flex-col gap-5 overflow-y-auto border-l border-fd-border bg-fd-surface p-3"
   >
     <div class="flex flex-col gap-1">
       <h3
