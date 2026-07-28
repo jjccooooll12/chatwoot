@@ -157,6 +157,16 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
     @conversation.save!
   end
 
+  def switch_to_email
+    @conversation = ::Conversations::SwitchToEmailService.new(
+      conversation: @conversation,
+      email: params.require(:email),
+      user: Current.user
+    ).perform
+  rescue ::Conversations::SwitchToEmailService::NotAWebWidgetConversation
+    render json: { message: I18n.t('errors.conversation.not_a_web_widget') }, status: :unprocessable_entity
+  end
+
   def merge_candidates
     @conversations = merge_candidate_conversations
   end

@@ -126,6 +126,12 @@ class ConversationApi extends ApiClient {
     });
   }
 
+  switchToEmail({ conversationId, email }) {
+    return axios.post(`${this.url}/${conversationId}/switch_to_email`, {
+      email,
+    });
+  }
+
   getMergeCandidates({ conversationId, q = '' }) {
     return axios.get(`${this.url}/${conversationId}/merge_candidates`, {
       params: { q },

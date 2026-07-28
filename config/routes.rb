@@ -170,6 +170,7 @@ Rails.application.routes.draw do
               post :update_last_seen
               post :unread
               post :custom_attributes
+              post :switch_to_email
               get :merge_candidates
               post :merge
               get :attachments

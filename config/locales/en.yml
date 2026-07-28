@@ -80,6 +80,8 @@ en:
         invalid: is not a valid timezone
       support_email:
         invalid: is not a valid email address
+    conversation:
+      not_a_web_widget: This conversation is not a live chat, so it can't be switched to email
     validations:
       presence: must not be blank
     webhook:
@@ -359,6 +361,7 @@ en:
       merge:
         primary: 'Ticket %{secondary_ticket_link} was merged into %{primary_ticket}.'
         secondary: 'Ticket %{secondary_ticket} was merged into %{primary_ticket_link}.'
+      switched_to_email: '%{user_name} switched this conversation to email (%{email})'
       muted: '%{user_name} has muted the conversation'
       unmuted: '%{user_name} has unmuted the conversation'
       auto_resolution_message: 'Resolving the conversation as it has been inactive for a while. Please start a new conversation if you need further assistance.'

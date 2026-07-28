@@ -16,8 +16,28 @@ class Api::V1::Widget::BaseController < ApplicationController
     end
   end
 
+  # A returning visitor's message continues their last conversation, unless
+  # it's gone cold — more than STALE_CONVERSATION_WINDOW since THEY last
+  # wrote (not since the account last replied) — in which case a fresh
+  # ticket is started instead. The contact stays the same either way, so
+  # their prior conversation(s) remain visible via the Recent Timeline.
+  STALE_CONVERSATION_WINDOW = 48.hours
+
   def conversation
-    @conversation ||= conversations.last
+    @conversation ||= find_active_conversation
+  end
+
+  def find_active_conversation
+    last_conversation = conversations.last
+    return nil if last_conversation.blank?
+    return nil if stale_conversation?(last_conversation)
+
+    last_conversation
+  end
+
+  def stale_conversation?(candidate_conversation)
+    last_contact_message_at = candidate_conversation.messages.incoming.maximum(:created_at) || candidate_conversation.created_at
+    last_contact_message_at < STALE_CONVERSATION_WINDOW.ago
   end
 
   def create_conversation

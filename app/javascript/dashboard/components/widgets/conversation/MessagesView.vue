@@ -13,6 +13,7 @@ import ConversationLabelSuggestion from './conversation/LabelSuggestion.vue';
 import Banner from 'dashboard/components/ui/Banner.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import ResizableEditorWrapper from './ResizableEditorWrapper.vue';
+import SendAsEmailDialog from './SendAsEmailDialog.vue';
 
 // stores and apis
 import { mapGetters } from 'vuex';
@@ -47,12 +48,14 @@ export default {
     ConversationLabelSuggestion,
     Spinner,
     ResizableEditorWrapper,
+    SendAsEmailDialog,
   },
   mixins: [inboxMixin],
   setup() {
     const conversationPanelRef = ref(null);
     const resizableEditorWrapperRef = ref(null);
     const replyBoxRef = ref(null);
+    const sendAsEmailDialogRef = ref(null);
     const messagesViewRef = useTemplateRef('messagesViewRef');
     const topBannerRef = useTemplateRef('topBannerRef');
     const { height: containerHeight } = useElementSize(messagesViewRef);
@@ -73,6 +76,7 @@ export default {
       conversationPanelRef,
       resizableEditorWrapperRef,
       replyBoxRef,
+      sendAsEmailDialogRef,
       messagesViewRef,
       topBannerRef,
       containerHeight,
@@ -393,6 +397,14 @@ export default {
           : REPLY_EDITOR_MODES.REPLY
       );
     },
+    openSendAsEmailDialog() {
+      this.sendAsEmailDialogRef?.open();
+    },
+    // The conversation's channel is now email — open the reply composer so
+    // the agent can write the message that actually goes out.
+    onSwitchedToEmail() {
+      this.startCompose(REPLY_EDITOR_MODES.REPLY);
+    },
     onCloseComposer() {
       this.replyBoxRef?.saveDraft?.(
         this.currentChat.id,
@@ -681,6 +693,15 @@ export default {
                   <span class="i-lucide-forward size-3.5" />
                   {{ $t('CHAT_LIST.FRESHDESK_DETAIL.FORWARD') }}
                 </button>
+                <button
+                  v-if="isAWebWidgetInbox"
+                  type="button"
+                  class="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-fd-muted hover:bg-n-slate-2 hover:text-fd-text"
+                  @click="openSendAsEmailDialog"
+                >
+                  <span class="i-lucide-send-horizontal size-3.5" />
+                  {{ $t('CHAT_LIST.FRESHDESK_DETAIL.SEND_EMAIL.BUTTON') }}
+                </button>
               </div>
               <div
                 class="flex cursor-text items-center gap-2 px-3 py-2.5"
@@ -719,5 +740,10 @@ export default {
         </div>
       </div>
     </div>
+    <SendAsEmailDialog
+      ref="sendAsEmailDialogRef"
+      :chat="currentChat"
+      @switched="onSwitchedToEmail"
+    />
   </div>
 </template>

@@ -96,6 +96,15 @@
       "STATUS_LINE": "Status",
       "AUTO_FOLLOW_UP": "Auto-Follow-up",
       "FORWARD": "Forward",
+      "SEND_EMAIL": {
+        "BUTTON": "Send Email",
+        "TITLE": "Send as email",
+        "DESCRIPTION": "This ticket will switch to email — the customer's replies will land back in this same ticket.",
+        "EMAIL_LABEL": "Email address",
+        "EMAIL_PLACEHOLDER": "customer@example.com",
+        "CONFIRM": "Switch to email",
+        "ERROR": "Couldn't switch this conversation to email. Please try again."
+      },
       "GROUP": "Group",
       "MIDDLE_CONVERSATIONS": "{count} conversations in the middle",
       "ORDER_NUMBER": "Order Number",

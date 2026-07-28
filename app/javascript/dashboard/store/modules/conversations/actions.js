@@ -45,6 +45,19 @@ const actions = {
     return undefined;
   },
 
+  // Left to throw on failure (e.g. email already belongs to another
+  // contact) so the caller can surface it — unlike getConversation this
+  // isn't a background refresh, it's a user-initiated action.
+  switchConversationToEmail: async ({ commit }, { conversationId, email }) => {
+    const response = await ConversationApi.switchToEmail({
+      conversationId,
+      email,
+    });
+    commit(types.UPDATE_CONVERSATION, response.data);
+    commit(`contacts/${types.SET_CONTACT_ITEM}`, response.data.meta.sender);
+    return response.data;
+  },
+
   fetchAllConversations: async ({ commit, state, dispatch }) => {
     commit(types.SET_LIST_LOADING_STATUS);
     try {
