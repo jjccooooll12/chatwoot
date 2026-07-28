@@ -13,6 +13,10 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
+  ticketNumber: {
+    type: [String, Number],
+    default: 0,
+  },
   inbox: {
     type: Object,
     default: () => ({}),
@@ -108,7 +112,7 @@ const inboxIcon = computed(() => {
               class="flex-shrink-0 text-n-slate-11 size-4"
             />
             <span class="text-n-slate-12 text-sm leading-4">
-              {{ id }}
+              {{ ticketNumber || id }}
             </span>
           </div>
           <div v-if="inboxName" class="w-px h-3 bg-n-strong" />

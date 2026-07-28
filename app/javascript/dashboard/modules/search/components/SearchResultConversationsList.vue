@@ -30,6 +30,11 @@ const conversationsWithSubject = computed(() => {
   return props.conversations.map(conversation => ({
     ...conversation,
     mailSubject: conversation.additionalAttributes?.mailSubject || '',
+    // conversation.id here is already display_id (see the search jbuilder),
+    // so the only real fallback left is the Freshdesk-style ticket_number —
+    // same precedence as ConversationCard.vue's displayId computed.
+    ticketNumber:
+      conversation.additionalAttributes?.ticketNumber || conversation.id,
   }));
 });
 </script>
@@ -49,6 +54,7 @@ const conversationsWithSubject = computed(() => {
       >
         <SearchResultConversationItem
           :id="conversation.id"
+          :ticket-number="conversation.ticketNumber"
           :name="conversation.contact.name"
           :email="conversation.contact.email"
           :account-id="accountId"
