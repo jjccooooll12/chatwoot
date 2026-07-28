@@ -328,10 +328,35 @@ class Message < ApplicationRecord
     reopen_conversation
     mark_pending_conversation_as_open_for_human_response
     set_conversation_activity
+    ensure_conversation_subject
     dispatch_create_events
     send_reply
     execute_message_template_hooks
     update_contact_activity
+  end
+
+  # Email conversations already get additional_attributes['mail_subject'] set
+  # once, at conversation-creation time (Imap::ImapMailbox / mailbox conversation
+  # finder strategies), and it's never touched again — the dashboard, the
+  # ticket list, and every outgoing email's Subject: line all read from it.
+  # Chat (and other non-email) conversations never get one, though, so the
+  # dashboard falls back to showing whatever the LATEST message happens to be
+  # as the "subject" — it changes on every reply, including after a
+  # conversation is later switched to email (Conversations::SwitchToEmailService).
+  # Backfill it here, once, from the first customer message with real content,
+  # so every channel gets the same "fixed forever" subject guarantee.
+  def ensure_conversation_subject
+    return unless incoming?
+    return if content.blank?
+    return if conversation.additional_attributes['mail_subject'].present?
+
+    # rubocop:disable Rails/SkipsModelValidations
+    conversation.update_columns(
+      additional_attributes: conversation.additional_attributes.merge(
+        'mail_subject' => content.truncate(100)
+      )
+    )
+    # rubocop:enable Rails/SkipsModelValidations
   end
 
   def update_contact_activity

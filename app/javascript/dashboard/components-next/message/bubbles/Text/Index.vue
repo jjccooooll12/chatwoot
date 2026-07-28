@@ -10,7 +10,6 @@ import PrivateNoteMeta from 'next/message/bubbles/PrivateNoteMeta.vue';
 import { MESSAGE_TYPES } from '../../constants';
 import { useMessageContext } from '../../provider.js';
 import { useTranslations } from 'dashboard/composables/useTranslations';
-import { useInbox } from 'dashboard/composables/useInbox';
 
 const {
   content,
@@ -18,16 +17,19 @@ const {
   contentAttributes,
   messageType,
   isPrivate,
+  isEmailInbox,
   sender,
 } = useMessageContext();
-const { isAnEmailChannel } = useInbox();
 
-// A private note on an email ticket gets its own Freshdesk-style header
-// (sender + "added a private note" + time) and left-side avatar, matching
-// the exact card layout regular email messages use (bubbles/Email/Index.vue)
-// — only the background differs.
+// A private note keeps whichever channel it was actually written under (its
+// own inbox, not necessarily the conversation's current one — a conversation
+// switched from chat to email keeps its old notes looking like chat notes).
+// On an email note it gets its own Freshdesk-style header (sender + "added a
+// private note" + time) and left-side avatar, matching the exact card layout
+// regular email messages use (bubbles/Email/Index.vue) — only the background
+// differs.
 const isPrivateEmailNote = computed(
-  () => isPrivate.value && isAnEmailChannel.value
+  () => isPrivate.value && isEmailInbox.value
 );
 
 const senderThumbnail = computed(() => sender.value?.thumbnail);

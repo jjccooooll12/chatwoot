@@ -89,6 +89,21 @@ class ConversationReplyMailer < ApplicationMailer
     @conversation.messages.chat.where.not(message_type: :incoming)&.last
   end
 
+  # The message this reply is quoting below the new text, the same way a
+  # mail client prepends "On ... wrote:" plus the previous message when you
+  # hit reply. Nil for the very first message in a thread (nothing to quote).
+  def previous_quotable_message
+    return nil unless @message
+
+    @conversation.messages.chat.where.not(id: @message.id).where('id < ?', @message.id).last
+  end
+
+  def quoted_sender_label(quoted_message)
+    quoted_message.sender&.name.presence ||
+      (quoted_message.incoming? ? @contact&.name : @agent&.name).presence ||
+      I18n.t('conversations.reply.email.header.notifications')
+  end
+
   def sender_name(sender_email)
     if @inbox.friendly?
       I18n.t('conversations.reply.email.header.friendly_name', sender_name: custom_sender_name, business_name: business_name,

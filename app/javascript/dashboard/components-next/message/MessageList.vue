@@ -6,6 +6,7 @@ import { useCamelCase } from 'dashboard/composables/useTransformKeys';
 import { useMapGetter } from 'dashboard/composables/store.js';
 import MessageApi from 'dashboard/api/inbox/message.js';
 import { useI18n } from 'vue-i18n';
+import { INBOX_TYPES } from 'dashboard/helper/inbox';
 
 /**
  * Props definition for the component
@@ -53,6 +54,19 @@ const allMessages = computed(() => {
     stopPaths: ['content_attributes.translations'],
   });
 });
+
+// A conversation switched from chat to email (Conversations::SwitchToEmailService)
+// keeps its old chat messages in the same thread — each message carries its own
+// inbox_id from when it was actually sent, so render every message against the
+// inbox it belongs to rather than the conversation's current (possibly since
+// changed) inbox. Falls back to the conversation-level flag if a message's own
+// inbox isn't resolvable (e.g. hasn't loaded into the inboxes store yet).
+const inboxGetter = useMapGetter('inboxes/getInbox');
+const isMessageFromEmailInbox = message => {
+  const inbox = inboxGetter.value(message?.inboxId);
+  if (!inbox) return props.isAnEmailChannel;
+  return (inbox.channel_type || inbox.channelType) === INBOX_TYPES.EMAIL;
+};
 
 const shouldCollapseMiddle = computed(
   () =>
@@ -263,7 +277,7 @@ const getInReplyToMessage = parentMessage => {
       <Message
         v-if="item.type === 'message'"
         v-bind="item.message"
-        :is-email-inbox="isAnEmailChannel"
+        :is-email-inbox="isMessageFromEmailInbox(item.message)"
         :in-reply-to="getInReplyToMessage(item.message)"
         :group-with-next="shouldGroupWithNext(item.index, allMessages)"
         :force-email-expanded="isAnEmailChannel"

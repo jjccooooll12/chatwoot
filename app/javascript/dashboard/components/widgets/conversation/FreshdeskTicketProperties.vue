@@ -2,7 +2,6 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
-import { useAlert } from 'dashboard/composables';
 import wootConstants from 'dashboard/constants/globals';
 import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
@@ -103,7 +102,6 @@ const updateStatus = event => {
     status: event.target.value,
     snoozedUntil: null,
   });
-  useAlert(t('CONVERSATION.CHANGE_STATUS'));
 };
 
 const selectPriority = key => {
@@ -145,7 +143,6 @@ const saveCustomFields = async () => {
     },
   });
   isSaving.value = false;
-  useAlert(t('CONVERSATION_CUSTOM_ATTRIBUTES.UPDATE.SUCCESS'));
 };
 
 // Order number persists as soon as the agent leaves the field — no need to hit
