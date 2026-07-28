@@ -142,7 +142,7 @@
       "MORE_FILTERS": "More filters",
       "ADD_FILTER": "Add",
       "REMOVE_FILTER": "Remove",
-      "NO_FILTER": "No filter — showing all",
+      "NO_FILTER": "All",
       "STATUS": {
         "open": "Open",
         "pending": "Pending",
