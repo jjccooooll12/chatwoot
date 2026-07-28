@@ -30,7 +30,7 @@ const { currentAccount } = useAccount();
 const { t } = useI18n();
 
 const PER_PAGE = 15; // Results per page
-const DEFAULT_TAB = 'contacts';
+const DEFAULT_TAB = 'conversations';
 const selectedTab = ref(route.params.tab || DEFAULT_TAB);
 const query = ref(route.query.q || '');
 const pages = ref({
