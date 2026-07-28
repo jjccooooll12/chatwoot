@@ -46,7 +46,10 @@ class AccountUser < ApplicationRecord
 
   def create_notification_setting
     setting = user.notification_settings.new(account_id: account.id)
-    setting.selected_email_flags = [:email_conversation_assignment]
+    # Assignment emails were the only email notification on by default and
+    # were pure noise (the dashboard bell + push already cover it) — leave
+    # push on, but no email by default for a newly-added agent.
+    setting.selected_email_flags = []
     setting.selected_push_flags = [:push_conversation_assignment]
     setting.save!
   end
