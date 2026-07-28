@@ -2,11 +2,12 @@
 import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
+import FreshdeskFilterPills from './FreshdeskFilterPills.vue';
 import { useUISettings } from 'dashboard/composables/useUISettings';
 
 const props = defineProps({
-  activeStatus: { type: String, required: true },
-  activeAssigneeTab: { type: String, required: true },
+  activeStatuses: { type: Array, required: true },
+  activeAssigneeTypes: { type: Array, required: true },
   assigneeTabItems: { type: Array, default: () => [] },
   activeChatLanguage: { type: String, default: '' },
   chatLanguageItems: { type: Array, default: () => [] },
@@ -14,8 +15,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits([
-  'changeStatus',
-  'changeAssignee',
+  'toggleStatus',
+  'toggleAssignee',
   'changeChatLanguage',
   'openFilters',
 ]);
@@ -24,13 +25,10 @@ const { t } = useI18n();
 const { uiSettings, updateUISettings } = useUISettings();
 
 // Chatwoot has no separate "Closed" status — Freshdesk's terminal state maps
-// onto Chatwoot's `resolved` (labelled "Closed" here).
+// onto Chatwoot's `resolved` (labelled "Closed" here). No "All" pill: with
+// multi-select, combining every status IS "all", so a separate option would
+// be redundant.
 const statusItems = computed(() => [
-  {
-    key: 'all',
-    label: t('CHAT_LIST.FRESHDESK_PANEL.STATUS.all'),
-    dot: 'bg-n-slate-8',
-  },
   {
     key: 'open',
     label: t('CHAT_LIST.FRESHDESK_PANEL.STATUS.open'),
@@ -47,6 +45,14 @@ const statusItems = computed(() => [
     dot: 'bg-fd-green',
   },
 ]);
+
+const assigneeItems = computed(() =>
+  props.assigneeTabItems.map(item => ({
+    key: item.key,
+    label: item.name,
+    badge: item.count,
+  }))
+);
 
 const rowClass = active =>
   active
@@ -88,17 +94,11 @@ const toggleLanguageVisibility = key => {
       >
         {{ t('CHAT_LIST.FRESHDESK_PANEL.STATUS_HEADING') }}
       </h3>
-      <button
-        v-for="item in statusItems"
-        :key="item.key"
-        type="button"
-        class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors"
-        :class="rowClass(item.key === activeStatus)"
-        @click="emit('changeStatus', item.key)"
-      >
-        <span class="size-2 shrink-0 rounded-full" :class="item.dot" />
-        <span class="flex-1 truncate">{{ item.label }}</span>
-      </button>
+      <FreshdeskFilterPills
+        :items="statusItems"
+        :active-keys="activeStatuses"
+        @toggle="key => emit('toggleStatus', key)"
+      />
     </div>
 
     <div class="flex flex-col gap-1">
@@ -107,21 +107,11 @@ const toggleLanguageVisibility = key => {
       >
         {{ t('CHAT_LIST.FRESHDESK_PANEL.ASSIGNEE_HEADING') }}
       </h3>
-      <button
-        v-for="item in assigneeTabItems"
-        :key="item.key"
-        type="button"
-        class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors"
-        :class="rowClass(item.key === activeAssigneeTab)"
-        @click="emit('changeAssignee', item.key)"
-      >
-        <span class="flex-1 truncate">{{ item.name }}</span>
-        <span
-          class="shrink-0 rounded-md bg-fd-background px-1.5 py-0.5 text-xxs font-medium text-fd-muted"
-        >
-          {{ item.count }}
-        </span>
-      </button>
+      <FreshdeskFilterPills
+        :items="assigneeItems"
+        :active-keys="activeAssigneeTypes"
+        @toggle="key => emit('toggleAssignee', key)"
+      />
     </div>
 
     <div class="flex flex-col gap-1">

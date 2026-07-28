@@ -12,7 +12,6 @@ const state = {
   allConversations: [],
   attachments: {},
   listLoadingStatus: true,
-  chatStatusFilter: wootConstants.STATUS_TYPE.OPEN,
   chatSortFilter: wootConstants.SORT_BY_TYPE.LATEST,
   currentInbox: null,
   selectedChatId: null,
@@ -285,10 +284,6 @@ export const mutations = {
       chat.unread_count = unreadCount;
     }
   },
-  [types.CHANGE_CHAT_STATUS_FILTER](_state, data) {
-    _state.chatStatusFilter = data;
-  },
-
   [types.CHANGE_CHAT_SORT_FILTER](_state, data) {
     _state.chatSortFilter = data;
   },

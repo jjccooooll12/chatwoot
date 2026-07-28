@@ -437,10 +437,6 @@ const actions = {
     });
   },
 
-  setChatStatusFilter({ commit }, data) {
-    commit(types.CHANGE_CHAT_STATUS_FILTER, data);
-  },
-
   setChatSortFilter({ commit }, data) {
     commit(types.CHANGE_CHAT_SORT_FILTER, data);
   },

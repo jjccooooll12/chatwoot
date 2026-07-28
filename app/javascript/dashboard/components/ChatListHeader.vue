@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { formatNumber } from '@chatwoot/utils';
 import { useMapGetter } from 'dashboard/composables/store';
 
@@ -12,7 +13,7 @@ const props = defineProps({
   pageTitle: { type: String, required: true },
   hasAppliedFilters: { type: Boolean, required: true },
   hasActiveFolders: { type: Boolean, required: true },
-  activeStatus: { type: String, required: true },
+  activeStatuses: { type: Array, required: true },
   isOnExpandedLayout: { type: Boolean, required: true },
   conversationStats: { type: Object, required: true },
   isListLoading: { type: Boolean, required: true },
@@ -33,6 +34,13 @@ const onBasicFilterChange = (value, type) => {
 const hasAppliedFiltersOrActiveFolders = computed(() => {
   return props.hasAppliedFilters || props.hasActiveFolders;
 });
+
+const { t } = useI18n();
+const activeStatusesLabel = computed(() =>
+  props.activeStatuses
+    .map(status => t(`CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.${status}.TEXT`))
+    .join(', ')
+);
 
 const allCount = computed(() => props.conversationStats?.allCount || 0);
 const formattedAllCount = computed(() => formatNumber(allCount.value));
@@ -68,9 +76,9 @@ const unreadNotificationCount = computed(() => {
       </span>
       <span
         v-if="!hasAppliedFiltersOrActiveFolders"
-        class="shrink-0 rounded-md border border-fd-border bg-fd-surface px-2 py-0.5 text-xxs capitalize text-fd-muted"
+        class="shrink-0 truncate rounded-md border border-fd-border bg-fd-surface px-2 py-0.5 text-xxs capitalize text-fd-muted"
       >
-        {{ $t(`CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.${activeStatus}.TEXT`) }}
+        {{ activeStatusesLabel }}
       </span>
     </div>
     <div class="flex items-center gap-1.5">

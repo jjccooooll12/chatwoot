@@ -126,15 +126,19 @@ class ConversationFinder
   end
 
   def filter_by_assignee_type
-    case @assignee_type
-    when 'me'
-      @conversations = @conversations.assigned_to(current_user)
-    when 'unassigned'
-      @conversations = @conversations.unassigned
-    when 'assigned'
-      @conversations = @conversations.assigned
+    types = Array(@assignee_type).compact_blank
+    return @conversations if types.empty? || types.include?('all')
+
+    scopes = types.filter_map do |type|
+      case type
+      when 'me' then @conversations.assigned_to(current_user)
+      when 'unassigned' then @conversations.unassigned
+      when 'assigned' then @conversations.assigned
+      end
     end
-    @conversations
+    return @conversations if scopes.empty?
+
+    @conversations = scopes.reduce { |combined, scope| combined.or(scope) }
   end
 
   def filter_by_conversation_type
@@ -161,9 +165,10 @@ class ConversationFinder
   end
 
   def filter_by_status
-    return if params[:status] == 'all'
+    statuses = Array(params[:status]).compact_blank.presence || [DEFAULT_STATUS]
+    return if statuses.include?('all')
 
-    @conversations = @conversations.where(status: params[:status] || DEFAULT_STATUS)
+    @conversations = @conversations.where(status: statuses)
   end
 
   def filter_by_team

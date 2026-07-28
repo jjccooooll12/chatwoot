@@ -140,8 +140,9 @@
       "CHAT_LANGUAGE_SETTINGS": "Choose visible languages",
       "NO_CHAT_LANGUAGES_VISIBLE": "No languages selected",
       "MORE_FILTERS": "More filters",
+      "ADD_FILTER": "Add",
+      "REMOVE_FILTER": "Remove",
       "STATUS": {
-        "all": "All",
         "open": "Open",
         "pending": "Pending",
         "resolved": "Closed",

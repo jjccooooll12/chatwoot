@@ -1068,17 +1068,6 @@ describe('#mutations', () => {
     });
   });
 
-  describe('#CHANGE_CHAT_STATUS_FILTER', () => {
-    it('should update chat status filter', () => {
-      const state = {
-        chatStatusFilter: 'open',
-      };
-
-      mutations[types.CHANGE_CHAT_STATUS_FILTER](state, 'resolved');
-      expect(state.chatStatusFilter).toBe('resolved');
-    });
-  });
-
   describe('#UPDATE_ASSIGNEE', () => {
     it('should update assignee on conversation', () => {
       const state = {

@@ -65,7 +65,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['conversationLoad']);
-const { uiSettings } = useUISettings();
+const { uiSettings, updateUISettings } = useUISettings();
 const { t } = useI18n();
 const router = useRouter();
 const route = useRoute();
@@ -73,8 +73,11 @@ const store = useStore();
 
 const resolveAttributesModalRef = ref(null);
 
-const activeAssigneeTab = ref(wootConstants.ASSIGNEE_TYPE.ME);
-const activeStatus = ref(wootConstants.STATUS_TYPE.OPEN);
+// Multi-select pill filters — both always keep at least one entry active
+// (enforced in toggleAssigneeType/toggleStatus below); there's no "All"
+// fallback state once every pill is removed.
+const activeAssigneeTypes = ref([wootConstants.ASSIGNEE_TYPE.ME]);
+const activeStatuses = ref([wootConstants.STATUS_TYPE.OPEN]);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
 const showAdvancedFilters = ref(false);
 // "CHATS" sidebar language filter — empty means no filter applied. Unlike the
@@ -183,16 +186,21 @@ const userPermissions = computed(() => {
   return getUserPermissions(currentUser.value, currentAccountId.value);
 });
 
+// "All" is intentionally excluded here — the Assignee filter is Mine/
+// Unassigned pills only; combining every type IS "all", so a separate
+// option would be redundant.
 const assigneeTabItems = computed(() => {
   return filterItemsByPermission(
     ASSIGNEE_TYPE_TAB_PERMISSIONS,
     userPermissions.value,
     item => item.permissions
-  ).map(({ key, count: countKey }) => ({
-    key,
-    name: t(`CHAT_LIST.ASSIGNEE_TYPE_TABS.${key}`),
-    count: conversationStats.value[countKey] || 0,
-  }));
+  )
+    .filter(item => item.key !== wootConstants.ASSIGNEE_TYPE.ALL)
+    .map(({ key, count: countKey }) => ({
+      key,
+      name: t(`CHAT_LIST.ASSIGNEE_TYPE_TABS.${key}`),
+      count: conversationStats.value[countKey] || 0,
+    }));
 });
 
 // All 7 buckets, each with a flag for quick visual scanning. Per-user
@@ -215,16 +223,23 @@ const chatLanguageItems = computed(() =>
   }))
 );
 
+// Pagination (and the per-tab "already loaded, switch instantly without a
+// refetch" cache) is keyed by the exact combination of active assignee
+// types, so e.g. "Mine" and "Mine+Unassigned" each get their own cursor.
+const assigneeFilterKey = computed(() =>
+  [...activeAssigneeTypes.value].sort().join('+')
+);
+
 const currentPageFilterKey = computed(() => {
   return hasAppliedFiltersOrActiveFolders.value
     ? 'appliedFilters'
-    : activeAssigneeTab.value;
+    : assigneeFilterKey.value;
 });
 
 const inbox = useFunctionGetter('inboxes/getInbox', activeInbox);
 const currentPage = useFunctionGetter(
   'conversationPage/getCurrentPageFilter',
-  activeAssigneeTab
+  assigneeFilterKey
 );
 const currentFiltersPage = useFunctionGetter(
   'conversationPage/getCurrentPageFilter',
@@ -241,10 +256,10 @@ const conversationCustomAttributes = useFunctionGetter(
 );
 
 const activeAssigneeTabCount = computed(() => {
-  const count = assigneeTabItems.value.find(
-    item => item.key === activeAssigneeTab.value
-  ).count;
-  return count;
+  return activeAssigneeTypes.value.reduce((sum, key) => {
+    const item = assigneeTabItems.value.find(i => i.key === key);
+    return sum + (item?.count || 0);
+  }, 0);
 });
 
 const conversationListPagination = computed(() => {
@@ -270,8 +285,8 @@ const conversationListPagination = computed(() => {
 const conversationFilters = computed(() => {
   return {
     inboxId: props.conversationInbox ? props.conversationInbox : undefined,
-    assigneeType: activeAssigneeTab.value,
-    status: activeStatus.value,
+    assigneeType: activeAssigneeTypes.value,
+    status: activeStatuses.value,
     sortBy: activeSortBy.value,
     page: conversationListPagination.value,
     labels: props.label ? [props.label] : undefined,
@@ -320,15 +335,19 @@ const pageTitle = computed(() => {
 });
 
 function filterByAssigneeTab(conversations) {
-  if (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.ME) {
-    return conversations.filter(
-      c => c.meta?.assignee?.id === currentUser.value?.id
-    );
+  const types = activeAssigneeTypes.value;
+  const wantsMine = types.includes(wootConstants.ASSIGNEE_TYPE.ME);
+  const wantsUnassigned = types.includes(
+    wootConstants.ASSIGNEE_TYPE.UNASSIGNED
+  );
+  if (!wantsMine && !wantsUnassigned) {
+    return [...conversations];
   }
-  if (activeAssigneeTab.value === wootConstants.ASSIGNEE_TYPE.UNASSIGNED) {
-    return conversations.filter(c => !c.meta?.assignee);
-  }
-  return [...conversations];
+  return conversations.filter(c => {
+    const isMine = c.meta?.assignee?.id === currentUser.value?.id;
+    const isUnassigned = !c.meta?.assignee;
+    return (wantsMine && isMine) || (wantsUnassigned && isUnassigned);
+  });
 }
 
 function sortByUnreadStatus(conversations) {
@@ -351,12 +370,24 @@ const conversationList = computed(() => {
       localConversationList = filterByAssigneeTab(
         participatingChatsList.value(filters)
       );
-    } else if (activeAssigneeTab.value === 'me') {
-      localConversationList = [...mineChatsList.value(filters)];
-    } else if (activeAssigneeTab.value === 'unassigned') {
-      localConversationList = [...unAssignedChatsList.value(filters)];
+    } else if (activeAssigneeTypes.value.length === 1) {
+      // Exactly one type active — same single-getter path as before.
+      const [type] = activeAssigneeTypes.value;
+      if (type === 'me') {
+        localConversationList = [...mineChatsList.value(filters)];
+      } else if (type === 'unassigned') {
+        localConversationList = [...unAssignedChatsList.value(filters)];
+      } else {
+        localConversationList = [...allChatList.value(filters)];
+      }
     } else {
-      localConversationList = [...allChatList.value(filters)];
+      // Multiple types selected — union the (mutually exclusive, so no
+      // dedup needed) mine/unassigned subsets.
+      localConversationList = activeAssigneeTypes.value.flatMap(type => {
+        if (type === 'me') return mineChatsList.value(filters);
+        if (type === 'unassigned') return unAssignedChatsList.value(filters);
+        return [];
+      });
     }
   } else {
     localConversationList = [...chatLists.value];
@@ -404,7 +435,12 @@ const uniqueInboxes = computed(() => {
 function setFiltersFromUISettings() {
   const { conversations_filter_by: filterBy = {} } = uiSettings.value;
   const { status, order_by: orderBy } = filterBy;
-  activeStatus.value = status || wootConstants.STATUS_TYPE.OPEN;
+  // `status` used to be persisted as a single string before multi-select
+  // pills; fall back to the default for that legacy shape too.
+  activeStatuses.value =
+    Array.isArray(status) && status.length
+      ? status
+      : [wootConstants.STATUS_TYPE.OPEN];
   activeSortBy.value = Object.values(wootConstants.SORT_BY_TYPE).includes(
     orderBy
   )
@@ -514,9 +550,9 @@ function setParamsForEditFolderModal() {
 
 function initializeExistingFilterToModal() {
   const statusFilter = initializeStatusAndAssigneeFilterToModal(
-    activeStatus.value,
+    activeStatuses.value,
     currentUserDetails.value,
-    activeAssigneeTab.value
+    activeAssigneeTypes.value
   );
   // TODO: Remove the usage of useCamelCase after migrating useFilter to camelcase
   if (statusFilter) {
@@ -626,14 +662,21 @@ function loadMoreConversations() {
   }
 }
 
-function updateAssigneeTab(selectedTab) {
-  if (activeAssigneeTab.value !== selectedTab) {
-    resetBulkActions();
-    emitter.emit('clearSearchInput');
-    activeAssigneeTab.value = selectedTab;
-    if (!currentPage.value) {
-      fetchConversations();
-    }
+// Adds/removes a pill; always leaves at least one type active. Reuses the
+// already-fetched cache (instant switch) when this exact combination has
+// been paged before, matching the previous single-tab behaviour.
+function toggleAssigneeType(type) {
+  const current = activeAssigneeTypes.value;
+  const isActive = current.includes(type);
+  if (isActive && current.length === 1) return;
+
+  resetBulkActions();
+  emitter.emit('clearSearchInput');
+  activeAssigneeTypes.value = isActive
+    ? current.filter(item => item !== type)
+    : [...current, type];
+  if (!currentPage.value) {
+    fetchConversations();
   }
 }
 
@@ -647,12 +690,28 @@ function updateChatLanguage(selectedLanguage) {
   fetchConversations();
 }
 
-function onBasicFilterChange(value, type) {
-  if (type === 'status') {
-    activeStatus.value = value;
-  } else {
-    activeSortBy.value = value;
-  }
+// Status changes always do a full reset+refetch (same as before multi-select
+// — status never relied on the per-tab instant-switch cache), and persist
+// the new combination so it survives a reload.
+function toggleStatus(status) {
+  const current = activeStatuses.value;
+  const isActive = current.includes(status);
+  if (isActive && current.length === 1) return;
+
+  activeStatuses.value = isActive
+    ? current.filter(item => item !== status)
+    : [...current, status];
+  updateUISettings({
+    conversations_filter_by: {
+      ...uiSettings.value.conversations_filter_by,
+      status: activeStatuses.value,
+    },
+  });
+  resetAndFetchData();
+}
+
+function onBasicFilterChange(value) {
+  activeSortBy.value = value;
   resetAndFetchData();
 }
 
@@ -842,7 +901,6 @@ useEmitter('fetch_conversation_stats', () => {
 onMounted(() => {
   store.dispatch('setChatListFilters', conversationFilters.value);
   setFiltersFromUISettings();
-  store.dispatch('setChatStatusFilter', activeStatus.value);
   store.dispatch('setChatSortFilter', activeSortBy.value);
   store.dispatch('chatLanguageStats/get');
   resetAndFetchData();
@@ -930,7 +988,7 @@ watch(conversationFilters, (newVal, oldVal) => {
         :page-title="pageTitle"
         :has-applied-filters="hasAppliedFilters"
         :has-active-folders="hasActiveFolders"
-        :active-status="activeStatus"
+        :active-statuses="activeStatuses"
         :is-on-expanded-layout="isOnExpandedLayout"
         :conversation-stats="conversationStats"
         :is-list-loading="chatListLoading && !conversationList.length"
@@ -1033,14 +1091,14 @@ watch(conversationFilters, (newVal, oldVal) => {
       />
     </div>
     <FreshdeskStatusPanel
-      :active-status="activeStatus"
-      :active-assignee-tab="activeAssigneeTab"
+      :active-statuses="activeStatuses"
+      :active-assignee-types="activeAssigneeTypes"
       :assignee-tab-items="assigneeTabItems"
       :active-chat-language="activeChatLanguage"
       :chat-language-items="chatLanguageItems"
       :applied-filter-count="hasAppliedFilters ? 1 : 0"
-      @change-status="value => onBasicFilterChange(value, 'status')"
-      @change-assignee="updateAssigneeTab"
+      @toggle-status="toggleStatus"
+      @toggle-assignee="toggleAssigneeType"
       @change-chat-language="updateChatLanguage"
       @open-filters="onToggleAdvanceFiltersModal"
     />
