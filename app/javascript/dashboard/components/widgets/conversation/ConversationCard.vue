@@ -89,6 +89,17 @@ const priorityDotClass = computed(() => {
   return 'bg-fd-green';
 });
 
+// Freshdesk convention: open reads as active work (green), closed as done
+// and out of the way (red accent, but the whole card mutes down — see
+// isResolved below), pending sits in between (amber).
+const statusDotClass = computed(() => {
+  if (props.chat.status === 'resolved') return 'bg-fd-red';
+  if (props.chat.status === 'open') return 'bg-fd-green';
+  return 'bg-fd-amber';
+});
+
+const isResolved = computed(() => props.chat.status === 'resolved');
+
 const statusOptions = computed(() => [
   { key: 'open', label: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT') },
   {
@@ -184,10 +195,16 @@ const statusPills = computed(() => {
   }
 
   if (!pills.length) {
+    const statusPillClass =
+      {
+        open: 'bg-fd-greenSoft text-fd-green',
+        resolved: 'bg-fd-redSoft text-fd-red',
+      }[props.chat.status] || 'bg-n-slate-3 text-n-slate-11';
+
     pills.push({
       key: props.chat.status,
       label: currentStatusLabel.value,
-      class: 'bg-n-slate-3 text-n-slate-11',
+      class: statusPillClass,
     });
   }
   return pills;
@@ -314,6 +331,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           :size="40"
           :status="currentContact.availability_status"
           hide-offline-status
+          :class="{ 'grayscale opacity-60': isResolved }"
         />
       </div>
 
@@ -331,7 +349,8 @@ watch(() => props.inbox.id, fetchAssignableAgents);
         </div>
 
         <h4
-          class="conversation--user m-0 truncate text-[13px] font-semibold leading-5 text-fd-text"
+          class="conversation--user m-0 truncate text-[13px] font-semibold leading-5"
+          :class="isResolved ? 'text-fd-muted' : 'text-fd-text'"
         >
           {{ subject }}
           <span class="font-medium text-fd-muted">
@@ -340,7 +359,8 @@ watch(() => props.inbox.id, fetchAssignableAgents);
         </h4>
 
         <div
-          class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5 text-fd-text"
+          class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5"
+          :class="isResolved ? 'text-fd-muted' : 'text-fd-text'"
         >
           <span
             class="inline-flex min-w-0 max-w-full items-center gap-1 truncate"
@@ -409,10 +429,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           <span class="sr-only">
             {{ $t('CHAT_LIST.FRESHDESK_CARD.STATUS_LABEL') }}
           </span>
-          <Icon
-            icon="i-lucide-activity"
-            class="size-3 shrink-0 text-fd-muted"
-          />
+          <span class="size-1.5 rounded-sm" :class="statusDotClass" />
           <span class="truncate">{{ currentStatusLabel }}</span>
           <Icon icon="i-lucide-chevron-down" class="size-3 shrink-0" />
           <select
