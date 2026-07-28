@@ -44,13 +44,13 @@ const titleCase = computed(() => props.title.toLowerCase());
     />
     <div
       v-if="empty && !isFetching"
-      class="flex items-start justify-center px-4 py-6 rounded-xl bg-n-slate-2 dark:bg-n-solid-1"
+      class="flex items-start justify-center rounded-xl border border-fd-border bg-fd-surface px-4 py-6"
     >
       <Icon
         icon="i-lucide-info"
-        class="text-n-slate-11 size-4 flex-shrink-0 mt-[3px]"
+        class="text-fd-muted size-4 flex-shrink-0 mt-[3px]"
       />
-      <p class="mx-2 my-0 text-center text-n-slate-11">
+      <p class="mx-2 my-0 text-center text-fd-muted">
         {{ $t('SEARCH.EMPTY_STATE', { item: titleCase, query }) }}
       </p>
     </div>

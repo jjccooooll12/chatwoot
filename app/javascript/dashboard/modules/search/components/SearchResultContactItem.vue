@@ -4,7 +4,6 @@ import { frontendURL } from 'dashboard/helper/URLHelper';
 import countries from 'shared/constants/countries';
 import { dynamicTime } from 'shared/helpers/timeHelper';
 
-import CardLayout from 'dashboard/components-next/CardLayout.vue';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Flag from 'dashboard/components-next/flag/Flag.vue';
 
@@ -87,67 +86,61 @@ const formattedLocation = computed(() => {
 
 <template>
   <router-link :to="navigateTo">
-    <CardLayout
-      layout="row"
-      class="[&>div]:justify-start [&>div]:px-4 [&>div]:py-3 [&>div]:items-start hover:bg-n-slate-2 dark:hover:bg-n-solid-3"
+    <div
+      class="flex items-start gap-3 rounded-lg border border-fd-border bg-fd-surface px-4 py-3 transition-colors hover:border-fd-primary/40 hover:bg-fd-background"
     >
       <Avatar
         :name="name"
         :src="thumbnail"
-        :size="24"
+        :size="36"
         rounded-full
-        class="mt-1 flex-shrink-0"
+        class="mt-0.5 flex-shrink-0"
       />
-      <div class="min-w-0 flex flex-col items-start gap-1.5 w-full">
-        <div class="flex items-center min-w-0 justify-between gap-2 w-full">
-          <h5 class="text-sm font-medium truncate min-w-0 text-n-slate-12 py-1">
+      <div class="min-w-0 flex w-full flex-col items-start gap-1">
+        <div class="flex w-full min-w-0 items-center justify-between gap-2">
+          <h5
+            class="m-0 min-w-0 truncate text-[13px] font-semibold leading-5 text-fd-text"
+          >
             {{ name }}
           </h5>
           <span
             v-if="updatedAtTime"
-            class="text-sm font-normal min-w-0 truncate text-n-slate-11"
+            class="shrink-0 text-xs leading-5 text-fd-muted"
           >
             {{ $t('SEARCH.UPDATED_AT', { time: updatedAtTime }) }}
           </span>
         </div>
         <div
-          class="grid items-center gap-3 m-0 text-sm overflow-hidden min-w-0 grid-cols-[minmax(0,max-content)_auto_minmax(0,max-content)_auto_minmax(0,max-content)]"
+          class="m-0 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5 text-fd-muted"
         >
-          <span
-            v-if="email"
-            class="truncate text-n-slate-11 min-w-0"
-            :title="email"
-          >
+          <span v-if="email" class="min-w-0 truncate" :title="email">
             {{ email }}
           </span>
 
-          <div v-if="email && phone" class="w-px h-3 bg-n-slate-6 rounded" />
+          <span v-if="email && phone">
+            {{ $t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
+          </span>
 
-          <span
-            v-if="phone"
-            :title="phone"
-            class="truncate text-n-slate-11 min-w-0"
-          >
+          <span v-if="phone" :title="phone" class="min-w-0 truncate">
             {{ phone }}
           </span>
 
-          <div
-            v-if="(email || phone) && countryDetails"
-            class="w-px h-3 bg-n-slate-6 rounded"
-          />
+          <span v-if="(email || phone) && countryDetails">
+            {{ $t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}
+          </span>
 
           <span
             v-if="countryDetails"
-            class="truncate text-n-slate-11 flex items-center gap-1 min-w-0"
+            class="flex min-w-0 items-center gap-1 truncate"
           >
             <Flag
               :country="countryDetails.countryCode"
               class="size-3 shrink-0"
             />
-            <span class="truncate min-w-0">{{ formattedLocation }}</span>
+            <span class="min-w-0 truncate">{{ formattedLocation }}</span>
           </span>
         </div>
       </div>
-    </CardLayout>
+    </div>
   </router-link>
 </template>

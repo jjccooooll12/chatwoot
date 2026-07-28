@@ -61,6 +61,7 @@ const conversationsWithSubject = computed(() => {
           :inbox="conversation.inbox"
           :created-at="conversation.createdAt"
           :email-subject="conversation.mailSubject"
+          :message-preview="conversation.message?.content"
         />
       </li>
     </ul>

@@ -1,11 +1,13 @@
 <script setup>
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { frontendURL } from 'dashboard/helper/URLHelper.js';
 import { dynamicTime } from 'shared/helpers/timeHelper';
 import { useInbox } from 'dashboard/composables/useInbox';
 import { getInboxIconByType } from 'dashboard/helper/inbox';
+import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 
-import CardLayout from 'dashboard/components-next/CardLayout.vue';
+import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 
 const props = defineProps({
@@ -45,8 +47,14 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  messagePreview: {
+    type: String,
+    default: '',
+  },
 });
 
+const { t } = useI18n();
+const { getPlainText } = useMessageFormatter();
 const { inbox } = useInbox(props.inbox?.id);
 
 const navigateTo = computed(() => {
@@ -65,29 +73,14 @@ const createdAtTime = computed(() => {
   return dynamicTime(props.createdAt);
 });
 
-const infoItems = computed(() => [
-  {
-    label: 'SEARCH.FROM',
-    value: props.name,
-    show: !!props.name,
-  },
-  {
-    label: 'SEARCH.EMAIL',
-    value: props.email,
-    show: !!props.email,
-  },
-  {
-    label: 'SEARCH.EMAIL_SUBJECT',
-    value: props.emailSubject,
-    show: !!props.emailSubject,
-  },
-]);
-
-const visibleInfoItems = computed(() =>
-  infoItems.value.filter(item => item.show)
-);
-
-const inboxName = computed(() => props.inbox?.name);
+// Same precedence as ConversationCard.vue's subject computed: the ticket's
+// locked-in email subject first, falling back to the first message so a
+// live-chat result (no subject) still shows something scannable.
+const subject = computed(() => {
+  if (props.emailSubject) return props.emailSubject;
+  if (props.messagePreview) return getPlainText(props.messagePreview);
+  return t('SEARCH.NO_SUBJECT');
+});
 
 const inboxIcon = computed(() => {
   if (!inbox.value) return null;
@@ -98,64 +91,57 @@ const inboxIcon = computed(() => {
 
 <template>
   <router-link :to="navigateTo">
-    <CardLayout
-      layout="col"
-      class="[&>div]:justify-start [&>div]:gap-2 [&>div]:px-4 [&>div]:py-3 [&>div]:items-start hover:bg-n-slate-2 dark:hover:bg-n-solid-3"
+    <div
+      class="flex items-start gap-3 rounded-lg border border-fd-border bg-fd-surface px-4 py-3 transition-colors hover:border-fd-primary/40 hover:bg-fd-background"
     >
-      <div
-        class="flex items-center min-w-0 justify-between gap-2 w-full h-7 mb-1"
-      >
-        <div class="flex items-center gap-3">
-          <div class="flex items-center gap-1.5 flex-shrink-0">
-            <Icon
-              icon="i-lucide-hash"
-              class="flex-shrink-0 text-n-slate-11 size-4"
-            />
-            <span class="text-n-slate-12 text-sm leading-4">
-              {{ ticketNumber || id }}
+      <Avatar
+        :name="name || email"
+        :size="36"
+        rounded-full
+        class="mt-0.5 flex-shrink-0"
+      />
+      <div class="min-w-0 flex-1">
+        <div class="flex items-start justify-between gap-3">
+          <h5
+            class="m-0 min-w-0 truncate text-[13px] font-semibold leading-5 text-fd-text"
+          >
+            {{ subject }}
+            <span class="font-medium text-fd-muted">
+              {{
+                $t('CHAT_LIST.FRESHDESK_CARD.TICKET_ID', {
+                  id: ticketNumber || id,
+                })
+              }}
             </span>
-          </div>
-          <div v-if="inboxName" class="w-px h-3 bg-n-strong" />
-          <div v-if="inboxName" class="flex items-center gap-1.5 flex-shrink-0">
-            <div
-              v-if="inboxIcon"
-              class="flex items-center justify-center flex-shrink-0 rounded-full bg-n-alpha-2 size-4"
-            >
-              <Icon
-                :icon="inboxIcon"
-                class="flex-shrink-0 text-n-slate-11 size-2.5"
-              />
-            </div>
-            <span class="text-sm leading-4 text-n-slate-12">
-              {{ inboxName }}
-            </span>
-          </div>
-        </div>
-        <span
-          v-if="createdAtTime"
-          class="text-sm font-normal min-w-0 truncate text-n-slate-11"
-        >
-          {{ createdAtTime }}
-        </span>
-      </div>
-      <div class="flex flex-wrap gap-x-2 gap-y-1.5 items-center">
-        <template
-          v-for="(item, index) in visibleInfoItems"
-          :key="`info-${index}`"
-        >
-          <h5 class="m-0 text-sm min-w-0 text-n-slate-12 truncate">
-            <span class="text-sm leading-4 font-normal text-n-slate-11">
-              {{ $t(item.label) + ':' }}
-            </span>
-            {{ item.value }}
           </h5>
-          <div
-            v-if="index < visibleInfoItems.length - 1"
-            class="w-px h-3 bg-n-strong"
-          />
-        </template>
+          <span
+            v-if="createdAtTime"
+            class="shrink-0 text-xs leading-5 text-fd-muted"
+          >
+            {{ createdAtTime }}
+          </span>
+        </div>
+        <div
+          class="mt-1 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-xs leading-5 text-fd-muted"
+        >
+          <span
+            v-if="inboxIcon"
+            class="flex size-4 shrink-0 items-center justify-center rounded-full bg-fd-background"
+          >
+            <Icon :icon="inboxIcon" class="size-2.5 shrink-0" />
+          </span>
+          <span v-if="name" class="min-w-0 truncate text-fd-text">
+            {{ name }}
+          </span>
+          <template v-if="name && email">
+            <span>{{ $t('CHAT_LIST.FRESHDESK_CARD.SEPARATOR') }}</span>
+          </template>
+          <span v-if="email" class="min-w-0 truncate">
+            {{ email }}
+          </span>
+        </div>
       </div>
       <slot />
-    </CardLayout>
+    </div>
   </router-link>
 </template>
