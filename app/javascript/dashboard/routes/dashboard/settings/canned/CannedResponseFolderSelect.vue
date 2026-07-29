@@ -81,13 +81,14 @@ const createFolder = async () => {
       <input
         v-model="newFolderName"
         type="text"
-        class="!mb-0"
+        class="!mb-0 !w-auto flex-1 min-w-0"
         :placeholder="t('CANNED_MGMT.ADD.FORM.FOLDER.NEW_PLACEHOLDER')"
         @keydown.enter.prevent="createFolder"
       />
       <NextButton
         type="button"
         sm
+        class="shrink-0 whitespace-nowrap"
         :label="t('CANNED_MGMT.FOLDERS.ADD_BUTTON')"
         :disabled="!newFolderName.trim() || isCreating"
         :is-loading="isCreating"
@@ -98,6 +99,7 @@ const createFolder = async () => {
         sm
         faded
         slate
+        class="shrink-0"
         icon="i-lucide-x"
         @click="cancelNewFolder"
       />

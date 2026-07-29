@@ -191,7 +191,7 @@ const tableHeaders = computed(() => {
         <template #actions>
           <select
             v-model="folderFilter"
-            class="!mb-0 !h-8 !py-0 text-body-main"
+            class="!mb-0 !h-8 !py-0 shrink-0 w-36 text-body-main"
           >
             <option value="">
               {{ $t('CANNED_MGMT.LIST.FOLDER_FILTER.ALL') }}
@@ -209,6 +209,7 @@ const tableHeaders = computed(() => {
           </select>
           <Button
             :label="$t('CANNED_MGMT.LIST.MANAGE_FOLDERS_BUTTON')"
+            class="shrink-0 whitespace-nowrap"
             slate
             faded
             size="sm"
@@ -216,6 +217,7 @@ const tableHeaders = computed(() => {
           />
           <Button
             :label="$t('CANNED_MGMT.HEADER_BTN_TXT')"
+            class="shrink-0 whitespace-nowrap"
             size="sm"
             @click="openAddPopup"
           />

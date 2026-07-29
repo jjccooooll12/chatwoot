@@ -105,12 +105,13 @@ const confirmDelete = async () => {
         <input
           v-model="newFolderName"
           type="text"
-          class="!mb-0"
+          class="!mb-0 !w-auto flex-1 min-w-0"
           :placeholder="t('CANNED_MGMT.FOLDERS.NEW_FOLDER_PLACEHOLDER')"
           @keydown.enter.prevent="addFolder"
         />
         <NextButton
           type="button"
+          class="shrink-0 whitespace-nowrap"
           :label="t('CANNED_MGMT.FOLDERS.ADD_BUTTON')"
           :disabled="!newFolderName.trim() || isCreating"
           :is-loading="isCreating"
