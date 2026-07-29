@@ -13,6 +13,7 @@ import { frontendURL } from 'dashboard/helper/URLHelper';
 const emit = defineEmits(['close']);
 
 const RECENT_KEY = 'chatwoot_canned_responses_recent';
+const STARRED_KEY = 'chatwoot_canned_responses_starred';
 const BANNER_KEY = 'chatwoot_canned_responses_banner_dismissed';
 const MAX_RECENT = 5;
 
@@ -30,10 +31,13 @@ const manageUrl = computed(() =>
 
 const searchQuery = ref('');
 const folderFilter = ref('all');
+const visibilityFilter = ref('all');
+const starredOnly = ref(false);
 const expandedId = ref(null);
 const showCreateModal = ref(false);
 const bannerDismissed = ref(localStorage.getItem(BANNER_KEY) === '1');
 const recentCodes = ref(JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'));
+const starredCodes = ref(JSON.parse(localStorage.getItem(STARRED_KEY) || '[]'));
 
 const records = computed(() => getters.getCannedResponses.value);
 const folders = computed(() => getters.getCannedResponseFolders.value);
@@ -51,15 +55,44 @@ const folderName = item => {
     : t('CANNED_MGMT.LIST.FOLDER_FILTER.UNCATEGORIZED');
 };
 
+const visibilityFilterOptions = computed(() => [
+  { value: 'all', label: t('CANNED_MGMT.LIST.VISIBILITY.ALL') },
+  { value: 'personal', label: t('CANNED_MGMT.LIST.VISIBILITY.PERSONAL') },
+  { value: 'global', label: t('CANNED_MGMT.LIST.VISIBILITY.SHARED') },
+]);
+
+const isStarred = item => starredCodes.value.includes(item.short_code);
+
+const toggleStar = item => {
+  starredCodes.value = isStarred(item)
+    ? starredCodes.value.filter(code => code !== item.short_code)
+    : [...starredCodes.value, item.short_code];
+  localStorage.setItem(STARRED_KEY, JSON.stringify(starredCodes.value));
+};
+
 const filteredRecords = computed(() => {
-  if (folderFilter.value === 'all') return records.value;
+  let list = records.value;
   if (folderFilter.value === 'uncategorized') {
-    return records.value.filter(item => !item.folder_id);
+    list = list.filter(item => !item.folder_id);
+  } else if (folderFilter.value !== 'all') {
+    list = list.filter(item => String(item.folder_id) === folderFilter.value);
   }
-  return records.value.filter(
-    item => String(item.folder_id) === folderFilter.value
-  );
+  if (visibilityFilter.value !== 'all') {
+    list = list.filter(item => item.visibility === visibilityFilter.value);
+  }
+  if (starredOnly.value) {
+    list = list.filter(item => isStarred(item));
+  }
+  return list;
 });
+
+const isDefaultView = computed(
+  () =>
+    !searchQuery.value.trim() &&
+    folderFilter.value === 'all' &&
+    visibilityFilter.value === 'all' &&
+    !starredOnly.value
+);
 
 const recentlyUsedItems = computed(() =>
   recentCodes.value
@@ -68,25 +101,35 @@ const recentlyUsedItems = computed(() =>
     .slice(0, MAX_RECENT)
 );
 
-const isShowingRecent = computed(
-  () =>
-    !searchQuery.value.trim() &&
-    folderFilter.value === 'all' &&
-    recentlyUsedItems.value.length > 0
+const showRecentSection = computed(
+  () => isDefaultView.value && recentlyUsedItems.value.length > 0
 );
 
-const listItems = computed(() =>
-  isShowingRecent.value ? recentlyUsedItems.value : filteredRecords.value
-);
-
-const sectionLabel = computed(() => {
-  if (isShowingRecent.value) {
-    return t('CONVERSATION.REPLYBOX.CANNED_PANEL.RECENTLY_USED');
+const primarySectionLabel = computed(() => {
+  if (starredOnly.value) {
+    return t('CONVERSATION.REPLYBOX.CANNED_PANEL.STARRED');
   }
   if (searchQuery.value.trim()) {
     return t('CONVERSATION.REPLYBOX.CANNED_PANEL.SEARCH_RESULTS');
   }
   return t('CONVERSATION.REPLYBOX.CANNED_PANEL.ALL_RESPONSES');
+});
+
+const sections = computed(() => {
+  const result = [];
+  if (showRecentSection.value) {
+    result.push({
+      key: 'recent',
+      label: t('CONVERSATION.REPLYBOX.CANNED_PANEL.RECENTLY_USED'),
+      items: recentlyUsedItems.value,
+    });
+  }
+  result.push({
+    key: 'primary',
+    label: primarySectionLabel.value,
+    items: filteredRecords.value,
+  });
+  return result;
 });
 
 const fetchResponses = () => {
@@ -203,6 +246,42 @@ const hideCreateModal = () => {
           />
         </div>
       </div>
+
+      <div class="mt-2 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-1 rounded-md bg-n-slate-2 p-0.5">
+          <button
+            v-for="option in visibilityFilterOptions"
+            :key="option.value"
+            type="button"
+            class="rounded px-2 py-1 text-xs font-medium transition-colors"
+            :class="
+              visibilityFilter === option.value
+                ? 'bg-fd-surface text-fd-text shadow-sm'
+                : 'text-fd-muted hover:text-fd-text'
+            "
+            @click="visibilityFilter = option.value"
+          >
+            {{ option.label }}
+          </button>
+        </div>
+        <button
+          v-tooltip.top="t('CONVERSATION.REPLYBOX.CANNED_PANEL.STARRED_ONLY')"
+          type="button"
+          :aria-label="t('CONVERSATION.REPLYBOX.CANNED_PANEL.STARRED_ONLY')"
+          class="shrink-0 rounded p-1.5 transition-colors"
+          :class="
+            starredOnly
+              ? 'bg-fd-amber/10 text-fd-amber'
+              : 'text-fd-muted hover:bg-n-slate-2 hover:text-fd-text'
+          "
+          @click="starredOnly = !starredOnly"
+        >
+          <Icon
+            :icon="starredOnly ? 'i-ph-star-fill' : 'i-ph-star'"
+            class="size-4"
+          />
+        </button>
+      </div>
     </div>
 
     <div
@@ -231,59 +310,77 @@ const hideCreateModal = () => {
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-      <p
-        class="mb-2 text-xxs font-semibold uppercase tracking-wide text-fd-muted"
-      >
-        {{ sectionLabel }}
-      </p>
-      <p v-if="!listItems.length" class="text-xs text-fd-muted">
-        {{ t('CONVERSATION.REPLYBOX.CANNED_PANEL.NO_RESULTS') }}
-      </p>
-      <ul v-else class="m-0 flex list-none flex-col gap-2 p-0">
-        <li
-          v-for="item in listItems"
-          :key="item.id"
-          class="rounded-md border border-fd-border bg-fd-background transition-colors hover:border-fd-primary"
+      <template v-for="section in sections" :key="section.key">
+        <p
+          class="mb-2 text-xxs font-semibold uppercase tracking-wide text-fd-muted"
+          :class="{ 'mt-4': section.key !== sections[0].key }"
         >
-          <div
-            class="flex cursor-pointer items-start gap-2 px-2.5 py-2"
-            @click="selectItem(item)"
+          {{ section.label }}
+        </p>
+        <p v-if="!section.items.length" class="mb-2 text-xs text-fd-muted">
+          {{ t('CONVERSATION.REPLYBOX.CANNED_PANEL.NO_RESULTS') }}
+        </p>
+        <ul v-else class="m-0 mb-2 flex list-none flex-col gap-2 p-0">
+          <li
+            v-for="item in section.items"
+            :key="item.id"
+            class="rounded-md border border-fd-border bg-fd-background transition-colors hover:border-fd-primary"
           >
-            <button
-              type="button"
-              class="mt-0.5 shrink-0 rounded p-0.5 text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
-              @click.stop="toggleExpand(item)"
+            <div
+              class="flex cursor-pointer items-start gap-2 px-2.5 py-2"
+              @click="selectItem(item)"
             >
-              <Icon
-                :icon="
-                  expandedId === item.id
-                    ? 'i-lucide-chevron-down'
-                    : 'i-lucide-chevron-right'
-                "
-                class="size-3.5"
-              />
-            </button>
-            <div class="min-w-0 flex-1">
-              <p class="m-0 truncate text-sm font-medium text-fd-text">
-                {{ item.short_code }}
-              </p>
-              <p
-                v-if="expandedId === item.id"
-                class="m-0 mt-1 line-clamp-4 text-xs text-fd-muted"
+              <button
+                type="button"
+                class="mt-0.5 shrink-0 rounded p-0.5 text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
+                @click.stop="toggleExpand(item)"
               >
-                {{ getPlainText(item.content) }}
-              </p>
-              <div class="mt-1 flex items-center gap-2 text-xs text-fd-muted">
-                <span class="flex items-center gap-1">
-                  <Icon icon="i-lucide-folder" class="size-3" />
-                  {{ folderName(item) }}
-                </span>
-                <span>{{ visibilityLabel(item) }}</span>
+                <Icon
+                  :icon="
+                    expandedId === item.id
+                      ? 'i-lucide-chevron-down'
+                      : 'i-lucide-chevron-right'
+                  "
+                  class="size-3.5"
+                />
+              </button>
+              <div class="min-w-0 flex-1">
+                <p class="m-0 truncate text-sm font-medium text-fd-text">
+                  {{ item.short_code }}
+                </p>
+                <p
+                  v-if="expandedId === item.id"
+                  class="m-0 mt-1 line-clamp-4 text-xs text-fd-muted"
+                >
+                  {{ getPlainText(item.content) }}
+                </p>
+                <div class="mt-1 flex items-center gap-2 text-xs text-fd-muted">
+                  <span class="flex items-center gap-1">
+                    <Icon icon="i-lucide-folder" class="size-3" />
+                    {{ folderName(item) }}
+                  </span>
+                  <span>{{ visibilityLabel(item) }}</span>
+                </div>
               </div>
+              <button
+                type="button"
+                class="mt-0.5 shrink-0 rounded p-0.5"
+                :class="
+                  isStarred(item)
+                    ? 'text-fd-amber'
+                    : 'text-fd-muted hover:bg-n-slate-3 hover:text-fd-text'
+                "
+                @click.stop="toggleStar(item)"
+              >
+                <Icon
+                  :icon="isStarred(item) ? 'i-ph-star-fill' : 'i-ph-star'"
+                  class="size-3.5"
+                />
+              </button>
             </div>
-          </div>
-        </li>
-      </ul>
+          </li>
+        </ul>
+      </template>
     </div>
 
     <woot-modal v-model:show="showCreateModal" :on-close="hideCreateModal">

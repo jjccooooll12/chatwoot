@@ -252,6 +252,8 @@
         "RECENTLY_USED": "Recently used",
         "ALL_RESPONSES": "All responses",
         "SEARCH_RESULTS": "Search results",
+        "STARRED": "Starred",
+        "STARRED_ONLY": "Show starred only",
         "NO_RESULTS": "No canned responses found",
         "CLOSE": "Close"
       },
