@@ -212,9 +212,20 @@ const tableHeaders = computed(() => {
             <template #default>
               <BaseTableCell class="max-w-0">
                 <div class="flex flex-col gap-2 min-w-0">
-                  <span class="text-heading-3 text-n-slate-12 truncate block">
-                    {{ cannedItem.short_code }}
-                  </span>
+                  <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-heading-3 text-n-slate-12 truncate block">
+                      {{ cannedItem.short_code }}
+                    </span>
+                    <span
+                      class="shrink-0 text-label-small px-1.5 py-0.5 rounded-md bg-n-slate-3 text-n-slate-11"
+                    >
+                      {{
+                        cannedItem.visibility === 'global'
+                          ? t('CANNED_MGMT.LIST.VISIBILITY.SHARED')
+                          : t('CANNED_MGMT.LIST.VISIBILITY.PERSONAL')
+                      }}
+                    </span>
+                  </div>
                   <p class="text-body-main text-n-slate-11 line-clamp-5">
                     {{ getPlainText(cannedItem.content) }}
                   </p>
@@ -256,6 +267,7 @@ const tableHeaders = computed(() => {
         :id="activeResponse.id"
         :edshort-code="activeResponse.short_code"
         :edcontent="activeResponse.content"
+        :edvisibility="activeResponse.visibility"
         :on-close="hideEditPopup"
       />
     </woot-modal>

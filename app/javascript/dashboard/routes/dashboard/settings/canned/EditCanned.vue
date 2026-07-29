@@ -6,6 +6,7 @@ import { useAlert } from 'dashboard/composables';
 import WootMessageEditor from 'dashboard/components/widgets/WootWriter/Editor.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Modal from '../../../../components/Modal.vue';
+import { useAdmin } from 'dashboard/composables/useAdmin';
 
 export default {
   components: {
@@ -17,10 +18,12 @@ export default {
     id: { type: Number, default: null },
     edcontent: { type: String, default: '' },
     edshortCode: { type: String, default: '' },
+    edvisibility: { type: String, default: 'personal' },
     onClose: { type: Function, default: () => {} },
   },
   setup() {
-    return { v$: useVuelidate() };
+    const { isAdmin } = useAdmin();
+    return { v$: useVuelidate(), isAdmin };
   },
   data() {
     return {
@@ -30,6 +33,7 @@ export default {
       },
       shortCode: this.edshortCode,
       content: this.edcontent,
+      visibility: this.edvisibility,
       show: true,
     };
   },
@@ -67,6 +71,7 @@ export default {
           id: this.id,
           short_code: this.shortCode,
           content: this.content,
+          visibility: this.visibility,
         })
         .then(() => {
           // Reset Form, Show success message
@@ -122,6 +127,39 @@ export default {
             />
           </div>
         </div>
+
+        <div v-if="isAdmin" class="w-full">
+          <label class="mb-1">
+            {{ $t('CANNED_MGMT.ADD.FORM.VISIBILITY.LABEL') }}
+          </label>
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <input
+                id="canned-edit-visibility-personal"
+                v-model="visibility"
+                type="radio"
+                name="canned-edit-visibility"
+                value="personal"
+              />
+              <label class="!mb-0" for="canned-edit-visibility-personal">
+                {{ $t('CANNED_MGMT.ADD.FORM.VISIBILITY.MYSELF') }}
+              </label>
+            </div>
+            <div class="flex items-center gap-2">
+              <input
+                id="canned-edit-visibility-global"
+                v-model="visibility"
+                type="radio"
+                name="canned-edit-visibility"
+                value="global"
+              />
+              <label class="!mb-0" for="canned-edit-visibility-global">
+                {{ $t('CANNED_MGMT.ADD.FORM.VISIBILITY.ALL_AGENTS') }}
+              </label>
+            </div>
+          </div>
+        </div>
+
         <div class="flex flex-row justify-end w-full gap-2 px-0 py-2">
           <NextButton
             faded

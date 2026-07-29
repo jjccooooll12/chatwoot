@@ -3,16 +3,20 @@ import { mapGetters } from 'vuex';
 import ConversationHeader from './ConversationHeader.vue';
 import DashboardAppFrame from '../DashboardApp/Frame.vue';
 import EmptyState from './EmptyState/EmptyState.vue';
+import CannedResponsesPanel from './CannedResponsesPanel.vue';
 import FreshdeskContactInfo from './FreshdeskContactInfo.vue';
 import FreshdeskTicketProperties from './FreshdeskTicketProperties.vue';
 import FreshdeskTicketTitle from './FreshdeskTicketTitle.vue';
 import MessagesView from './MessagesView.vue';
+import { emitter } from 'shared/helpers/mitt';
+import { BUS_EVENTS } from 'shared/constants/busEvents';
 
 export default {
   components: {
     ConversationHeader,
     DashboardAppFrame,
     EmptyState,
+    CannedResponsesPanel,
     FreshdeskContactInfo,
     FreshdeskTicketProperties,
     FreshdeskTicketTitle,
@@ -38,7 +42,7 @@ export default {
     },
   },
   data() {
-    return { activeIndex: 0 };
+    return { activeIndex: 0, showCannedResponsesPanel: false };
   },
   computed: {
     ...mapGetters({
@@ -78,13 +82,27 @@ export default {
     'currentChat.id'() {
       this.fetchLabels();
       this.activeIndex = 0;
+      this.showCannedResponsesPanel = false;
     },
   },
   mounted() {
     this.fetchLabels();
     this.$store.dispatch('dashboardApps/get');
+    emitter.on(
+      BUS_EVENTS.TOGGLE_CANNED_RESPONSES_PANEL,
+      this.toggleCannedResponsesPanel
+    );
+  },
+  beforeUnmount() {
+    emitter.off(
+      BUS_EVENTS.TOGGLE_CANNED_RESPONSES_PANEL,
+      this.toggleCannedResponsesPanel
+    );
   },
   methods: {
+    toggleCannedResponsesPanel() {
+      this.showCannedResponsesPanel = !this.showCannedResponsesPanel;
+    },
     fetchLabels() {
       if (!this.currentChat.id) {
         return;
@@ -137,8 +155,14 @@ export default {
           :is-inbox-view="isInboxView"
         />
       </div>
-      <FreshdeskTicketProperties v-if="currentChat.id" :chat="currentChat" />
-      <FreshdeskContactInfo v-if="currentChat.id" :chat="currentChat" />
+      <CannedResponsesPanel
+        v-if="currentChat.id && showCannedResponsesPanel"
+        @close="showCannedResponsesPanel = false"
+      />
+      <template v-else>
+        <FreshdeskTicketProperties v-if="currentChat.id" :chat="currentChat" />
+        <FreshdeskContactInfo v-if="currentChat.id" :chat="currentChat" />
+      </template>
       <EmptyState
         v-if="!currentChat.id && !isInboxView"
         :is-on-expanded-layout="isOnExpandedLayout"

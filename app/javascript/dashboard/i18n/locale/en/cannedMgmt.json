@@ -17,6 +17,10 @@
         "SHORT_CODE": "Short code",
         "CONTENT": "Content",
         "ACTIONS": "Actions"
+      },
+      "VISIBILITY": {
+        "PERSONAL": "Personal",
+        "SHARED": "Shared"
       }
     },
     "ADD": {
@@ -33,6 +37,11 @@
           "LABEL": "Message",
           "PLACEHOLDER": "Please write the message you want to save as a template to use later.",
           "ERROR": "Message is required."
+        },
+        "VISIBILITY": {
+          "LABEL": "Available for",
+          "MYSELF": "Myself",
+          "ALL_AGENTS": "All agents"
         },
         "SUBMIT": "Submit"
       },

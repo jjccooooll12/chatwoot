@@ -587,11 +587,8 @@ export default {
 
       useTrack(CONVERSATION_EVENTS.INSERT_ARTICLE_LINK);
     },
-    // Reuses Chatwoot's own '/' canned-response suggestion plugin (Editor.vue)
-    // instead of building a separate picker — inserting the trigger character
-    // opens the exact same native popup as typing it would.
-    insertCannedResponseTrigger() {
-      emitter.emit(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, '/');
+    toggleCannedResponsesPanel() {
+      emitter.emit(BUS_EVENTS.TOGGLE_CANNED_RESPONSES_PANEL);
     },
     toggleQuotedReply() {
       if (!this.isAnEmailChannel) {
@@ -1453,7 +1450,7 @@ export default {
         @select-content-template="openContentTemplateModal"
         @toggle-insert-article="toggleInsertArticle"
         @toggle-quoted-reply="toggleQuotedReply"
-        @toggle-canned-responses="insertCannedResponseTrigger"
+        @toggle-canned-responses="toggleCannedResponsesPanel"
       />
     </Transition>
 

@@ -73,10 +73,9 @@ const variableKey = (item = {}) => {
 <template>
   <div
     ref="mentionsListContainerRef"
-    class="bg-n-solid-1 p-1 rounded-xl overflow-hidden absolute w-full z-20 shadow-md left-0 bottom-full max-h-[9.75rem] border border-solid border-n-strong mention--box flex flex-col"
+    class="bg-n-solid-1 p-1 rounded-xl overflow-auto absolute w-full z-20 shadow-md left-0 bottom-full max-h-[9.75rem] border border-solid border-n-strong mention--box"
   >
-    <slot name="header" />
-    <ul class="mb-0 vertical dropdown menu min-h-0 overflow-y-auto">
+    <ul class="mb-0 vertical dropdown menu">
       <woot-dropdown-item
         v-for="(item, index) in items"
         :id="`mention-item-${index}`"
