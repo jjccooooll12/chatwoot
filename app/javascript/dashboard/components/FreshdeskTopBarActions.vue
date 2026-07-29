@@ -1,13 +1,8 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { useMapGetter } from 'dashboard/composables/store';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
-import Avatar from 'next/avatar/Avatar.vue';
-
-const currentUser = useMapGetter('getCurrentUser');
-const currentUserAvailability = useMapGetter('getCurrentUserAvailability');
 
 const router = useRouter();
 const searchQuery = ref('');
@@ -50,12 +45,5 @@ const onSearchEnter = () => {
         @keydown.enter="onSearchEnter"
       />
     </div>
-    <Avatar
-      :size="32"
-      :name="currentUser.available_name"
-      :src="currentUser.avatar_url"
-      :status="currentUserAvailability"
-      class="shrink-0"
-    />
   </div>
 </template>
