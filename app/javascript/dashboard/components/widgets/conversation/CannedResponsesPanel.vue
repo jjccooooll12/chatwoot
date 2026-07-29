@@ -15,7 +15,10 @@ const emit = defineEmits(['close']);
 const RECENT_KEY = 'chatwoot_canned_responses_recent';
 const STARRED_KEY = 'chatwoot_canned_responses_starred';
 const BANNER_KEY = 'chatwoot_canned_responses_banner_dismissed';
+const FILTERS_KEY = 'chatwoot_canned_responses_filters';
 const MAX_RECENT = 5;
+
+const persistedFilters = JSON.parse(localStorage.getItem(FILTERS_KEY) || '{}');
 
 const { t } = useI18n();
 const store = useStore();
@@ -30,9 +33,9 @@ const manageUrl = computed(() =>
 );
 
 const searchQuery = ref('');
-const folderFilter = ref('all');
-const visibilityFilter = ref('all');
-const starredOnly = ref(false);
+const folderFilter = ref(persistedFilters.folderFilter || 'all');
+const visibilityFilter = ref(persistedFilters.visibilityFilter || 'all');
+const starredOnly = ref(persistedFilters.starredOnly || false);
 const expandedId = ref(null);
 const showCreateModal = ref(false);
 const bannerDismissed = ref(localStorage.getItem(BANNER_KEY) === '1');
@@ -141,6 +144,20 @@ onMounted(() => {
   store.dispatch('getCannedResponseFolders');
 });
 watch(searchQuery, fetchResponses);
+
+watch(
+  [folderFilter, visibilityFilter, starredOnly],
+  ([folder, visibility, starred]) => {
+    localStorage.setItem(
+      FILTERS_KEY,
+      JSON.stringify({
+        folderFilter: folder,
+        visibilityFilter: visibility,
+        starredOnly: starred,
+      })
+    );
+  }
+);
 
 const toggleExpand = item => {
   expandedId.value = expandedId.value === item.id ? null : item.id;
