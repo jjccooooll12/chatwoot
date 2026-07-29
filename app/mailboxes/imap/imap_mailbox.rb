@@ -9,7 +9,7 @@ class Imap::ImapMailbox
   # are automated notifications, not customer conversations. A domain entry also
   # matches its subdomains; an entry with "@" matches an exact address. The team
   # can extend this at runtime via account.custom_attributes['blocked_ticket_senders'].
-  DEFAULT_BLOCKED_SENDER_DOMAINS = %w[microsoft.com godaddy.com no-reply@twilio.com].freeze
+  DEFAULT_BLOCKED_SENDER_DOMAINS = %w[microsoft.com godaddy.com twilio.com].freeze
 
   def process(mail, channel)
     @inbound_mail = mail
