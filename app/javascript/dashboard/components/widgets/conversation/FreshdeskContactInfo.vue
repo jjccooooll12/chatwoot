@@ -114,20 +114,18 @@ watch(contactId, fetchConversations);
           <p class="m-0 truncate text-sm font-semibold text-fd-text">
             {{ contact.name }}
           </p>
-          <a
+          <p
             v-if="contact.email"
-            :href="`mailto:${contact.email}`"
-            class="m-0 block truncate text-xs text-fd-primary hover:underline"
+            class="m-0 select-text truncate text-xs text-fd-primary"
           >
             {{ contact.email }}
-          </a>
-          <a
+          </p>
+          <p
             v-if="contact.phone_number"
-            :href="`tel:${contact.phone_number}`"
-            class="m-0 block truncate text-xs text-fd-muted hover:text-fd-primary hover:underline"
+            class="m-0 mt-1.5 select-text truncate text-xs text-fd-muted"
           >
             {{ contact.phone_number }}
-          </a>
+          </p>
         </div>
       </div>
       <a

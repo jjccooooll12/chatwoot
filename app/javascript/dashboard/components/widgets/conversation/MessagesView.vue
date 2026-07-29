@@ -634,7 +634,7 @@ export default {
           class="list-none border-t border-n-weak bg-fd-surface"
         >
           <div
-            class="sticky top-0 z-20 flex items-center justify-end bg-fd-surface px-3 pt-1"
+            class="sticky top-0 z-20 flex items-center justify-end bg-fd-surface px-3 pt-3"
           >
             <button
               type="button"

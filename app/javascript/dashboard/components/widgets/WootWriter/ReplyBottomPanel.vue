@@ -131,6 +131,7 @@ export default {
     'selectWhatsappTemplate',
     'selectContentTemplate',
     'toggleQuotedReply',
+    'toggleCannedResponses',
   ],
   setup(props) {
     const { setSignatureFlagForInbox, fetchSignatureFlagFromUISettings } =
@@ -240,6 +241,12 @@ export default {
       if (this.isEditorDisabled) return false;
       return !this.isOnPrivateNote;
     },
+    // Canned responses only trigger on '/' when not writing a private note
+    // (see the '/' suggestion plugin's isAllowed in Editor.vue) — same gate.
+    showCannedResponsesButton() {
+      if (this.isEditorDisabled) return false;
+      return !this.isOnPrivateNote;
+    },
     sendWithSignature() {
       // channelType is sourced from inboxMixin
       return this.fetchSignatureFlagFromUISettings(this.channelType);
@@ -312,6 +319,15 @@ export default {
           sm
         />
       </FileUpload>
+      <NextButton
+        v-if="showCannedResponsesButton"
+        v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_CANNED_ICON')"
+        icon="i-ph-lightning"
+        slate
+        faded
+        sm
+        @click="$emit('toggleCannedResponses')"
+      />
       <NextButton
         v-if="showAudioRecorderButton"
         v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_AUDIORECORDER_ICON')"

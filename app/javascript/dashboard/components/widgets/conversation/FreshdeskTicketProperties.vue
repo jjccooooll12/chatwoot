@@ -20,6 +20,7 @@ const autoFollowUp = ref('no');
 const orderNumber = ref('');
 const lastSavedOrderNumber = ref('');
 const isSaving = ref(false);
+const justSaved = ref(false);
 const priorityOpen = ref(false);
 
 // Priority only applies when auto follow-up is on; each level drives the
@@ -143,6 +144,13 @@ const saveCustomFields = async () => {
     },
   });
   isSaving.value = false;
+  // Brief color flash as a CSS-only "saved" confirmation on the Update
+  // button — justSaved flips true then back false, and the button's own
+  // transition-colors does the fading.
+  justSaved.value = true;
+  setTimeout(() => {
+    justSaved.value = false;
+  }, 700);
 };
 
 // Order number persists as soon as the agent leaves the field — no need to hit
@@ -341,7 +349,8 @@ onMounted(() => {
     <div class="shrink-0 border-t border-fd-border px-3 py-2.5">
       <button
         type="button"
-        class="flex h-7 w-full items-center justify-center rounded-md bg-fd-primary px-3 text-xs font-semibold text-white disabled:cursor-wait disabled:opacity-70"
+        class="flex h-7 w-full items-center justify-center rounded-md px-3 text-xs font-semibold text-white transition-colors duration-700 disabled:cursor-wait disabled:opacity-70"
+        :class="justSaved ? 'bg-fd-green' : 'bg-fd-primary'"
         :disabled="isSaving"
         @click="saveCustomFields"
       >
