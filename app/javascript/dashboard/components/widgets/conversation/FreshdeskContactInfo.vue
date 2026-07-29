@@ -121,6 +121,13 @@ watch(contactId, fetchConversations);
           >
             {{ contact.email }}
           </a>
+          <a
+            v-if="contact.phone_number"
+            :href="`tel:${contact.phone_number}`"
+            class="m-0 block truncate text-xs text-fd-muted hover:text-fd-primary hover:underline"
+          >
+            {{ contact.phone_number }}
+          </a>
         </div>
       </div>
       <a
