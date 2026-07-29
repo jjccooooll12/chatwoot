@@ -2,11 +2,13 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useStore, useStoreGetters } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
+import { useRoute } from 'vue-router';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import AddCanned from 'dashboard/routes/dashboard/settings/canned/AddCanned.vue';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
+import { frontendURL } from 'dashboard/helper/URLHelper';
 
 const emit = defineEmits(['close']);
 
@@ -17,7 +19,14 @@ const MAX_RECENT = 5;
 const { t } = useI18n();
 const store = useStore();
 const getters = useStoreGetters();
+const route = useRoute();
 const { getPlainText } = useMessageFormatter();
+
+const manageUrl = computed(() =>
+  frontendURL(
+    `accounts/${route.params.accountId}/settings/canned-response/list`
+  )
+);
 
 const searchQuery = ref('');
 const folderFilter = ref('all');
@@ -109,10 +118,7 @@ const hideCreateModal = () => {
       class="flex items-center justify-between gap-2 border-b border-fd-border px-3 py-3"
     >
       <div class="flex min-w-0 items-center gap-2">
-        <Icon
-          icon="i-lucide-book-open"
-          class="size-4 shrink-0 text-fd-primary"
-        />
+        <Icon icon="i-lucide-bookmark" class="size-4 shrink-0 text-fd-text" />
         <span class="truncate text-sm font-semibold text-fd-text">
           {{ t('CONVERSATION.REPLYBOX.CANNED_RESPONSES_HEADER') }}
         </span>
@@ -134,34 +140,42 @@ const hideCreateModal = () => {
       </button>
     </div>
 
-    <div class="flex items-center gap-2 border-b border-fd-border px-3 py-2.5">
-      <div class="relative min-w-0 flex-1">
-        <Icon
-          icon="i-lucide-search"
-          class="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-fd-muted"
-        />
-        <input
-          v-model="searchQuery"
-          type="text"
-          :placeholder="
-            t('CONVERSATION.REPLYBOX.CANNED_PANEL.SEARCH_PLACEHOLDER')
-          "
-          class="reset-base w-full rounded-md border border-fd-border bg-fd-background py-1.5 pl-7 pr-2 text-xs text-fd-text placeholder:text-fd-muted focus:border-fd-primary focus:outline-none"
-        />
-      </div>
-      <div class="relative shrink-0">
-        <select
-          v-model="folderFilter"
-          class="reset-base appearance-none rounded-md border border-fd-border bg-fd-background py-1.5 pl-2 pr-6 text-xs text-fd-text focus:border-fd-primary focus:outline-none"
-        >
-          <option value="all">{{ folderLabel.all }}</option>
-          <option value="personal">{{ folderLabel.personal }}</option>
-          <option value="global">{{ folderLabel.global }}</option>
-        </select>
-        <Icon
-          icon="i-lucide-chevron-down"
-          class="pointer-events-none absolute right-1.5 top-1/2 size-3.5 -translate-y-1/2 text-fd-muted"
-        />
+    <div class="border-b border-fd-border px-3 py-2.5">
+      <div
+        class="flex items-center rounded-md border border-fd-border bg-fd-background focus-within:border-fd-primary"
+      >
+        <div class="relative min-w-0 flex-1">
+          <Icon
+            icon="i-lucide-search"
+            class="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-fd-muted"
+          />
+          <input
+            v-model="searchQuery"
+            type="text"
+            :placeholder="
+              t('CONVERSATION.REPLYBOX.CANNED_PANEL.SEARCH_PLACEHOLDER')
+            "
+            class="reset-base w-full border-0 bg-transparent py-1.5 pl-7 pr-2 text-xs text-fd-text placeholder:text-fd-muted focus:outline-none"
+          />
+        </div>
+        <div class="relative shrink-0 border-l border-fd-border">
+          <Icon
+            icon="i-lucide-folder"
+            class="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-fd-muted"
+          />
+          <select
+            v-model="folderFilter"
+            class="reset-base appearance-none border-0 bg-transparent py-1.5 pl-7 pr-6 text-xs text-fd-text focus:outline-none"
+          >
+            <option value="all">{{ folderLabel.all }}</option>
+            <option value="personal">{{ folderLabel.personal }}</option>
+            <option value="global">{{ folderLabel.global }}</option>
+          </select>
+          <Icon
+            icon="i-lucide-chevron-down"
+            class="pointer-events-none absolute right-1.5 top-1/2 size-3.5 -translate-y-1/2 text-fd-muted"
+          />
+        </div>
       </div>
     </div>
 
@@ -173,9 +187,14 @@ const hideCreateModal = () => {
         icon="i-lucide-info"
         class="mt-0.5 size-3.5 shrink-0 text-fd-primary"
       />
-      <span class="flex-1">
-        {{ t('CONVERSATION.REPLYBOX.CANNED_PANEL.BANNER_TEXT') }}
-      </span>
+      <div class="flex-1">
+        <p class="m-0">
+          {{ t('CONVERSATION.REPLYBOX.CANNED_PANEL.BANNER_TEXT') }}
+        </p>
+        <a :href="manageUrl" class="text-fd-primary hover:underline">
+          {{ t('CONVERSATION.REPLYBOX.CANNED_PANEL.LEARN_MORE') }}
+        </a>
+      </div>
       <button
         type="button"
         class="shrink-0 text-fd-muted hover:text-fd-text"
