@@ -247,9 +247,6 @@
       "CANNED_RESPONSES_CREATE_NEW": "Create new",
       "CANNED_PANEL": {
         "SEARCH_PLACEHOLDER": "Search canned responses",
-        "ALL_FOLDERS": "All folders",
-        "PERSONAL_FOLDER": "Personal",
-        "SHARED_FOLDER": "Shared",
         "BANNER_TEXT": "Type / in the reply editor to insert canned responses faster",
         "LEARN_MORE": "Manage canned responses",
         "RECENTLY_USED": "Recently used",

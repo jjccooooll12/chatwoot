@@ -6,6 +6,7 @@ import { useAlert } from 'dashboard/composables';
 import WootMessageEditor from 'dashboard/components/widgets/WootWriter/Editor.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Modal from '../../../../components/Modal.vue';
+import CannedResponseFolderSelect from './CannedResponseFolderSelect.vue';
 import { useAdmin } from 'dashboard/composables/useAdmin';
 
 export default {
@@ -13,12 +14,14 @@ export default {
     NextButton,
     Modal,
     WootMessageEditor,
+    CannedResponseFolderSelect,
   },
   props: {
     id: { type: Number, default: null },
     edcontent: { type: String, default: '' },
     edshortCode: { type: String, default: '' },
     edvisibility: { type: String, default: 'personal' },
+    edfolderId: { type: [Number, String], default: '' },
     onClose: { type: Function, default: () => {} },
   },
   setup() {
@@ -34,6 +37,7 @@ export default {
       shortCode: this.edshortCode,
       content: this.edcontent,
       visibility: this.edvisibility,
+      folderId: this.edfolderId || '',
       show: true,
     };
   },
@@ -72,6 +76,7 @@ export default {
           short_code: this.shortCode,
           content: this.content,
           visibility: this.visibility,
+          folder_id: this.folderId || null,
         })
         .then(() => {
           // Reset Form, Show success message
@@ -127,6 +132,8 @@ export default {
             />
           </div>
         </div>
+
+        <CannedResponseFolderSelect v-model="folderId" />
 
         <div v-if="isAdmin" class="w-full">
           <label class="mb-1">

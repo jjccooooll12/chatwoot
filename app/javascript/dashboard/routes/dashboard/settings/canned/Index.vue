@@ -2,6 +2,7 @@
 import { useAlert } from 'dashboard/composables';
 import AddCanned from './AddCanned.vue';
 import EditCanned from './EditCanned.vue';
+import ManageCannedResponseFolders from './ManageCannedResponseFolders.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import { computed, onMounted, ref } from 'vue';
@@ -32,25 +33,45 @@ const showAddPopup = ref(false);
 const loading = ref({});
 const showEditPopup = ref(false);
 const showDeleteConfirmationPopup = ref(false);
+const showManageFoldersPopup = ref(false);
 const activeResponse = ref({});
 const cannedResponseAPI = ref({ message: '' });
 
 const sortOrder = ref('asc');
 const searchQuery = ref('');
+const folderFilter = ref('');
 
 const records = computed(() =>
   getters.getSortedCannedResponses.value(sortOrder.value)
 );
 
+const folders = computed(() => getters.getCannedResponseFolders.value);
+
+const folderFilteredRecords = computed(() => {
+  if (!folderFilter.value) return records.value;
+  if (folderFilter.value === 'uncategorized') {
+    return records.value.filter(item => !item.folder_id);
+  }
+  return records.value.filter(
+    item => String(item.folder_id) === folderFilter.value
+  );
+});
+
 const filteredRecords = computed(() => {
   const query = searchQuery.value.trim();
-  if (!query) return records.value;
-  return picoSearch(records.value, query, [
+  if (!query) return folderFilteredRecords.value;
+  return picoSearch(folderFilteredRecords.value, query, [
     { name: 'short_code', weight: 4 },
     'content',
   ]);
 });
 const uiFlags = computed(() => getters.getUIFlags.value);
+
+const folderName = folderId => {
+  if (!folderId) return '';
+  const folder = folders.value.find(item => item.id === folderId);
+  return folder ? folder.name : '';
+};
 
 const deleteConfirmText = computed(
   () =>
@@ -80,7 +101,15 @@ const fetchCannedResponses = async () => {
 
 onMounted(() => {
   fetchCannedResponses();
+  store.dispatch('getCannedResponseFolders');
 });
+
+const openManageFoldersPopup = () => {
+  showManageFoldersPopup.value = true;
+};
+const hideManageFoldersPopup = () => {
+  showManageFoldersPopup.value = false;
+};
 
 const showAlertMessage = message => {
   loading[activeResponse.value.id] = false;
@@ -160,6 +189,31 @@ const tableHeaders = computed(() => {
           </span>
         </template>
         <template #actions>
+          <select
+            v-model="folderFilter"
+            class="!mb-0 !h-8 !py-0 text-body-main"
+          >
+            <option value="">
+              {{ $t('CANNED_MGMT.LIST.FOLDER_FILTER.ALL') }}
+            </option>
+            <option value="uncategorized">
+              {{ $t('CANNED_MGMT.LIST.FOLDER_FILTER.UNCATEGORIZED') }}
+            </option>
+            <option
+              v-for="folder in folders"
+              :key="folder.id"
+              :value="String(folder.id)"
+            >
+              {{ folder.name }}
+            </option>
+          </select>
+          <Button
+            :label="$t('CANNED_MGMT.LIST.MANAGE_FOLDERS_BUTTON')"
+            slate
+            faded
+            size="sm"
+            @click="openManageFoldersPopup"
+          />
           <Button
             :label="$t('CANNED_MGMT.HEADER_BTN_TXT')"
             size="sm"
@@ -225,6 +279,13 @@ const tableHeaders = computed(() => {
                           : t('CANNED_MGMT.LIST.VISIBILITY.PERSONAL')
                       }}
                     </span>
+                    <span
+                      v-if="folderName(cannedItem.folder_id)"
+                      class="shrink-0 flex items-center gap-1 text-label-small px-1.5 py-0.5 rounded-md bg-n-slate-3 text-n-slate-11"
+                    >
+                      <Icon icon="i-lucide-folder" class="size-3" />
+                      {{ folderName(cannedItem.folder_id) }}
+                    </span>
                   </div>
                   <p class="text-body-main text-n-slate-11 line-clamp-5">
                     {{ getPlainText(cannedItem.content) }}
@@ -268,9 +329,15 @@ const tableHeaders = computed(() => {
         :edshort-code="activeResponse.short_code"
         :edcontent="activeResponse.content"
         :edvisibility="activeResponse.visibility"
+        :edfolder-id="activeResponse.folder_id"
         :on-close="hideEditPopup"
       />
     </woot-modal>
+
+    <ManageCannedResponseFolders
+      v-if="showManageFoldersPopup"
+      :on-close="hideManageFoldersPopup"
+    />
 
     <woot-delete-modal
       v-model:show="showDeleteConfirmationPopup"

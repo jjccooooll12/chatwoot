@@ -36,16 +36,29 @@ const bannerDismissed = ref(localStorage.getItem(BANNER_KEY) === '1');
 const recentCodes = ref(JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'));
 
 const records = computed(() => getters.getCannedResponses.value);
+const folders = computed(() => getters.getCannedResponseFolders.value);
 
-const folderLabel = computed(() => ({
-  all: t('CONVERSATION.REPLYBOX.CANNED_PANEL.ALL_FOLDERS'),
-  personal: t('CONVERSATION.REPLYBOX.CANNED_PANEL.PERSONAL_FOLDER'),
-  global: t('CONVERSATION.REPLYBOX.CANNED_PANEL.SHARED_FOLDER'),
-}));
+const visibilityLabel = item =>
+  item.visibility === 'global'
+    ? t('CANNED_MGMT.LIST.VISIBILITY.SHARED')
+    : t('CANNED_MGMT.LIST.VISIBILITY.PERSONAL');
+
+const folderName = item => {
+  if (!item.folder_id) return t('CANNED_MGMT.LIST.FOLDER_FILTER.UNCATEGORIZED');
+  const folder = folders.value.find(f => f.id === item.folder_id);
+  return folder
+    ? folder.name
+    : t('CANNED_MGMT.LIST.FOLDER_FILTER.UNCATEGORIZED');
+};
 
 const filteredRecords = computed(() => {
   if (folderFilter.value === 'all') return records.value;
-  return records.value.filter(item => item.visibility === folderFilter.value);
+  if (folderFilter.value === 'uncategorized') {
+    return records.value.filter(item => !item.folder_id);
+  }
+  return records.value.filter(
+    item => String(item.folder_id) === folderFilter.value
+  );
 });
 
 const recentlyUsedItems = computed(() =>
@@ -80,7 +93,10 @@ const fetchResponses = () => {
   store.dispatch('getCannedResponse', { searchKey: searchQuery.value });
 };
 
-onMounted(fetchResponses);
+onMounted(() => {
+  fetchResponses();
+  store.dispatch('getCannedResponseFolders');
+});
 watch(searchQuery, fetchResponses);
 
 const toggleExpand = item => {
@@ -167,9 +183,19 @@ const hideCreateModal = () => {
             v-model="folderFilter"
             class="reset-base appearance-none border-0 bg-transparent py-1.5 pl-7 pr-6 text-xs text-fd-text focus:outline-none"
           >
-            <option value="all">{{ folderLabel.all }}</option>
-            <option value="personal">{{ folderLabel.personal }}</option>
-            <option value="global">{{ folderLabel.global }}</option>
+            <option value="all">
+              {{ t('CANNED_MGMT.LIST.FOLDER_FILTER.ALL') }}
+            </option>
+            <option value="uncategorized">
+              {{ t('CANNED_MGMT.LIST.FOLDER_FILTER.UNCATEGORIZED') }}
+            </option>
+            <option
+              v-for="folder in folders"
+              :key="folder.id"
+              :value="String(folder.id)"
+            >
+              {{ folder.name }}
+            </option>
           </select>
           <Icon
             icon="i-lucide-chevron-down"
@@ -247,13 +273,12 @@ const hideCreateModal = () => {
               >
                 {{ getPlainText(item.content) }}
               </p>
-              <div class="mt-1 flex items-center gap-1 text-xs text-fd-muted">
-                <Icon icon="i-lucide-folder" class="size-3" />
-                {{
-                  item.visibility === 'global'
-                    ? folderLabel.global
-                    : folderLabel.personal
-                }}
+              <div class="mt-1 flex items-center gap-2 text-xs text-fd-muted">
+                <span class="flex items-center gap-1">
+                  <Icon icon="i-lucide-folder" class="size-3" />
+                  {{ folderName(item) }}
+                </span>
+                <span>{{ visibilityLabel(item) }}</span>
               </div>
             </div>
           </div>

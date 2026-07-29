@@ -32,7 +32,7 @@ class Api::V1::Accounts::CannedResponsesController < Api::V1::Accounts::BaseCont
   end
 
   def permitted_params
-    params.permit(:short_code, :content, :visibility)
+    params.permit(:short_code, :content, :visibility, :folder_id)
   end
 
   def canned_responses

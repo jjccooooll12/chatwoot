@@ -2,7 +2,7 @@
   "CANNED_MGMT": {
     "HEADER": "Canned Responses",
     "LEARN_MORE": "Learn more about canned responses",
-    "DESCRIPTION": "Canned Responses are pre-written reply templates that help you quickly respond to a conversation. Agents can type the '/' character followed by the shortcode to insert a canned response during a conversation. ",
+    "DESCRIPTION": "Canned Responses are pre-written reply templates that help you quickly respond to a conversation. Agents can type the '/' character followed by the response title to insert a canned response during a conversation. ",
     "COUNT": "{n} canned response | {n} canned responses",
     "HEADER_BTN_TXT": "Add canned response",
     "LOADING": "Fetching canned responses...",
@@ -13,15 +13,37 @@
       "404": "There are no canned responses available in this account.",
       "TITLE": "Manage canned responses",
       "DESC": "Canned Responses are predefined reply templates which can be used to quickly send out replies to conversations.",
+      "MANAGE_FOLDERS_BUTTON": "Manage folders",
       "TABLE_HEADER": {
-        "SHORT_CODE": "Short code",
+        "SHORT_CODE": "Response title",
         "CONTENT": "Content",
         "ACTIONS": "Actions"
       },
       "VISIBILITY": {
         "PERSONAL": "Personal",
         "SHARED": "Shared"
+      },
+      "FOLDER_FILTER": {
+        "ALL": "All folders",
+        "UNCATEGORIZED": "Uncategorized"
       }
+    },
+    "FOLDERS": {
+      "MODAL_TITLE": "Manage folders",
+      "MODAL_DESC": "Group canned responses into folders, for example by language or topic.",
+      "NEW_FOLDER_PLACEHOLDER": "New folder name",
+      "ADD_BUTTON": "Add",
+      "RENAME_ERROR": "Could not rename folder. Please try again.",
+      "CREATE_ERROR": "Could not create folder. Please try again.",
+      "DELETE_ERROR": "Could not delete folder. Please try again.",
+      "DELETE_CONFIRM": {
+        "TITLE": "Delete folder",
+        "MESSAGE": "Canned responses in this folder will not be deleted, they will just become uncategorized. Are you sure you want to delete ",
+        "YES": "Yes, delete ",
+        "NO": "No, keep "
+      },
+      "EMPTY": "No folders yet. Add one above.",
+      "DONE_BUTTON": "Done"
     },
     "ADD": {
       "TITLE": "Add canned response",
@@ -29,9 +51,9 @@
       "CANCEL_BUTTON_TEXT": "Cancel",
       "FORM": {
         "SHORT_CODE": {
-          "LABEL": "Short code",
-          "PLACEHOLDER": "Please enter a short code.",
-          "ERROR": "Short Code is required."
+          "LABEL": "Response title",
+          "PLACEHOLDER": "",
+          "ERROR": "Response title is required."
         },
         "CONTENT": {
           "LABEL": "Message",
@@ -42,6 +64,12 @@
           "LABEL": "Available for",
           "MYSELF": "Myself",
           "ALL_AGENTS": "All agents"
+        },
+        "FOLDER": {
+          "LABEL": "Folder",
+          "NONE": "No folder",
+          "NEW_OPTION": "+ Add new folder",
+          "NEW_PLACEHOLDER": "New folder name"
         },
         "SUBMIT": "Submit"
       },
@@ -55,9 +83,9 @@
       "CANCEL_BUTTON_TEXT": "Cancel",
       "FORM": {
         "SHORT_CODE": {
-          "LABEL": "Short code",
-          "PLACEHOLDER": "Please enter a shortcode.",
-          "ERROR": "Short code is required."
+          "LABEL": "Response title",
+          "PLACEHOLDER": "",
+          "ERROR": "Response title is required."
         },
         "CONTENT": {
           "LABEL": "Message",

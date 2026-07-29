@@ -22,6 +22,7 @@ class CannedResponse < ApplicationRecord
   belongs_to :account
   belongs_to :created_by, class_name: 'User', optional: true
   belongs_to :updated_by, class_name: 'User', optional: true
+  belongs_to :folder, class_name: 'CannedResponseFolder', optional: true
 
   # Same personal/global convention as Macro — personal responses are only
   # visible to their creator, global ones to the whole account.
