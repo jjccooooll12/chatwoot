@@ -179,6 +179,7 @@ onMounted(async () => {
                     variant="faded"
                     icon="i-lucide-chevron-down"
                     trailing-icon
+                    class="w-36"
                     :label="
                       selectedAgentName || t('VOICE_ROUTING.SELECT_AGENT')
                     "
