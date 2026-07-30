@@ -161,21 +161,26 @@ onMounted(async () => {
               <label class="text-xs text-n-slate-11">{{
                 t('VOICE_ROUTING.AGENT')
               }}</label>
-              <select
-                v-model="selectedAgentId"
-                class="reset-base border border-n-weak rounded-md px-2 py-1.5 text-sm"
-              >
-                <option value="" disabled>
-                  {{ t('VOICE_ROUTING.SELECT_AGENT') }}
-                </option>
-                <option
-                  v-for="agent in agents"
-                  :key="agent.id"
-                  :value="agent.id"
+              <div class="relative">
+                <select
+                  v-model="selectedAgentId"
+                  class="reset-base appearance-none border border-n-weak rounded-md pl-2 pr-7 py-1.5 text-sm w-full"
                 >
-                  {{ agent.name }}
-                </option>
-              </select>
+                  <option value="" disabled>
+                    {{ t('VOICE_ROUTING.SELECT_AGENT') }}
+                  </option>
+                  <option
+                    v-for="agent in agents"
+                    :key="agent.id"
+                    :value="agent.id"
+                  >
+                    {{ agent.name }}
+                  </option>
+                </select>
+                <span
+                  class="i-lucide-chevron-down size-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-n-slate-11"
+                />
+              </div>
             </div>
             <NextButton
               :label="t('VOICE_ROUTING.ADD')"
