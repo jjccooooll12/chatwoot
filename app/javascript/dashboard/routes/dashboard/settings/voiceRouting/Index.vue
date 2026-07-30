@@ -6,6 +6,11 @@ import { useI18n } from 'vue-i18n';
 import BaseSettingsHeader from '../components/BaseSettingsHeader.vue';
 import SettingsLayout from '../SettingsLayout.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import {
+  DropdownContainer,
+  DropdownBody,
+  DropdownItem,
+} from 'next/dropdown-menu/base';
 import voiceCountryRoutesAPI from 'dashboard/api/voiceCountryRoutes';
 
 const { t } = useI18n();
@@ -21,6 +26,11 @@ const isLoading = ref(false);
 const countryName = ref('');
 const phonePrefix = ref('');
 const selectedAgentId = ref('');
+
+const selectedAgentName = computed(() => {
+  const agent = agents.value.find(a => a.id === selectedAgentId.value);
+  return agent?.name;
+});
 
 const fetchRoutes = async () => {
   if (!voiceInbox.value) return;
@@ -161,26 +171,30 @@ onMounted(async () => {
               <label class="text-xs text-n-slate-11">{{
                 t('VOICE_ROUTING.AGENT')
               }}</label>
-              <div class="relative">
-                <select
-                  v-model="selectedAgentId"
-                  class="reset-base appearance-none h-[34px] !border !border-n-weak rounded-md pl-2 pr-7 text-sm w-full box-border"
-                >
-                  <option value="" disabled>
-                    {{ t('VOICE_ROUTING.SELECT_AGENT') }}
-                  </option>
-                  <option
+              <DropdownContainer class="shrink-0">
+                <template #trigger="{ toggle }">
+                  <NextButton
+                    size="sm"
+                    color="slate"
+                    variant="faded"
+                    icon="i-lucide-chevron-down"
+                    trailing-icon
+                    :label="
+                      selectedAgentName || t('VOICE_ROUTING.SELECT_AGENT')
+                    "
+                    @click="toggle"
+                  />
+                </template>
+                <DropdownBody class="min-w-40 z-20">
+                  <DropdownItem
                     v-for="agent in agents"
                     :key="agent.id"
-                    :value="agent.id"
-                  >
-                    {{ agent.name }}
-                  </option>
-                </select>
-                <span
-                  class="i-lucide-chevron-down size-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-n-slate-11"
-                />
-              </div>
+                    :label="agent.name"
+                    class="cursor-pointer"
+                    @click="selectedAgentId = agent.id"
+                  />
+                </DropdownBody>
+              </DropdownContainer>
             </div>
             <NextButton
               :label="t('VOICE_ROUTING.ADD')"
