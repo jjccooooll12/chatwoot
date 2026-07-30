@@ -11,7 +11,7 @@ import voiceCountryRoutesAPI from 'dashboard/api/voiceCountryRoutes';
 const { t } = useI18n();
 const store = useStore();
 
-const inboxes = useMapGetter('getInboxes');
+const inboxes = useMapGetter('inboxes/getInboxes');
 const agents = useMapGetter('agents/getAgents');
 
 const voiceInbox = computed(() => inboxes.value.find(i => i.name === 'Voice'));
