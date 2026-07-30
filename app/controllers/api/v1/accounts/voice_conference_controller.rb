@@ -29,6 +29,10 @@ class Api::V1::Accounts::VoiceConferenceController < Api::V1::Accounts::BaseCont
 
   # POST .../conference — agent answers. Atomic first-agent-wins claim.
   def create
+    unless @voice_call.eligible_for?(current_user.id)
+      return render json: { error: 'This call is routed to a different agent' }, status: :forbidden
+    end
+
     claimed = VoiceCall.where(id: @voice_call.id, accepted_by_agent_id: nil)
                         .update_all(accepted_by_agent_id: current_user.id, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
 

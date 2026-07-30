@@ -42,7 +42,7 @@ RSpec.describe VoiceCall do
       expect(data.keys).to contain_exactly(
         :id, :provider_call_id, :provider, :direction, :status, :duration_seconds, :end_reason,
         :conference_sid, :accepted_by_agent_id, :accepted_by_agent_name, :started_at, :ended_at,
-        :from_number, :to_number, :recording_url, :transcript
+        :from_number, :to_number, :recording_url, :transcript, :eligible_agent_ids
       )
       expect(data[:status]).to eq('ringing')
       expect(data[:direction]).to eq('incoming')
@@ -68,6 +68,20 @@ RSpec.describe VoiceCall do
     it 'is a no-op on the message side when there is no linked message' do
       voice_call.update!(message: nil)
       expect { voice_call.transition_to!(status: 'failed', end_reason: 'busy') }.not_to raise_error
+    end
+  end
+
+  describe '#eligible_for?' do
+    it 'allows anyone when no country route matched (empty eligible_agent_ids)' do
+      voice_call.update!(eligible_agent_ids: [])
+      expect(voice_call.eligible_for?(999)).to be true
+    end
+
+    it 'only allows agents in the list when a route matched' do
+      voice_call.update!(eligible_agent_ids: [42])
+
+      expect(voice_call.eligible_for?(42)).to be true
+      expect(voice_call.eligible_for?(43)).to be false
     end
   end
 end

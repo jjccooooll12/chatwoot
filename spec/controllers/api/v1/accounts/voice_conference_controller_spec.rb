@@ -85,6 +85,26 @@ RSpec.describe 'Voice Conference API', type: :request do
 
       expect(conversation.reload.assignee_id).to eq(other_agent.id)
     end
+
+    it 'rejects an agent excluded by a country-routing rule even though they are an inbox member' do
+      voice_call.update!(eligible_agent_ids: [other_agent.id])
+
+      post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/conference",
+           params: { conversation_id: conversation.display_id, call_sid: 'CA_join_1' }, headers: agent.create_new_auth_token
+
+      expect(response).to have_http_status(:forbidden)
+      expect(voice_call.reload.accepted_by_agent_id).to be_nil
+    end
+
+    it 'lets the routed agent claim a country-restricted call' do
+      voice_call.update!(eligible_agent_ids: [agent.id])
+
+      post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/conference",
+           params: { conversation_id: conversation.display_id, call_sid: 'CA_join_1' }, headers: agent.create_new_auth_token
+
+      expect(response).to have_http_status(:success)
+      expect(voice_call.reload.accepted_by_agent_id).to eq(agent.id)
+    end
   end
 
   describe 'DELETE /inboxes/:inbox_id/conference' do

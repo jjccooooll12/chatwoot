@@ -59,6 +59,17 @@ const shouldRingInbound = (callDirection, currentUserAvailability) => {
   return currentUserAvailability === 'online';
 };
 
+// A country-routing rule restricts which agents should even be bothered by
+// an inbound call (e.g. +39 rings only the agent(s) set up for Italy) — an
+// empty list means no rule matched, so every agent stays eligible. Backend
+// still enforces this independently when answering (VoiceConferenceController),
+// this is purely so agents who can't take the call never see it ring.
+const isEligibleAgent = (callDirection, eligibleAgentIds, currentUserId) => {
+  if (callDirection === 'outbound') return true;
+  if (!eligibleAgentIds?.length) return true;
+  return eligibleAgentIds.includes(currentUserId);
+};
+
 function extractCallerSnapshot(message) {
   // Snapshot caller info from the message at add-time so the widget can keep
   // rendering it after the user navigates away from a conversation list that
@@ -89,6 +100,7 @@ function extractCallData(message) {
     inboxId: message?.inbox_id ?? message?.conversation?.inbox_id,
     assigneeId: extractAssigneeId(message?.conversation),
     senderId: message?.sender?.id,
+    eligibleAgentIds: call.eligible_agent_ids,
     caller: extractCallerSnapshot(message),
   };
 }
@@ -110,6 +122,7 @@ export function handleVoiceCallCreated(
     inboxId,
     assigneeId,
     senderId,
+    eligibleAgentIds,
   } = extractCallData(message);
 
   // A voice_call message can be created already terminal when the caller hangs
@@ -129,6 +142,7 @@ export function handleVoiceCallCreated(
   }
 
   if (!shouldRingInbound(callDirection, currentUserAvailability)) return;
+  if (!isEligibleAgent(callDirection, eligibleAgentIds, currentUserId)) return;
 
   const callsStore = useCallsStore();
   callsStore.addCall({
@@ -161,6 +175,7 @@ export function handleVoiceCallUpdated(
     inboxId,
     assigneeId,
     senderId,
+    eligibleAgentIds,
   } = extractCallData(message);
 
   const callsStore = useCallsStore();
@@ -187,6 +202,8 @@ export function handleVoiceCallUpdated(
 
   if (status === 'ringing') {
     if (!shouldRingInbound(callDirection, currentUserAvailability)) return;
+    if (!isEligibleAgent(callDirection, eligibleAgentIds, currentUserId))
+      return;
 
     callsStore.addCall({
       callSid,

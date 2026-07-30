@@ -136,7 +136,8 @@ class Webhooks::TwilioVoiceController < ApplicationController
       status: 'ringing',
       conference_sid: "voice-#{SecureRandom.hex(8)}",
       from_number: from_number,
-      to_number: to_number
+      to_number: to_number,
+      eligible_agent_ids: matched_route_agent_ids(from_number)
     )
   end
 
@@ -179,21 +180,23 @@ class Webhooks::TwilioVoiceController < ApplicationController
     online_ids = OnlineStatusTracker.get_available_users(@account.id)
                                      .select { |_id, status| status == 'online' }
                                      .keys.map(&:to_i)
-    restrict_to_country_route(member_ids & online_ids)
+    eligible_ids = matched_route_agent_ids(params[:From].to_s)
+    candidate_ids = member_ids & online_ids
+    eligible_ids.present? ? (candidate_ids & eligible_ids) : candidate_ids
   end
 
-  # A country with no configured route rings everyone (fail open — better to
-  # ring an unconfigured country than silently voicemail a real customer).
-  # When a route does match, only its assigned agent(s) are candidates, so
-  # e.g. Italian callers only ever ring the agent(s) set up for +39.
-  def restrict_to_country_route(candidate_ids)
-    from_number = params[:From].to_s
+  # Empty return means no country route matched — every inbox member is
+  # eligible (fail open, matches the ring-vs-voicemail default for an
+  # unconfigured country). This is the single source of truth for country
+  # eligibility: used both for the ring-vs-voicemail decision here and
+  # stored on the VoiceCall record itself so VoiceConferenceController can
+  # enforce the same rule when an agent actually tries to answer.
+  def matched_route_agent_ids(from_number)
     routes = @inbox.voice_country_routes.select { |route| from_number.start_with?(route.phone_prefix) }
-    return candidate_ids if routes.empty?
+    return [] if routes.empty?
 
     longest_prefix = routes.map(&:phone_prefix).max_by(&:length)
-    allowed_ids = routes.select { |route| route.phone_prefix == longest_prefix }.map(&:user_id)
-    candidate_ids & allowed_ids
+    routes.select { |route| route.phone_prefix == longest_prefix }.map(&:user_id)
   end
 
   def set_channel_and_inbox!

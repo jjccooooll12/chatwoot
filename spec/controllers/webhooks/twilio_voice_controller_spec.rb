@@ -112,6 +112,20 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
         expect(response.body).to include('<Dial>')
       end
 
+      it 'stores the matched route agent(s) as eligible_agent_ids on the call, not just the online decision' do
+        signed_post "/webhooks/twilio_voice/#{phone_digits}", italy_params
+
+        voice_call = VoiceCall.find_by(provider_call_id: italy_params['CallSid'])
+        expect(voice_call.eligible_agent_ids).to eq([italy_agent.id])
+      end
+
+      it 'leaves eligible_agent_ids empty for a country with no matching rule' do
+        signed_post "/webhooks/twilio_voice/#{phone_digits}", params
+
+        voice_call = VoiceCall.find_by(provider_call_id: params['CallSid'])
+        expect(voice_call.eligible_agent_ids).to eq([])
+      end
+
       it 'is unaffected for a country with no routing rule' do
         signed_post "/webhooks/twilio_voice/#{phone_digits}", params
 

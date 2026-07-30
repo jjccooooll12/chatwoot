@@ -69,13 +69,21 @@ class VoiceCall < ApplicationRecord
       from_number: from_number,
       to_number: to_number,
       recording_url: recording_url,
-      transcript: nil
+      transcript: nil,
+      eligible_agent_ids: eligible_agent_ids
     }
   end
 
   def transition_to!(status:, **attrs)
     update!(attrs.merge(status: status))
     message&.send_update_event
+  end
+
+  # Empty list means no country route matched this call — every online
+  # inbox member is eligible (fail open), matching how the ring-vs-voicemail
+  # decision itself treats an unconfigured country.
+  def eligible_for?(user_id)
+    eligible_agent_ids.blank? || eligible_agent_ids.include?(user_id)
   end
 
   private
