@@ -607,6 +607,13 @@ const menuItems = computed(() => {
             ]
           : []),
         {
+          name: 'Settings Voice Routing',
+          label: t('SIDEBAR.VOICE_ROUTING'),
+          icon: 'i-lucide-phone-forwarded',
+          activeOn: ['voice_routing_index'],
+          to: accountScopedRoute('voice_routing_index'),
+        },
+        {
           name: 'Settings Inboxes',
           label: t('SIDEBAR.INBOXES'),
           icon: 'i-lucide-inbox',

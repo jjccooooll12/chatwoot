@@ -375,6 +375,7 @@
     "REPORTS_INBOX": "Inbox",
     "REPORTS_TEAM": "Team",
     "AGENT_ASSIGNMENT": "Agent Assignment",
+    "VOICE_ROUTING": "Voice Call Routing",
     "SET_AVAILABILITY_TITLE": "Set yourself as",
     "SET_YOUR_AVAILABILITY": "Set your availability",
     "SLA": "SLA",
@@ -1066,5 +1067,24 @@
       "CONFIRM_BUTTON_LABEL": "Delete",
       "CANCEL_BUTTON_LABEL": "Cancel"
     }
+  },
+  "VOICE_ROUTING": {
+    "TITLE": "Voice call routing",
+    "DESCRIPTION": "Control which agents receive incoming calls from which countries. A country with no rule rings every online agent.",
+    "NO_VOICE_INBOX": "No Voice inbox found on this account.",
+    "EMPTY": "No routing rules yet — calls from every country ring all online agents.",
+    "ADD_TITLE": "Add a routing rule",
+    "ADD_DESCRIPTION": "Only calls starting with this prefix will be restricted to the agent below. Add the same country multiple times to allow more than one agent.",
+    "COUNTRY_NAME": "Country",
+    "COUNTRY_NAME_PLACEHOLDER": "Italy",
+    "PHONE_PREFIX": "Phone prefix",
+    "PHONE_PREFIX_PLACEHOLDER": "+39",
+    "AGENT": "Agent",
+    "SELECT_AGENT": "Select an agent",
+    "ADD": "Add rule",
+    "REMOVE": "Remove",
+    "FETCH_ERROR": "Could not load routing rules",
+    "ADD_ERROR": "Could not add routing rule",
+    "REMOVE_ERROR": "Could not remove routing rule"
   }
 }

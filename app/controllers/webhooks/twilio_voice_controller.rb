@@ -179,7 +179,21 @@ class Webhooks::TwilioVoiceController < ApplicationController
     online_ids = OnlineStatusTracker.get_available_users(@account.id)
                                      .select { |_id, status| status == 'online' }
                                      .keys.map(&:to_i)
-    member_ids & online_ids
+    restrict_to_country_route(member_ids & online_ids)
+  end
+
+  # A country with no configured route rings everyone (fail open — better to
+  # ring an unconfigured country than silently voicemail a real customer).
+  # When a route does match, only its assigned agent(s) are candidates, so
+  # e.g. Italian callers only ever ring the agent(s) set up for +39.
+  def restrict_to_country_route(candidate_ids)
+    from_number = params[:From].to_s
+    routes = @inbox.voice_country_routes.select { |route| from_number.start_with?(route.phone_prefix) }
+    return candidate_ids if routes.empty?
+
+    longest_prefix = routes.map(&:phone_prefix).max_by(&:length)
+    allowed_ids = routes.select { |route| route.phone_prefix == longest_prefix }.map(&:user_id)
+    candidate_ids & allowed_ids
   end
 
   def set_channel_and_inbox!

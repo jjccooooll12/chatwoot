@@ -297,6 +297,7 @@ Rails.application.routes.draw do
             resource :conference, only: %i[create destroy], controller: 'voice_conference' do
               get :token, on: :member
             end
+            resources :voice_country_routes, only: %i[index create destroy]
 
             resource :csat_template, only: [:show, :create], controller: 'inbox_csat_templates' do
               post :analyze, on: :collection

@@ -83,6 +83,41 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
         end.to have_enqueued_job(VoiceRingTimeoutJob).with(kind_of(Integer))
       end
     end
+
+    context 'with a country routing rule' do
+      let(:italy_agent) { create(:user, account: account, role: :agent) }
+      let(:italy_params) { params.merge('From' => '+390212345678') }
+
+      before do
+        create(:inbox_member, inbox: inbox, user: agent)
+        create(:inbox_member, inbox: inbox, user: italy_agent)
+        OnlineStatusTracker.set_status(account.id, agent.id, 'online')
+        OnlineStatusTracker.update_presence(account.id, 'User', agent.id)
+        create(:voice_country_route, account: account, inbox: inbox, user: italy_agent, country_name: 'Italy', phone_prefix: '+39')
+      end
+
+      it 'goes to voicemail for a routed country when the assigned agent is offline, even if others are online' do
+        signed_post "/webhooks/twilio_voice/#{phone_digits}", italy_params
+
+        expect(response.body).to include('<Record')
+        expect(response.body).not_to include('<Dial>')
+      end
+
+      it 'rings the routed agent once they are online' do
+        OnlineStatusTracker.set_status(account.id, italy_agent.id, 'online')
+        OnlineStatusTracker.update_presence(account.id, 'User', italy_agent.id)
+
+        signed_post "/webhooks/twilio_voice/#{phone_digits}", italy_params
+
+        expect(response.body).to include('<Dial>')
+      end
+
+      it 'is unaffected for a country with no routing rule' do
+        signed_post "/webhooks/twilio_voice/#{phone_digits}", params
+
+        expect(response.body).to include('<Dial>')
+      end
+    end
   end
 
   describe 'POST .../status' do
