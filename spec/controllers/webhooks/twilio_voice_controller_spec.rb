@@ -154,6 +154,26 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
 
       expect(voice_call.reload.status).to eq('in-progress')
     end
+
+    it 'schedules an outcome check so the ticket gets relabeled/merged once the call settles' do
+      expect do
+        signed_post "/webhooks/twilio_voice/#{phone_digits}/status", { 'CallSid' => 'CA_status_1', 'CallStatus' => 'no-answer' }
+      end.to have_enqueued_job(VoiceCallOutcomeCheckJob).with(voice_call.id)
+    end
+
+    it 'schedules an outcome check on a busy/failed callback too' do
+      expect do
+        signed_post "/webhooks/twilio_voice/#{phone_digits}/status", { 'CallSid' => 'CA_status_1', 'CallStatus' => 'failed' }
+      end.to have_enqueued_job(VoiceCallOutcomeCheckJob).with(voice_call.id)
+    end
+
+    it 'does not schedule an outcome check for a call that already progressed past ringing' do
+      voice_call.update!(status: 'in_progress')
+
+      expect do
+        signed_post "/webhooks/twilio_voice/#{phone_digits}/status", { 'CallSid' => 'CA_status_1', 'CallStatus' => 'completed' }
+      end.not_to have_enqueued_job(VoiceCallOutcomeCheckJob)
+    end
   end
 
   describe 'POST .../conference_status' do

@@ -116,6 +116,18 @@ const audioAttachment = computed(() =>
   (attachments?.value || []).find(a => a.fileType === ATTACHMENT_TYPES.AUDIO)
 );
 
+const recordingAttachment = computed(() => {
+  if (audioAttachment.value) return audioAttachment.value;
+  const url = call.value?.recordingUrl;
+  if (!url) return null;
+  return {
+    dataUrl: url,
+    fileType: ATTACHMENT_TYPES.AUDIO,
+    extension: 'wav',
+    transcribedText: call.value?.transcript || '',
+  };
+});
+
 const durationSeconds = computed(() => {
   const fromCall = call.value?.durationSeconds || call.value?.duration_seconds;
   if (fromCall != null) return fromCall;
@@ -144,8 +156,10 @@ const handledBy = computed(() =>
 const labelKey = computed(() => {
   if (LABEL_MAP[status.value]) return LABEL_MAP[status.value];
   if (isFailed.value) {
-    return isOutbound.value
-      ? 'CONVERSATION.VOICE_CALL.NO_ANSWER_OUTBOUND_LABEL'
+    if (isOutbound.value)
+      return 'CONVERSATION.VOICE_CALL.NO_ANSWER_OUTBOUND_LABEL';
+    return recordingAttachment.value
+      ? 'CONVERSATION.VOICE_CALL.VOICEMAIL'
       : 'CONVERSATION.VOICE_CALL.MISSED_CALL';
   }
   // RINGING or an as-yet-unknown/initial status: orient purely by direction so an
@@ -218,18 +232,6 @@ const canJoinCall = computed(() => {
   const assignee = conversationAssignee.value;
   if (assignee?.id && assignee.id !== currentUserId.value) return false;
   return true;
-});
-
-const recordingAttachment = computed(() => {
-  if (audioAttachment.value) return audioAttachment.value;
-  const url = call.value?.recordingUrl;
-  if (!url) return null;
-  return {
-    dataUrl: url,
-    fileType: ATTACHMENT_TYPES.AUDIO,
-    extension: 'wav',
-    transcribedText: call.value?.transcript || '',
-  };
 });
 
 const handleJoinCall = async () => {

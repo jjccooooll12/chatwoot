@@ -86,6 +86,14 @@ class VoiceCall < ApplicationRecord
     eligible_agent_ids.blank? || eligible_agent_ids.include?(user_id)
   end
 
+  def outcome_kind
+    recording.attached? ? :voicemail : :abandoned
+  end
+
+  def outcome_label
+    outcome_kind == :voicemail ? 'Voicemail' : 'Abandoned call'
+  end
+
   private
 
   def recording_url

@@ -22,6 +22,13 @@ class VoiceRecordingDownloadJob < ApplicationJob
     )
 
     voice_call.transition_to!(status: 'no_answer', ended_at: Time.current, end_reason: 'no_answer') if voice_call.ringing?
+
+    # This job also fires for an *answered* call's conference recording
+    # (record: 'record-from-start' on the Dial/Conference verb shares the
+    # same recording_status_callback) — only unanswered outcomes get
+    # relabeled/merged as a voicemail.
+    unanswered_statuses = %w[no_answer failed rejected]
+    Voice::CallOutcomeFinalizer.new(voice_call: voice_call).perform if unanswered_statuses.include?(voice_call.status)
   end
 
   private

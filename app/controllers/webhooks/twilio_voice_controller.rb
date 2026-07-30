@@ -52,12 +52,15 @@ class Webhooks::TwilioVoiceController < ApplicationController
     case params[:CallStatus]
     when 'no-answer', 'canceled'
       voice_call.transition_to!(status: 'no_answer', ended_at: Time.current, end_reason: params[:CallStatus])
+      schedule_outcome_check!(voice_call)
     when 'busy', 'failed'
       voice_call.transition_to!(status: 'failed', ended_at: Time.current, end_reason: params[:CallStatus])
+      schedule_outcome_check!(voice_call)
     when 'completed'
       # The call ended without ever reaching a conference (e.g. hung up
       # while ringing, before the voicemail Record verb or any agent joined).
       voice_call.transition_to!(status: 'no_answer', ended_at: Time.current, end_reason: 'no_answer')
+      schedule_outcome_check!(voice_call)
     end
 
     head :no_content
@@ -173,6 +176,13 @@ class Webhooks::TwilioVoiceController < ApplicationController
   def finalize_completed_call(voice_call)
     duration = voice_call.started_at ? (Time.current - voice_call.started_at).round : nil
     voice_call.transition_to!(status: 'completed', ended_at: Time.current, duration_seconds: duration, end_reason: 'completed')
+  end
+
+  # Delayed so a genuine voicemail recording (async, via the separate
+  # recording_status webhook) has a chance to arrive before the call is
+  # settled as a plain abandoned attempt — see Voice::CallOutcomeFinalizer.
+  def schedule_outcome_check!(voice_call)
+    VoiceCallOutcomeCheckJob.set(wait: VoiceCallOutcomeCheckJob::WAIT).perform_later(voice_call.id)
   end
 
   def online_agent_ids
