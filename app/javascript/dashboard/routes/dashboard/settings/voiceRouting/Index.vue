@@ -143,7 +143,7 @@ onMounted(async () => {
                 v-model="countryName"
                 type="text"
                 :placeholder="t('VOICE_ROUTING.COUNTRY_NAME_PLACEHOLDER')"
-                class="reset-base border border-n-weak rounded-md px-2 py-1.5 text-sm"
+                class="reset-base h-[34px] border border-n-weak rounded-md px-2 text-sm"
               />
             </div>
             <div class="flex flex-col gap-1">
@@ -154,7 +154,7 @@ onMounted(async () => {
                 v-model="phonePrefix"
                 type="text"
                 :placeholder="t('VOICE_ROUTING.PHONE_PREFIX_PLACEHOLDER')"
-                class="reset-base border border-n-weak rounded-md px-2 py-1.5 text-sm w-24"
+                class="reset-base h-[34px] border border-n-weak rounded-md px-2 text-sm w-24"
               />
             </div>
             <div class="flex flex-col gap-1">
@@ -164,7 +164,7 @@ onMounted(async () => {
               <div class="relative">
                 <select
                   v-model="selectedAgentId"
-                  class="reset-base appearance-none border border-n-weak rounded-md pl-2 pr-7 py-1.5 text-sm w-full"
+                  class="reset-base appearance-none h-[34px] !border !border-n-weak rounded-md pl-2 pr-7 text-sm w-full box-border"
                 >
                   <option value="" disabled>
                     {{ t('VOICE_ROUTING.SELECT_AGENT') }}
