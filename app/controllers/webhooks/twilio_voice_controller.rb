@@ -9,8 +9,19 @@ class Webhooks::TwilioVoiceController < ApplicationController
   def call_twiml
     voice_call = create_ringing_call!
 
-    twiml = online_agent_ids.present? ? dial_conference_twiml(voice_call) : voicemail_twiml
-    render xml: twiml.to_s
+    if online_agent_ids.present?
+      VoiceRingTimeoutJob.set(wait: VoiceRingTimeoutJob::RING_TIMEOUT).perform_later(voice_call.id)
+      render xml: dial_conference_twiml(voice_call).to_s
+    else
+      render xml: voicemail_twiml.to_s
+    end
+  end
+
+  # Mid-call redirect target for VoiceRingTimeoutJob — if nobody answers
+  # within the ring timeout, the live call gets pointed here instead of
+  # sitting in the conference indefinitely.
+  def ring_timeout
+    render xml: voicemail_twiml.to_s
   end
 
   # TwiML Application's Voice Request URL — hit when an agent's browser
@@ -131,6 +142,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
 
   def dial_conference_twiml(voice_call)
     response = Twilio::TwiML::VoiceResponse.new
+    response.say(message: 'Please hold while we connect you to an agent.')
     response.dial do |dial|
       dial.conference(
         voice_call.conference_sid,

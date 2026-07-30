@@ -76,6 +76,12 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
         voice_call = VoiceCall.find_by(provider_call_id: 'CA_inbound_1')
         expect(response.body).to include(voice_call.conference_sid)
       end
+
+      it 'schedules a ring-timeout job so an unanswered call falls back to voicemail' do
+        expect do
+          signed_post "/webhooks/twilio_voice/#{phone_digits}", params
+        end.to have_enqueued_job(VoiceRingTimeoutJob).with(kind_of(Integer))
+      end
     end
   end
 
@@ -148,6 +154,17 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
         signed_post "/webhooks/twilio_voice/#{phone_digits}/recording_status",
                     { 'CallSid' => 'CA_rec_1', 'RecordingStatus' => 'in-progress', 'RecordingUrl' => 'https://api.twilio.com/rec/RE1' }
       end.not_to have_enqueued_job(VoiceRecordingDownloadJob)
+    end
+  end
+
+  describe 'POST .../ring_timeout' do
+    let(:phone_digits) { channel.additional_attributes['phone_number'].delete_prefix('+') }
+
+    it 'renders the voicemail TwiML so an unanswered call gets redirected there' do
+      signed_post "/webhooks/twilio_voice/#{phone_digits}/ring_timeout", {}
+
+      expect(response.body).to include('<Record')
+      expect(response.body).not_to include('<Dial>')
     end
   end
 end

@@ -656,6 +656,7 @@ Rails.application.routes.draw do
   post 'webhooks/twilio_voice/:phone_number/status', to: 'webhooks/twilio_voice#status', as: :voice_webhook_status
   post 'webhooks/twilio_voice/:phone_number/conference_status', to: 'webhooks/twilio_voice#conference_status', as: :voice_webhook_conference_status
   post 'webhooks/twilio_voice/:phone_number/recording_status', to: 'webhooks/twilio_voice#recording_status', as: :voice_webhook_recording_status
+  post 'webhooks/twilio_voice/:phone_number/ring_timeout', to: 'webhooks/twilio_voice#ring_timeout', as: :voice_webhook_ring_timeout
   get 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#verify'
   post 'webhooks/whatsapp/:phone_number', to: 'webhooks/whatsapp#process_payload'
   get 'webhooks/instagram', to: 'webhooks/instagram#verify'
