@@ -40,6 +40,19 @@ RSpec.describe Voice::CallOutcomeFinalizer do
       expect(call.conversation.reload).to be_open
     end
 
+    it "updates the conversation's mail_subject too, not just the message content" do
+      # Message#ensure_conversation_subject sets additional_attributes['mail_subject']
+      # once at creation time and it takes priority over message.content in the
+      # ticket list's subject — relabeling only the message would leave the list
+      # showing "Incoming call" forever even though the bubble is correct.
+      call = build_call(status: 'no_answer')
+      call.conversation.update_columns(additional_attributes: { 'mail_subject' => 'Incoming call' })
+
+      described_class.new(voice_call: call).perform
+
+      expect(call.conversation.reload.additional_attributes['mail_subject']).to eq('Abandoned call')
+    end
+
     it 'merges two abandoned calls for the same number, primary = the newest' do
       older = build_call(status: 'no_answer')
       described_class.new(voice_call: older).perform

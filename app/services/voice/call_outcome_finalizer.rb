@@ -22,6 +22,19 @@ class Voice::CallOutcomeFinalizer
   def relabel!
     voice_call.message.update!(content: voice_call.outcome_label)
     voice_call.message.send_update_event
+    update_mail_subject!
+  end
+
+  # The ticket list title reads additional_attributes['mail_subject'], which
+  # Message#ensure_conversation_subject sets once, permanently, at message
+  # creation time, and takes priority over message.content in the frontend's
+  # subject computed — without this, the list keeps showing the stock
+  # "Incoming call" forever even after the content update above.
+  def update_mail_subject!
+    conversation = voice_call.conversation
+    conversation.update_columns( # rubocop:disable Rails/SkipsModelValidations
+      additional_attributes: conversation.additional_attributes.merge('mail_subject' => voice_call.outcome_label)
+    )
   end
 
   def merge_with_sibling!
