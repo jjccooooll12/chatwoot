@@ -24,7 +24,12 @@ namespace :voice_inbox do
       }
     )
 
-    inbox = Inbox.create!(account: account, channel: channel, name: 'Voice')
+    # Auto-assignment must stay off: a call rings every online agent on the
+    # inbox until one of them answers (see VoiceConferenceController#create),
+    # not Chatwoot's normal single-agent round robin. If auto-assignment
+    # claims the conversation first, the frontend's shouldShowCall hides the
+    # incoming-call popup from every agent except whoever it auto-assigned to.
+    inbox = Inbox.create!(account: account, channel: channel, name: 'Voice', enable_auto_assignment: false)
 
     users = account.users.where(email: agent_emails)
     missing = agent_emails - users.pluck(:email)

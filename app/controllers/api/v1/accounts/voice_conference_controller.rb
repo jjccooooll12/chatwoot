@@ -36,6 +36,11 @@ class Api::V1::Accounts::VoiceConferenceController < Api::V1::Accounts::BaseCont
       return render json: { error: 'Call already answered' }, status: :conflict
     end
 
+    # Auto-assignment is off for the Voice inbox (every online agent needs to
+    # see the ringing popup, not just whoever it round-robins to) — assign
+    # the conversation here instead, to whoever actually answered.
+    @voice_call.conversation.update!(assignee_id: current_user.id) if @voice_call.conversation.assignee_id.blank?
+
     render json: { conference_sid: @voice_call.conference_sid }
   end
 

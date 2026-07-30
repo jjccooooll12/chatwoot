@@ -69,6 +69,22 @@ RSpec.describe 'Voice Conference API', type: :request do
 
       expect(response).to have_http_status(:success)
     end
+
+    it 'assigns the conversation to the agent who answers' do
+      post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/conference",
+           params: { conversation_id: conversation.display_id, call_sid: 'CA_join_1' }, headers: agent.create_new_auth_token
+
+      expect(conversation.reload.assignee_id).to eq(agent.id)
+    end
+
+    it 'does not steal an already-assigned conversation from another agent' do
+      conversation.update!(assignee_id: other_agent.id)
+
+      post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/conference",
+           params: { conversation_id: conversation.display_id, call_sid: 'CA_join_1' }, headers: agent.create_new_auth_token
+
+      expect(conversation.reload.assignee_id).to eq(other_agent.id)
+    end
   end
 
   describe 'DELETE /inboxes/:inbox_id/conference' do
