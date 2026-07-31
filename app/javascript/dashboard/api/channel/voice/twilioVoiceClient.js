@@ -93,8 +93,17 @@ class TwilioVoiceClient extends EventTarget {
     return connection;
   }
 
+  // Fires for every way a call can end (agent hangs up, the other party
+  // hangs up, a connection drops) - this is the one convergence point,
+  // registered on both the Device and the Connection. Fully destroying the
+  // Device here (not just disconnecting) releases the microphone, which is
+  // what actually clears the browser's "this tab is using your mic" tab
+  // indicator - disconnecting alone leaves the Device (and its mic access)
+  // warm indefinitely, so the tab kept showing "on a call" long after the
+  // call ended. The next joinCall() re-initializes a fresh Device anyway, so
+  // there's no real cost to releasing it promptly.
   onDisconnect = () => {
-    this.activeConnection = null;
+    this.destroyDevice();
     this.dispatchEvent(createCallDisconnectedEvent());
   };
 }
