@@ -53,9 +53,12 @@ const conversationUrl = id =>
 const channelIconFor = conversation => {
   const inbox = store.getters['inboxes/getInbox'](conversation.inbox_id);
   const channelType = inbox?.channel_type || inbox?.channelType;
-  return channelType === INBOX_TYPES.WEB
-    ? 'i-lucide-message-circle'
-    : 'i-lucide-mail';
+  const isWhatsApp =
+    channelType === INBOX_TYPES.WHATSAPP ||
+    (channelType === INBOX_TYPES.TWILIO && inbox?.medium === 'whatsapp');
+  if (channelType === INBOX_TYPES.WEB) return 'i-lucide-message-circle';
+  if (isWhatsApp) return 'i-woot-whatsapp';
+  return 'i-lucide-mail';
 };
 const subjectOf = conversation => {
   const attrs = conversation.additional_attributes || {};

@@ -227,13 +227,18 @@ const assignableAgents = computed(() => {
   ];
 });
 
-// A distinct icon for live-chat tickets vs email, so the two are easy to
-// tell apart at a glance in the list.
+// A distinct icon per channel, so tickets are easy to tell apart at a
+// glance in the list. WhatsApp arrives as Channel::TwilioSms with
+// medium "whatsapp" here (see isATwilioWhatsAppChannel in useInbox.js) -
+// checking INBOX_TYPES.WHATSAPP too covers the Cloud API channel type.
 const channelIcon = computed(() => {
   const channelType = props.inbox?.channel_type || props.inbox?.channelType;
-  return channelType === INBOX_TYPES.WEB
-    ? 'i-lucide-message-circle'
-    : 'i-lucide-mail';
+  const isWhatsApp =
+    channelType === INBOX_TYPES.WHATSAPP ||
+    (channelType === INBOX_TYPES.TWILIO && props.inbox?.medium === 'whatsapp');
+  if (channelType === INBOX_TYPES.WEB) return 'i-lucide-message-circle';
+  if (isWhatsApp) return 'i-woot-whatsapp';
+  return 'i-lucide-mail';
 });
 
 const assigneeId = computed(() => props.assignee.id || '');
