@@ -36,6 +36,7 @@ import {
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { REPLY_POLICY } from 'shared/constants/links';
 import { MESSAGE_TYPE } from 'shared/constants/messages';
+import { CONTENT_TYPES } from 'next/message/constants';
 import wootConstants from 'dashboard/constants/globals';
 import { LOCAL_STORAGE_KEYS } from 'dashboard/constants/localStorage';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
@@ -162,6 +163,17 @@ export default {
         return filterDuplicateSourceMessages(messages);
       }
       return messages;
+    },
+    // A voice ticket reads top-down like an email/ticket thread (the call
+    // summary is the one thing that matters, not a running back-and-forth),
+    // so it shouldn't get the chat-style "first:mt-auto" trick further down
+    // that bottom-anchors short conversations near the composer - that left
+    // a lone call card stranded at the very bottom with a large empty gap
+    // above it instead of sitting in its natural top-of-thread position.
+    isVoiceCallConversation() {
+      return (this.currentChat.messages || []).some(
+        m => m.content_type === CONTENT_TYPES.VOICE_CALL
+      );
     },
     readMessages() {
       return getReadMessages(
@@ -595,14 +607,20 @@ export default {
       <template #beforeAll>
         <transition name="slide-up">
           <!-- Email/ticket threads start at the top (Freshdesk); chat threads
-               keep the `first:mt-auto` trick that bottom-aligns messages. -->
+               keep the `first:mt-auto` trick that bottom-aligns messages.
+               Voice tickets read like an email/ticket thread too - the call
+               summary is a standalone record, not a live back-and-forth - so
+               they're excluded from the bottom-anchor trick as well. -->
           <!-- eslint-disable-next-line vue/require-toggle-inside-transition -->
           <li
             v-if="shouldShowSpinner || !isAnEmailChannel"
             class="flex flex-shrink-0 flex-grow-0 items-center justify-center max-w-full mt-0 mr-0 mb-1 ml-0 relative last:mb-0"
             :class="[
               shouldShowSpinner ? 'min-h-[4rem]' : 'min-h-0',
-              { 'flex-auto first:mt-auto': !isAnEmailChannel },
+              {
+                'flex-auto first:mt-auto':
+                  !isAnEmailChannel && !isVoiceCallConversation,
+              },
             ]"
           >
             <Spinner v-if="shouldShowSpinner" class="text-n-brand" />
