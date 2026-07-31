@@ -17,6 +17,7 @@ import { useWhatsappCallSession } from 'dashboard/composables/useWhatsappCallSes
 import { useCallsStore } from 'dashboard/stores/calls';
 import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 import { formatDuration } from 'shared/helpers/timeHelper';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 import { useAlert } from 'dashboard/composables';
 
 import Icon from 'dashboard/components-next/icon/Icon.vue';
@@ -103,13 +104,15 @@ const conversationAssignee = computed(() => {
   return conversation?.meta?.assignee || null;
 });
 const displayAgentName = computed(() => {
-  if (call.value?.acceptedByAgentName) return call.value.acceptedByAgentName;
+  if (call.value?.acceptedByAgentName) {
+    return shortenAgentName(call.value.acceptedByAgentName);
+  }
   if (acceptedByAgentId.value) {
     const agent = store.getters['agents/getAgentById'](acceptedByAgentId.value);
-    if (agent?.available_name) return agent.available_name;
-    if (agent?.name) return agent.name;
+    if (agent?.available_name) return shortenAgentName(agent.available_name);
+    if (agent?.name) return shortenAgentName(agent.name);
   }
-  return conversationAssignee.value?.name || null;
+  return shortenAgentName(conversationAssignee.value?.name) || null;
 });
 
 const audioAttachment = computed(() =>
@@ -141,10 +144,12 @@ const formattedDuration = computed(() => formatDuration(durationSeconds.value));
 // strictly from the persisted accept fields — never the conversation's current
 // assignee, which would mis-attribute a historical call after a reassignment.
 const handlerName = computed(() => {
-  if (call.value?.acceptedByAgentName) return call.value.acceptedByAgentName;
+  if (call.value?.acceptedByAgentName) {
+    return shortenAgentName(call.value.acceptedByAgentName);
+  }
   if (!acceptedByAgentId.value) return null;
   const agent = store.getters['agents/getAgentById'](acceptedByAgentId.value);
-  return agent?.available_name || agent?.name || null;
+  return shortenAgentName(agent?.available_name || agent?.name) || null;
 });
 
 const handledBy = computed(() =>

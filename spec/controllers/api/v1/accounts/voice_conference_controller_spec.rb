@@ -52,6 +52,20 @@ RSpec.describe 'Voice Conference API', type: :request do
       expect(voice_call.reload.accepted_by_agent_id).to eq(agent.id)
     end
 
+    # Regression: the ring can time out (or the caller can hang up) in the
+    # window between the popup rendering and an agent clicking Answer. Without
+    # this check, that race silently "succeeded" - accepted_by_agent_id got
+    # set on a call already resolved as no_answer, a confusing, wrong state.
+    it 'returns 409 when the call already timed out to voicemail before the agent claimed it' do
+      voice_call.update!(status: 'no_answer', ended_at: Time.current, end_reason: 'no_answer')
+
+      post "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/conference",
+           params: { conversation_id: conversation.display_id, call_sid: 'CA_join_1' }, headers: agent.create_new_auth_token
+
+      expect(response).to have_http_status(:conflict)
+      expect(voice_call.reload.accepted_by_agent_id).to be_nil
+    end
+
     it 'returns 409 for a second agent trying to claim an already-answered call' do
       voice_call.update!(accepted_by_agent_id: agent.id)
 

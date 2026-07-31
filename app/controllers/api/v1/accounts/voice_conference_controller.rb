@@ -33,6 +33,16 @@ class Api::V1::Accounts::VoiceConferenceController < Api::V1::Accounts::BaseCont
       return render json: { error: 'This call is routed to a different agent' }, status: :forbidden
     end
 
+    # The ring can time out (or the caller can hang up) in the moment between
+    # the popup rendering and the agent clicking Answer - without this, that
+    # race silently "succeeds" into a broken state: accepted_by_agent_id set
+    # on a call that's already no_answer. 409 here is the same response the
+    # frontend already treats as "someone else got it" (tears down the local
+    # Device, dismisses the popup), so this reuses an existing handled path.
+    unless @voice_call.ringing?
+      return render json: { error: 'This call is no longer available' }, status: :conflict
+    end
+
     claimed = VoiceCall.where(id: @voice_call.id, accepted_by_agent_id: nil)
                         .update_all(accepted_by_agent_id: current_user.id, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
 

@@ -34,7 +34,28 @@ RSpec.describe VoiceRingTimeoutJob do
     described_class.new.perform(voice_call.id)
   end
 
-  it 'does not raise if the call already ended on Twilio\'s side' do
+  # Regression: redirecting the live Twilio call alone never touched our own
+  # VoiceCall row, so nothing broadcast and the ringing popup sat frozen on
+  # "ringing" for every agent indefinitely - and an agent could still "answer"
+  # a call that had already moved on to voicemail.
+  it 'settles the call as no_answer immediately and schedules the outcome check, so the popup actually stops' do
+    client = instance_double(Twilio::REST::Client)
+    calls_resource = instance_double(Twilio::REST::Api::V2010::CallInstance)
+    allow(Twilio::REST::Client).to receive(:new).and_return(client)
+    allow(client).to receive(:calls).and_return(calls_resource)
+    allow(calls_resource).to receive(:update)
+
+    expect do
+      described_class.new.perform(voice_call.id)
+    end.to have_enqueued_job(VoiceCallOutcomeCheckJob).with(voice_call.id)
+
+    voice_call.reload
+    expect(voice_call.status).to eq('no-answer')
+    expect(voice_call.end_reason).to eq('no_answer')
+    expect(voice_call.ended_at).to be_present
+  end
+
+  it 'does not raise if the call already ended on Twilio\'s side, and does not settle the call locally' do
     client = instance_double(Twilio::REST::Client)
     calls_resource = instance_double(Twilio::REST::Api::V2010::CallInstance)
     allow(Twilio::REST::Client).to receive(:new).and_return(client)
@@ -42,5 +63,6 @@ RSpec.describe VoiceRingTimeoutJob do
     allow(calls_resource).to receive(:update).and_raise(Twilio::REST::RestError.new('not in-progress', double(status_code: 400, body: {}))) # rubocop:disable RSpec/VerifiedDoubles
 
     expect { described_class.new.perform(voice_call.id) }.not_to raise_error
+    expect(voice_call.reload.status).to eq('ringing')
   end
 end

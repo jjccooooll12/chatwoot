@@ -77,7 +77,14 @@ class Webhooks::TwilioVoiceController < ApplicationController
 
     case params[:StatusCallbackEvent]
     when 'conference-start'
-      voice_call.transition_to!(status: 'in_progress', started_at: Time.current) if voice_call.ringing?
+      # ConferenceSid (Twilio's own SID, e.g. "CFxxx") is what the recording
+      # webhook below sends for a conference-sourced recording - it does NOT
+      # send FriendlyName there, only here. Capture it now; without it, an
+      # answered call's recording can never be matched back to this VoiceCall.
+      if voice_call.ringing?
+        voice_call.transition_to!(status: 'in_progress', started_at: Time.current, twilio_conference_sid: params[:ConferenceSid])
+        relabel_as_answered!(voice_call)
+      end
     when 'conference-end'
       finalize_completed_call(voice_call) if voice_call.in_progress?
     end
@@ -86,16 +93,18 @@ class Webhooks::TwilioVoiceController < ApplicationController
   end
 
   # Fires for both the voicemail <Record> verb and the answered-call
-  # <Conference record="record-from-start"> recording. The voicemail case
-  # carries CallSid; the conference-recording case may only carry
-  # ConferenceSid/FriendlyName — try both. Not yet exercised against live
-  # Twilio traffic; confirm the actual param set during throwaway-number
-  # testing (see plan verification step) and adjust if needed.
+  # <Conference record="record-from-start"> recording. Confirmed against live
+  # Twilio traffic: the voicemail case carries CallSid; the conference case
+  # carries ConferenceSid (Twilio's SID) instead - never FriendlyName, and
+  # never CallSid - so that lookup silently matched nothing and every
+  # answered-call recording was dropped. twilio_conference_sid (captured on
+  # conference-start above) is what actually resolves it.
   def recording_status
     return head :no_content unless params[:RecordingStatus] == 'completed'
 
     voice_call = VoiceCall.find_by(provider_call_id: params[:CallSid], account_id: @account.id) ||
-                 VoiceCall.find_by(conference_sid: params[:FriendlyName], account_id: @account.id)
+                 VoiceCall.find_by(conference_sid: params[:FriendlyName], account_id: @account.id) ||
+                 VoiceCall.find_by(twilio_conference_sid: params[:ConferenceSid], account_id: @account.id)
     return head :no_content unless voice_call
 
     VoiceRecordingDownloadJob.perform_later(voice_call.id, params[:RecordingUrl])
@@ -187,6 +196,22 @@ class Webhooks::TwilioVoiceController < ApplicationController
   def finalize_completed_call(voice_call)
     duration = voice_call.started_at ? (Time.current - voice_call.started_at).round : nil
     voice_call.transition_to!(status: 'completed', ended_at: Time.current, duration_seconds: duration, end_reason: 'completed')
+  end
+
+  # Once an agent actually answers, relabel the ticket from the generic
+  # "Incoming call" (both the message content and the list title share this
+  # gap - see Voice::CallOutcomeFinalizer for the equivalent on the
+  # abandoned/voicemail side) to who it's actually with, same as any other
+  # channel's ticket title reflects its subject.
+  def relabel_as_answered!(voice_call)
+    label = "Incoming call with #{voice_call.caller_display_name}"
+    voice_call.message.update!(content: label)
+    voice_call.message.send_update_event
+
+    conversation = voice_call.conversation
+    conversation.update_columns( # rubocop:disable Rails/SkipsModelValidations
+      additional_attributes: conversation.additional_attributes.merge('mail_subject' => label)
+    )
   end
 
   # Delayed so a genuine voicemail recording (async, via the separate

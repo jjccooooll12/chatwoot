@@ -94,6 +94,13 @@ class VoiceCall < ApplicationRecord
     outcome_kind == :voicemail ? 'Voicemail' : 'Abandoned call'
   end
 
+  # Contact#name defaults to the raw phone number at creation (see
+  # create_ringing_call!) and only ever changes if an agent later renames the
+  # contact — so "still equal to the number" is exactly "no real name known".
+  def caller_display_name
+    contact.name == from_number ? from_number : contact.name
+  end
+
   private
 
   def recording_url
