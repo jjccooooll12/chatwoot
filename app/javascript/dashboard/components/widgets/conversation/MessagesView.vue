@@ -175,6 +175,16 @@ export default {
         m => m.content_type === CONTENT_TYPES.VOICE_CALL
       );
     },
+    // Voice tickets need the same "send as email" escape hatch as live
+    // chat - hides itself again once the conversation is actually on the
+    // email inbox (isAnEmailChannel), same as the web-widget case already
+    // does implicitly (isAWebWidgetInbox goes false once switched).
+    canSendAsEmail() {
+      return (
+        !this.isAnEmailChannel &&
+        (this.isAWebWidgetInbox || this.isVoiceCallConversation)
+      );
+    },
     readMessages() {
       return getReadMessages(
         this.getMessages,
@@ -403,6 +413,17 @@ export default {
     // Bottom compact-composer tabs open the full editor in the chosen mode.
     // Forward has no dedicated editor mode yet, so it opens a reply.
     startCompose(mode) {
+      // A voice ticket isn't a chat - replying needs a real "to" address
+      // first. Route Reply through the same dialog the "Send Email" button
+      // uses instead of opening a chat-style composer with nowhere to send.
+      if (
+        mode === REPLY_EDITOR_MODES.REPLY &&
+        this.isVoiceCallConversation &&
+        !this.isAnEmailChannel
+      ) {
+        this.openSendAsEmailDialog();
+        return;
+      }
       this.onOpenComposer(
         mode === REPLY_EDITOR_MODES.NOTE
           ? REPLY_EDITOR_MODES.NOTE
@@ -713,7 +734,7 @@ export default {
                   {{ $t('CHAT_LIST.FRESHDESK_DETAIL.FORWARD') }}
                 </button>
                 <button
-                  v-if="isAWebWidgetInbox"
+                  v-if="canSendAsEmail"
                   type="button"
                   class="inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-xs font-medium text-fd-muted hover:bg-n-slate-2 hover:text-fd-text"
                   @click="openSendAsEmailDialog"

@@ -1,16 +1,17 @@
 # frozen_string_literal: true
 
-# Moves a live-chat conversation onto the account's email inbox, in place —
-# same conversation/ticket, but from this point on it goes through the
-# normal email reply/threading pipeline (so a customer reply lands back in
-# this same ticket) instead of the widget's websocket delivery.
+# Moves a non-email conversation (live chat, voice call, ...) onto the
+# account's email inbox, in place — same conversation/ticket, but from this
+# point on it goes through the normal email reply/threading pipeline (so a
+# customer reply lands back in this same ticket) instead of the original
+# channel's delivery mechanism.
 class Conversations::SwitchToEmailService
   pattr_initialize [:conversation!, :email!, :user]
 
-  class NotAWebWidgetConversation < StandardError; end
+  class NotSwitchableToEmail < StandardError; end
 
   def perform
-    raise NotAWebWidgetConversation unless conversation.inbox.channel_type == 'Channel::WebWidget'
+    raise NotSwitchableToEmail if conversation.inbox.channel_type == 'Channel::Email'
 
     ActiveRecord::Base.transaction do
       update_contact_email!

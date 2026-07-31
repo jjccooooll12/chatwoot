@@ -81,7 +81,7 @@ en:
       support_email:
         invalid: is not a valid email address
     conversation:
-      not_a_web_widget: This conversation is not a live chat, so it can't be switched to email
+      not_switchable_to_email: This conversation can't be switched to email
     validations:
       presence: must not be blank
     webhook:

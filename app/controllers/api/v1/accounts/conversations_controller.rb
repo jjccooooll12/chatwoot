@@ -163,8 +163,8 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
       email: params.require(:email),
       user: Current.user
     ).perform
-  rescue ::Conversations::SwitchToEmailService::NotAWebWidgetConversation
-    render json: { message: I18n.t('errors.conversation.not_a_web_widget') }, status: :unprocessable_entity
+  rescue ::Conversations::SwitchToEmailService::NotSwitchableToEmail
+    render json: { message: I18n.t('errors.conversation.not_switchable_to_email') }, status: :unprocessable_entity
   end
 
   def merge_candidates
