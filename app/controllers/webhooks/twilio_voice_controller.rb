@@ -128,7 +128,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
       content: 'Incoming call'
     )
 
-    VoiceCall.create!(
+    voice_call = VoiceCall.create!(
       account: @account,
       inbox: @inbox,
       conversation: conversation,
@@ -142,6 +142,17 @@ class Webhooks::TwilioVoiceController < ApplicationController
       to_number: to_number,
       eligible_agent_ids: matched_route_agent_ids(from_number)
     )
+
+    # The message.created broadcast fires the instant the message row above is
+    # saved - before this VoiceCall exists, so message.call is nil and that
+    # first payload carries no call data at all. The frontend's ring popup
+    # requires call.status == 'ringing' to show itself, so without this, it
+    # silently never appears - nothing re-broadcasts until the call's next
+    # transition_to! (i.e. when it's already over). Force one now so the
+    # frontend learns the call is ringing within milliseconds, not at the end.
+    message.send_update_event
+
+    voice_call
   end
 
   def dial_conference_twiml(voice_call)

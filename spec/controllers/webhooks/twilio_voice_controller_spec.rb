@@ -61,6 +61,26 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
       end
     end
 
+    # Regression: the message.created broadcast fires the instant the message
+    # row is saved, which is BEFORE the VoiceCall row (and thus message.call)
+    # exists - so that first broadcast always carries no call data, and the
+    # frontend's ring popup (which requires call.status == 'ringing') never
+    # appears. Nothing re-broadcast until the call's next transition_to!,
+    # which only happens once it's already resolved - by then it's too late.
+    # create_ringing_call! must force a second broadcast once the VoiceCall
+    # exists so the frontend learns "ringing" within milliseconds, not at the
+    # end of the call.
+    it 'broadcasts the call as ringing immediately once the VoiceCall exists, not only once it resolves' do
+      expect_any_instance_of(Message).to receive(:send_update_event) # rubocop:disable RSpec/AnyInstance
+
+      signed_post "/webhooks/twilio_voice/#{phone_digits}", params
+
+      voice_call = VoiceCall.find_by(provider_call_id: 'CA_inbound_1')
+      call_payload = voice_call.message.push_event_data[:call]
+      expect(call_payload).to be_present
+      expect(call_payload[:status]).to eq('ringing')
+    end
+
     context 'when an inbox member is online' do
       before do
         create(:inbox_member, inbox: inbox, user: agent)
