@@ -84,3 +84,11 @@ auto_follow_up_job:
   cron: '0 * * * *'
   class: 'AutoFollowUpJob'
   queue: scheduled_jobs
+
+# Checks hourly for open WhatsApp conversations idle 48h+ and resolves them,
+# so the next inbound message from that contact starts a fresh ticket instead
+# of reopening a stale one. See app/jobs/whatsapp_auto_resolve_job.rb.
+whatsapp_auto_resolve_job:
+  cron: '0 * * * *'
+  class: 'WhatsappAutoResolveJob'
+  queue: scheduled_jobs
