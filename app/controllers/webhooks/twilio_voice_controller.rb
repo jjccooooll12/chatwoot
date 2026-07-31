@@ -163,7 +163,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
 
   def voicemail_twiml
     response = Twilio::TwiML::VoiceResponse.new
-    response.say(message: 'Sorry, nobody is available to take your call right now. Please leave a message after the beep.')
+    response.say(message: 'Please leave a message after the beep.')
     response.record(
       max_length: 120,
       play_beep: true,
