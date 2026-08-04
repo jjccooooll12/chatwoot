@@ -9,7 +9,13 @@ class Imap::ImapMailbox
   # are automated notifications, not customer conversations. A domain entry also
   # matches its subdomains; an entry with "@" matches an exact address. The team
   # can extend this at runtime via account.custom_attributes['blocked_ticket_senders'].
-  DEFAULT_BLOCKED_SENDER_DOMAINS = %w[microsoft.com godaddy.com twilio.com].freeze
+  # facebook.com also covers business.facebook.com via the subdomain rule below;
+  # facebookmail.com is a separate apex Meta sends from, so it needs its own entry.
+  DEFAULT_BLOCKED_SENDER_DOMAINS = %w[
+    microsoft.com godaddy.com twilio.com
+    linkedin.com trustpilot.com qwoted.com crunchbase.com
+    facebook.com facebookmail.com
+  ].freeze
 
   def process(mail, channel)
     @inbound_mail = mail
