@@ -44,7 +44,7 @@ RSpec.describe Crm::Leadsquared::Mappers::ConversationMapper do
         expect(result).to include('New conversation started on TestBrand')
         expect(result).to include('Channel: Test Inbox')
         expect(result).to include('Created: 2024-01-01 10:00:00')
-        expect(result).to include("Conversation ID: #{conversation.display_id}")
+        expect(result).to include("Ticket: #{conversation.ticket_number}")
         expect(result).to include('View in TestBrand: http://')
       end
     end
@@ -255,8 +255,8 @@ RSpec.describe Crm::Leadsquared::Mappers::ConversationMapper do
         result = described_class.map_transcript_activity(hook, conversation)
 
         # Extract just the formatted messages part
-        id = conversation.display_id
-        prefix = "Conversation Transcript from TestBrand\nChannel: Test Inbox\nConversation ID: #{id}\nView in TestBrand: "
+        id = conversation.ticket_number
+        prefix = "Conversation Transcript from TestBrand\nChannel: Test Inbox\nTicket: #{id}\nView in TestBrand: "
         formatted_messages = result.sub(prefix, '').sub(%r{http://.*}, '')
 
         # Check that it's under the limit (with some tolerance for the message format)

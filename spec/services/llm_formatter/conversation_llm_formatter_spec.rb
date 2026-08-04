@@ -9,7 +9,7 @@ RSpec.describe LlmFormatter::ConversationLlmFormatter do
     context 'when conversation has no messages' do
       it 'returns basic conversation info with no messages' do
         expected_output = [
-          "Conversation ID: ##{conversation.display_id}",
+          "Ticket: ##{conversation.ticket_number}",
           "Channel: #{conversation.inbox.channel.name}",
           'Message History:',
           'No messages in this conversation'
@@ -44,7 +44,7 @@ RSpec.describe LlmFormatter::ConversationLlmFormatter do
         )
 
         expected_output = [
-          "Conversation ID: ##{conversation.display_id}",
+          "Ticket: ##{conversation.ticket_number}",
           "Channel: #{conversation.inbox.channel.name}",
           'Message History:',
           'User: Hello, I need help',
@@ -60,7 +60,7 @@ RSpec.describe LlmFormatter::ConversationLlmFormatter do
     context 'when include_contact_details is true' do
       it 'includes contact details' do
         expected_output = [
-          "Conversation ID: ##{conversation.display_id}",
+          "Ticket: ##{conversation.ticket_number}",
           "Channel: #{conversation.inbox.channel.name}",
           'Message History:',
           'No messages in this conversation',
@@ -84,7 +84,7 @@ RSpec.describe LlmFormatter::ConversationLlmFormatter do
         conversation.update(custom_attributes: { 'order_id' => '12345' })
 
         expected_output = [
-          "Conversation ID: ##{conversation.display_id}",
+          "Ticket: ##{conversation.ticket_number}",
           "Channel: #{conversation.inbox.channel.name}",
           'Message History:',
           'No messages in this conversation',

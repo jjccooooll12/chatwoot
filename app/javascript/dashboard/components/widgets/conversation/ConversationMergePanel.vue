@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import { getTicketNumber } from 'dashboard/helper/conversationHelper';
 import { useI18n } from 'vue-i18n';
 import { frontendURL } from 'dashboard/helper/URLHelper';
 import ConversationApi from 'dashboard/api/inbox/conversation';
@@ -31,9 +32,7 @@ const additionalAttributes = computed(
     props.chat.additional_attributes || props.chat.additionalAttributes || {}
 );
 
-const primaryTicketNumber = computed(
-  () => additionalAttributes.value.ticket_number || props.chat.id
-);
+const primaryTicketNumber = computed(() => getTicketNumber(props.chat));
 
 const primarySubject = computed(
   () =>
@@ -65,10 +64,7 @@ const secondaryConversation = computed(() =>
   isCurrentTicketPrimary.value ? selectedConversation.value : props.chat
 );
 
-const ticketNumberOf = conversation => {
-  const attrs = conversation.additional_attributes || {};
-  return attrs.ticket_number || conversation.display_id || conversation.id;
-};
+const ticketNumberOf = conversation => getTicketNumber(conversation);
 
 const subjectOf = conversation => {
   const attrs = conversation.additional_attributes || {};

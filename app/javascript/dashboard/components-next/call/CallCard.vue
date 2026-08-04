@@ -224,7 +224,7 @@ const channelIcon = computed(() => {
             class="size-3.5 text-n-call-widget-sub-text shrink-0"
           />
           <span class="text-sm tracking-tight tabular-nums">
-            #{{ call.conversationId }}
+            #{{ callInfo.ticketNumber || call.conversationId }}
           </span>
           <Icon
             icon="i-ph-caret-right-bold"

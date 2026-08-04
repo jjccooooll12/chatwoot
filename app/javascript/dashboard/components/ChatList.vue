@@ -1,5 +1,6 @@
 <script setup>
 import { ref, unref, provide, computed, watch, onMounted } from 'vue';
+import { getTicketNumber } from 'dashboard/helper/conversationHelper';
 import { useStore } from 'vuex';
 import { useRoute, useRouter } from 'vue-router';
 import {
@@ -930,13 +931,27 @@ onMounted(() => {
 const deleteConversationDialogRef = ref(null);
 const selectedConversationId = ref(null);
 
+// The dialog dispatches on the raw conversation id, but must *show* the
+// customer-facing ticket number — same identifier the agent sees everywhere
+// else and quotes back to the customer.
+const selectedTicketNumber = computed(() => {
+  if (!selectedConversationId.value) return '';
+  const conversation = getConversationById.value(selectedConversationId.value);
+  return conversation
+    ? getTicketNumber(conversation)
+    : selectedConversationId.value;
+});
+
 async function deleteConversation() {
+  const number = selectedTicketNumber.value;
   try {
     await store.dispatch('deleteConversation', selectedConversationId.value);
     redirectToConversationList();
     selectedConversationId.value = null;
     deleteConversationDialogRef.value.close();
-    useAlert(t('CONVERSATION.SUCCESS_DELETE_CONVERSATION'));
+    useAlert(
+      t('CONVERSATION.SUCCESS_DELETE_TICKET', { conversationId: number })
+    );
   } catch (error) {
     useAlert(t('CONVERSATION.FAIL_DELETE_CONVERSATION'));
   }
@@ -1078,7 +1093,7 @@ watch(conversationFilters, (newVal, oldVal) => {
         type="alert"
         :title="
           $t('CONVERSATION.DELETE_CONVERSATION.TITLE', {
-            conversationId: selectedConversationId,
+            conversationId: selectedTicketNumber,
           })
         "
         :description="$t('CONVERSATION.DELETE_CONVERSATION.DESCRIPTION')"

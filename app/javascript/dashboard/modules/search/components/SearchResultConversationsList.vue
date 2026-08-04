@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { getTicketNumber } from 'dashboard/helper/conversationHelper';
 import { useMapGetter } from 'dashboard/composables/store.js';
 
 import SearchResultSection from './SearchResultSection.vue';
@@ -30,11 +31,7 @@ const conversationsWithSubject = computed(() => {
   return props.conversations.map(conversation => ({
     ...conversation,
     mailSubject: conversation.additionalAttributes?.mailSubject || '',
-    // conversation.id here is already display_id (see the search jbuilder),
-    // so the only real fallback left is the Freshdesk-style ticket_number —
-    // same precedence as ConversationCard.vue's displayId computed.
-    ticketNumber:
-      conversation.additionalAttributes?.ticketNumber || conversation.id,
+    ticketNumber: getTicketNumber(conversation),
   }));
 });
 </script>

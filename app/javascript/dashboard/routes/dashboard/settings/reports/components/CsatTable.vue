@@ -64,6 +64,7 @@ const tableData = computed(() => {
     rating: response.rating,
     feedbackText: response.feedback_message || '',
     conversationId: response.conversation_id,
+    ticketNumber: response.ticket_number,
     csatReviewNotes: response.csat_review_notes,
     createdAgo: dynamicTime(response.created_at),
     createdAt: messageStamp(response.created_at, 'LLL d yyyy, h:mm a'),
@@ -176,6 +177,7 @@ const table = useVueTable({
                 <CsatContactCell
                   :contact="row.contact"
                   :conversation-id="row.conversationId"
+                  :ticket-number="row.ticketNumber"
                   :created-ago="row.createdAgo"
                   :created-at="row.createdAt"
                 />

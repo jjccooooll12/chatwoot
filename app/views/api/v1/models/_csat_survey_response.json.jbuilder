@@ -17,6 +17,7 @@ if resource.contact
   end
 end
 json.conversation_id resource.conversation.display_id
+json.ticket_number resource.conversation.ticket_number
 if resource.assigned_agent
   json.assigned_agent do
     json.partial! 'api/v1/models/agent', formats: [:json], resource: resource.assigned_agent

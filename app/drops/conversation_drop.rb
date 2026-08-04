@@ -9,6 +9,13 @@ class ConversationDrop < BaseDrop
     @obj.try(:display_id)
   end
 
+  # Customer-facing ticket number (yymmdd + daily counter). Templates should
+  # always render this rather than display_id, so every surface quotes the same
+  # identifier the agent UI and outgoing email subjects use.
+  def ticket_number
+    @obj.try(:ticket_number)
+  end
+
   def contact_name
     @obj.try(:contact).name.try(:capitalize) || 'Customer'
   end

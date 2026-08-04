@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from 'vue';
+import { getTicketNumber } from 'dashboard/helper/conversationHelper';
 import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { relativeDayTimestamp } from 'shared/helpers/timeHelper';
@@ -75,6 +76,8 @@ const conversationRoute = computed(() => ({
   },
   query: { messageId: props.call.messageId },
 }));
+
+const ticketNumber = computed(() => getTicketNumber(props.call.conversation));
 </script>
 
 <template>
@@ -98,7 +101,7 @@ const conversationRoute = computed(() => ({
         class="inline-flex items-center h-6 gap-1 px-2 text-label-small outline outline-1 -outline-offset-1 rounded-md outline-n-weak text-n-slate-11 hover:bg-n-alpha-1 shrink-0"
       >
         <Icon icon="i-lucide-message-circle" class="size-3.5 text-n-slate-11" />
-        {{ call.conversation.displayId }}
+        {{ ticketNumber }}
         <Icon icon="i-lucide-arrow-up-right" class="size-3.5 text-n-slate-11" />
       </RouterLink>
     </div>
@@ -224,7 +227,7 @@ const conversationRoute = computed(() => ({
       class="inline-flex items-center h-6 gap-1 px-2 text-label-small py-3.5 outline outline-1 -outline-offset-1 rounded-md outline-n-weak text-n-slate-11 hover:bg-n-alpha-1 shrink-0 justify-self-start"
     >
       <Icon icon="i-lucide-message-circle" class="size-3.5 text-n-slate-11" />
-      {{ call.conversation.displayId }}
+      {{ ticketNumber }}
       <Icon icon="i-lucide-arrow-up-right" class="size-3.5 text-n-slate-11" />
     </RouterLink>
     <span

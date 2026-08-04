@@ -92,3 +92,35 @@ export const getUnreadMessages = (messages, agentLastSeenAt) => {
     message => message.created_at * 1000 > agentLastSeenAt * 1000
   );
 };
+
+/**
+ * The customer-facing ticket number (yymmdd + that day's counter, e.g. 2608021).
+ * This is the ONLY identifier that should ever be shown to a human — in the UI,
+ * in email subjects, on call cards, in confirmation dialogs. The raw display_id
+ * stays an internal routing/API key.
+ *
+ * Conversation payloads reach the dashboard in several shapes: the conversation
+ * API serialises `ticket_number` at the top level, the search store camelizes it
+ * to `ticketNumber`, and websocket/older payloads carry it inside
+ * additional_attributes. This resolves all of them.
+ *
+ * @param {Object} conversation - A conversation in any of the shapes above.
+ * @returns {string|number|undefined} The ticket number, falling back to the
+ *   display id only for records that predate the scheme.
+ */
+export const getTicketNumber = (conversation = {}) => {
+  const attrs =
+    conversation.additional_attributes ||
+    conversation.additionalAttributes ||
+    {};
+
+  return (
+    conversation.ticket_number ||
+    conversation.ticketNumber ||
+    attrs.ticket_number ||
+    attrs.ticketNumber ||
+    conversation.display_id ||
+    conversation.displayId ||
+    conversation.id
+  );
+};

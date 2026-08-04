@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
+import { getTicketNumber } from 'dashboard/helper/conversationHelper';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import MoreActions from './MoreActions.vue';
@@ -54,11 +55,7 @@ const backButtonUrl = computed(() => {
   });
 });
 
-const ticketNumber = computed(() => {
-  const additionalAttributes =
-    props.chat.additional_attributes || props.chat.additionalAttributes || {};
-  return additionalAttributes.ticket_number || props.chat.id;
-});
+const ticketNumber = computed(() => getTicketNumber(props.chat));
 
 const inbox = computed(() => {
   const { inbox_id: inboxId } = props.chat;

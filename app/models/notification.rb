@@ -101,13 +101,16 @@ class Notification < ApplicationRecord
     i18n_key = notification_title_map[notification_type]
     return '' unless i18n_key
 
+    # Both interpolations carry the same customer-facing ticket number. en.yml
+    # reads %{ticket_number}; the Crowdin-managed locales still say %{display_id},
+    # so passing both keeps every language rendering the standard identifier
+    # without a 40-file translation change.
+    ticket = conversation.ticket_number
+
     if notification_type == 'conversation_creation'
-      I18n.t(i18n_key, display_id: conversation.display_id, inbox_name: primary_actor.inbox.name)
-    elsif %w[conversation_assignment assigned_conversation_new_message participating_conversation_new_message
-             conversation_mention].include?(notification_type)
-      I18n.t(i18n_key, display_id: conversation.display_id)
+      I18n.t(i18n_key, ticket_number: ticket, display_id: ticket, inbox_name: primary_actor.inbox.name)
     else
-      I18n.t(i18n_key, display_id: primary_actor.display_id)
+      I18n.t(i18n_key, ticket_number: ticket, display_id: ticket)
     end
   end
   # rubocop:enable Metrics/MethodLength

@@ -6,9 +6,15 @@ defineProps({
     type: Object,
     default: null,
   },
+  // Routing key — the link target. Never rendered.
   conversationId: {
     type: Number,
     required: true,
+  },
+  // Customer-facing identifier — what the agent actually sees.
+  ticketNumber: {
+    type: [String, Number],
+    default: '',
   },
   createdAgo: {
     type: String,
@@ -42,7 +48,7 @@ defineProps({
           target="_blank"
           rel="noopener noreferrer nofollow"
         >
-          <span>#{{ conversationId }}</span>
+          <span>#{{ ticketNumber || conversationId }}</span>
         </a>
         <span>·</span>
         <span :title="createdAt">{{ createdAgo }}</span>

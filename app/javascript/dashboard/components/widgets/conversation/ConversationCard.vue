@@ -2,7 +2,10 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'vuex';
-import { getLastMessage } from 'dashboard/helper/conversationHelper';
+import {
+  getLastMessage,
+  getTicketNumber,
+} from 'dashboard/helper/conversationHelper';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { MESSAGE_TYPE } from 'shared/constants/messages';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
@@ -42,13 +45,7 @@ const hovered = ref(false);
 const unreadCount = computed(() => props.chat.unread_count);
 const hasUnread = computed(() => unreadCount.value > 0);
 const lastMessageInChat = computed(() => getLastMessage(props.chat));
-const displayId = computed(() => {
-  const additionalAttributes =
-    props.chat.additional_attributes || props.chat.additionalAttributes || {};
-  return (
-    additionalAttributes.ticket_number || props.chat.display_id || props.chat.id
-  );
-});
+const displayId = computed(() => getTicketNumber(props.chat));
 const createdTimestamp = computed(
   () => props.chat.created_at || props.chat.timestamp
 );

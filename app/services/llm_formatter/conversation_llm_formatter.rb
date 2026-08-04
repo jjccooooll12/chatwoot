@@ -1,7 +1,7 @@
 class LlmFormatter::ConversationLlmFormatter < LlmFormatter::DefaultLlmFormatter
   def format(config = {})
     sections = []
-    sections << "Conversation ID: ##{@record.display_id}"
+    sections << "Ticket: ##{@record.ticket_number}"
     sections << "Channel: #{@record.inbox.channel.name}"
     sections << 'Message History:'
     sections << if @record.messages.any?

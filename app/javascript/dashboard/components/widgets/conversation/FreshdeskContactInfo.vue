@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, watch } from 'vue';
+import { getTicketNumber } from 'dashboard/helper/conversationHelper';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
@@ -68,15 +69,7 @@ const subjectOf = conversation => {
     t('CHAT_LIST.NO_CONTENT')
   );
 };
-const ticketNumberOf = conversation => {
-  const attrs = conversation.additional_attributes || {};
-  return (
-    conversation.ticket_number ||
-    attrs.ticket_number ||
-    conversation.display_id ||
-    conversation.id
-  );
-};
+const ticketNumberOf = conversation => getTicketNumber(conversation);
 const statusLabelMap = computed(() => ({
   open: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.open.TEXT'),
   resolved: t('CHAT_LIST.CHAT_STATUS_FILTER_ITEMS.resolved.TEXT'),

@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { getTicketNumber } from 'dashboard/helper/conversationHelper';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import { useCallSession } from 'dashboard/composables/useCallSession';
@@ -118,6 +119,10 @@ const getCallInfo = call => {
   return {
     conversation,
     inbox,
+    // Prefer the snapshot captured when the call landed — the conversation can
+    // be evicted from the store mid-call, and every addCall path that lacks the
+    // snapshot still resolves through the store lookup above.
+    ticketNumber: call?.ticketNumber || getTicketNumber(conversation || {}),
     contactName:
       caller?.name ||
       sender?.name ||
