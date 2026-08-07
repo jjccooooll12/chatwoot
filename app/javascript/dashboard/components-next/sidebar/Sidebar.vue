@@ -18,6 +18,7 @@ import SidebarProfileMenu from './SidebarProfileMenu.vue';
 import SidebarChangelogCard from './SidebarChangelogCard.vue';
 import SidebarChangelogButton from './SidebarChangelogButton.vue';
 import SidebarAccountSwitcher from './SidebarAccountSwitcher.vue';
+import SidebarDialer from './SidebarDialer.vue';
 import Logo from 'next/icon/Logo.vue';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
 
@@ -867,6 +868,7 @@ const menuItems = computed(() => {
           isEffectivelyCollapsed
         "
       />
+      <SidebarDialer :is-collapsed="isEffectivelyCollapsed" />
       <div
         class="px-1 py-1.5 flex-shrink-0 flex w-full z-50 gap-2 items-center border-t border-fd-border shadow-[0px_-2px_4px_0px_rgba(27,28,29,0.02)]"
         :class="isEffectivelyCollapsed ? 'justify-center' : 'justify-between'"
