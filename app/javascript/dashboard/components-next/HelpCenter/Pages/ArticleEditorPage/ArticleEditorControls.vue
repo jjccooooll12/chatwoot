@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { OnClickOutside } from '@vueuse/components';
 import { useMapGetter } from 'dashboard/composables/store';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
@@ -51,7 +52,8 @@ const author = computed(() => {
 });
 
 const authorName = computed(
-  () => author.value?.name || author.value?.available_name || ''
+  () =>
+    shortenAgentName(author.value?.name || author.value?.available_name) || ''
 );
 const authorThumbnailSrc = computed(() => author.value?.thumbnail);
 
@@ -59,9 +61,9 @@ const agentList = computed(() => {
   return (
     agents.value
       ?.map(({ name, id, thumbnail }) => ({
-        label: name,
+        label: shortenAgentName(name),
         value: id,
-        thumbnail: { name, src: thumbnail },
+        thumbnail: { name: shortenAgentName(name), src: thumbnail },
         isSelected: props.article?.author?.id
           ? id === props.article.author.id
           : id === (selectedAuthorId.value || currentUserId.value),

@@ -2,6 +2,7 @@
 import { useAlert } from 'dashboard/composables';
 import { computed, onMounted, ref } from 'vue';
 import Avatar from 'next/avatar/Avatar.vue';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 import { useI18n } from 'vue-i18n';
 import { picoSearch } from '@scmmishra/pico-search';
 import {
@@ -190,14 +191,14 @@ const confirmDeletion = () => {
           <div class="flex items-center gap-4">
             <Avatar
               :src="agent.thumbnail"
-              :name="agent.name"
+              :name="shortenAgentName(agent.name)"
               :status="agent.availability_status"
               :size="40"
               hide-offline-status
             />
             <div class="flex flex-col gap-1.5 items-start">
               <span class="block text-heading-3 text-n-slate-12 capitalize">
-                {{ agent.name }}
+                {{ shortenAgentName(agent.name) }}
               </span>
               <div class="flex items-center gap-2">
                 <span class="text-body-main text-n-slate-11">

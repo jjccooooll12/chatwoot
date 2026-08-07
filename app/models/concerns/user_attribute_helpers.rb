@@ -1,8 +1,20 @@
 module UserAttributeHelpers
   extend ActiveSupport::Concern
 
+  # Staff are always shown as "First L." — "Libero Cole" renders as
+  # "Libero C." on every surface (dashboard, notification mail, reply
+  # headers), never with a full last name. A single-word name is already in
+  # that shape and passes through untouched. Derived from `name` rather than
+  # `display_name` so the rule can't be defeated by a user setting a display
+  # name; `display_name`/email only stand in when `name` is somehow blank.
+  # Mirrored on the frontend by shared/helpers/agentNameHelper#shortenAgentName.
   def available_name
-    self[:display_name].presence || name
+    parts = name.to_s.strip.split(/\s+/)
+
+    return self[:display_name].presence || email.to_s.split('@').first if parts.empty?
+    return parts.first if parts.one?
+
+    "#{parts.first} #{parts.last[0].upcase}."
   end
 
   def availability_status

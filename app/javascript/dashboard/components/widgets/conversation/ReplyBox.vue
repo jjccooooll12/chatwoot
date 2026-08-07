@@ -242,7 +242,9 @@ export default {
     },
     sender() {
       return {
-        name: this.currentUser.name,
+        // available_name already carries the "First L." staff form, so the
+        // optimistic echo matches what the server-rendered message shows.
+        name: this.currentUser.available_name || this.currentUser.name,
         thumbnail: this.currentUser.avatar_url,
       };
     },

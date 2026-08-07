@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import Button from 'dashboard/components-next/button/Button.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 const props = defineProps({
   // Null while a fetch is in flight so stale counts are never shown.
@@ -89,10 +90,10 @@ const assigneeItems = computed(() => [
     isSelected: !assigneeId.value,
   },
   ...props.agents.map(agent => ({
-    label: agent.name,
+    label: shortenAgentName(agent.name),
     value: agent.id,
     action: 'filter',
-    thumbnail: { name: agent.name, src: agent.thumbnail },
+    thumbnail: { name: shortenAgentName(agent.name), src: agent.thumbnail },
     isSelected: assigneeId.value === agent.id,
   })),
 ]);

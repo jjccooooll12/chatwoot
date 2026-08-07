@@ -3,6 +3,7 @@ import Avatar from 'next/avatar/Avatar.vue';
 import Spinner from 'shared/components/Spinner.vue';
 import EmptyState from 'dashboard/components/widgets/EmptyState.vue';
 import { dynamicTime } from 'shared/helpers/timeHelper';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 import { mapGetters } from 'vuex';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 
@@ -45,6 +46,7 @@ export default {
   },
   methods: {
     dynamicTime,
+    shortenAgentName,
   },
 };
 </script>
@@ -111,7 +113,11 @@ export default {
               v-if="notificationItem.primary_actor.meta.assignee"
               :src="notificationItem.primary_actor.meta.assignee.thumbnail"
               :size="28"
-              :name="notificationItem.primary_actor.meta.assignee.name"
+              :name="
+                shortenAgentName(
+                  notificationItem.primary_actor.meta.assignee.name
+                )
+              "
               rounded-full
             />
           </td>

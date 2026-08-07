@@ -5,6 +5,7 @@ import { useToggle } from '@vueuse/core';
 import { vOnClickOutside } from '@vueuse/components';
 import { useStore } from 'vuex';
 import { useMapGetter } from 'dashboard/composables/store';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
@@ -62,9 +63,9 @@ const agentMenuItems = computed(() => {
     items.push({
       action: 'select',
       value: agent.id,
-      label: agent.name,
+      label: shortenAgentName(agent.name),
       thumbnail: {
-        name: agent.name,
+        name: shortenAgentName(agent.name),
         src: agent.thumbnail,
       },
       isSelected: selectedAgent.value?.id === agent.id,

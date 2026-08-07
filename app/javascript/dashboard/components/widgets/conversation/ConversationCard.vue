@@ -420,7 +420,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
               :key="agent.id ?? 'none'"
               :value="agent.id ?? ''"
             >
-              {{ agent.name }}
+              {{ agent.id ? shortenAgentName(agent.name) : agent.name }}
             </option>
           </select>
         </label>

@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import Avatar from 'next/avatar/Avatar.vue';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 import Checkbox from 'dashboard/components-next/checkbox/Checkbox.vue';
 import BaseTable from 'dashboard/components-next/table/BaseTable.vue';
 import BaseTableRow from 'dashboard/components-next/table/BaseTableRow.vue';
@@ -109,7 +110,7 @@ const headers = computed(() => [
             <div class="flex items-center gap-2 min-w-0">
               <Avatar
                 :src="agent.thumbnail"
-                :name="agent.name"
+                :name="shortenAgentName(agent.name)"
                 :status="agent.availability_status"
                 :size="24"
                 hide-offline-status
@@ -117,7 +118,7 @@ const headers = computed(() => [
                 class="flex-shrink-0"
               />
               <h4 class="text-heading-3 mb-0 text-n-slate-12 truncate">
-                {{ agent.name }}
+                {{ shortenAgentName(agent.name) }}
               </h4>
             </div>
           </BaseTableCell>

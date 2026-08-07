@@ -9,6 +9,7 @@ import {
   CONVERSATION_ATTRIBUTES,
 } from './helper/filterHelper';
 import languages from 'dashboard/components/widgets/conversation/advancedFilterItems/languages.js';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 /**
  * @typedef {Object} FilterOption
@@ -149,7 +150,7 @@ export function useConversationFilterContext() {
       options: agents.value.map(agent => {
         return {
           id: agent.id,
-          name: agent.name,
+          name: shortenAgentName(agent.name),
         };
       }),
       dataType: 'text',

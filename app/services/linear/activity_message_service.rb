@@ -22,11 +22,11 @@ class Linear::ActivityMessageService
   def generate_activity_content
     case action_type.to_sym
     when :issue_created
-      I18n.t('conversations.activity.linear.issue_created', user_name: user.name, issue_id: issue_data[:id])
+      I18n.t('conversations.activity.linear.issue_created', user_name: user.available_name, issue_id: issue_data[:id])
     when :issue_linked
-      I18n.t('conversations.activity.linear.issue_linked', user_name: user.name, issue_id: issue_data[:id])
+      I18n.t('conversations.activity.linear.issue_linked', user_name: user.available_name, issue_id: issue_data[:id])
     when :issue_unlinked
-      I18n.t('conversations.activity.linear.issue_unlinked', user_name: user.name, issue_id: issue_data[:id])
+      I18n.t('conversations.activity.linear.issue_unlinked', user_name: user.available_name, issue_id: issue_data[:id])
     end
   end
 

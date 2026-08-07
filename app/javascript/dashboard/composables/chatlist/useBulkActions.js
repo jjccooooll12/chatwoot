@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n';
 import { useMapGetter } from 'dashboard/composables/store.js';
 import { useConversationRequiredAttributes } from 'dashboard/composables/useConversationRequiredAttributes';
 import wootConstants from 'dashboard/constants/globals';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 export function useBulkActions() {
   const store = useStore();
@@ -70,7 +71,7 @@ export function useBulkActions() {
       if (conversationId) {
         useAlert(
           t('CONVERSATION.CARD_CONTEXT_MENU.API.AGENT_ASSIGNMENT.SUCCESFUL', {
-            agentName: agent.name,
+            agentName: shortenAgentName(agent.name),
             conversationId,
           })
         );

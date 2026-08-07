@@ -8,6 +8,7 @@ import { useMapGetter } from 'dashboard/composables/store.js';
 import { createContactSearcher } from 'dashboard/components-next/NewConversation/helpers/composeConversationHelper';
 import { useCamelCase } from 'dashboard/composables/useTransformKeys';
 import { fetchContactDetails } from '../helpers/searchHelper';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 import DropdownMenu from 'dashboard/components-next/dropdown-menu/DropdownMenu.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -42,13 +43,17 @@ const agentsList = useMapGetter('agents/getVerifiedAgents');
 const createMenuItem = (item, type, isAgent = false) => {
   const transformed = useCamelCase(item, { deep: true });
   const value = `${type}:${transformed.id}`;
+  // Staff render as "First L."; contacts keep their full name.
+  const displayName = isAgent
+    ? shortenAgentName(transformed.name)
+    : transformed.name;
   return {
-    label: transformed.name,
+    label: displayName,
     value,
     action: MENU_ACTIONS_SELECT,
     type,
     thumbnail: {
-      name: transformed.name,
+      name: displayName,
       src: isAgent ? transformed.avatarUrl : transformed.thumbnail,
     },
     ...(isAgent
@@ -105,7 +110,7 @@ const selectedLabel = computed(() => {
     if (contact) return `${props.label}: ${contact.name}`;
   } else if (type === FROM_TYPE.AGENT) {
     const agent = agentsList.value?.find(a => a.id === numericId);
-    if (agent) return `${props.label}: ${agent.name}`;
+    if (agent) return `${props.label}: ${shortenAgentName(agent.name)}`;
   }
 
   return `${props.label}: ${numericId}`;

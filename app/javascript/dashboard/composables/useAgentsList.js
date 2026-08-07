@@ -3,6 +3,7 @@ import {
   getAgentsByUpdatedPresence,
   getSortedAgentsByAvailability,
 } from 'dashboard/helper/agentHelper';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
@@ -53,10 +54,13 @@ export function useAgentsList(
    * @type {import('vue').ComputedRef<Array>}
    */
   const agentsList = computed(() => {
+    // This list is display/selection only — assignment posts agent.id — so
+    // the "First L." staff naming rule is applied once here rather than at
+    // every dropdown that renders it.
     const agents = (assignableAgents.value || []).map(agent =>
       !agent.name && agent.assignee_type === 'AgentBot'
         ? { ...agent, name: '-' }
-        : agent
+        : { ...agent, name: shortenAgentName(agent.name) }
     );
     const agentsByUpdatedPresence = getAgentsByUpdatedPresence(
       agents,

@@ -53,7 +53,7 @@ class Conversations::SwitchToEmailService
       account_id: conversation.account_id,
       inbox_id: conversation.inbox_id,
       message_type: :activity,
-      content: I18n.t('conversations.activity.switched_to_email', user_name: user&.name || 'System', email: normalized_email),
+      content: I18n.t('conversations.activity.switched_to_email', user_name: user&.available_name || 'System', email: normalized_email),
       content_attributes: {
         activity: {
           type: 'conversation_switched_to_email',

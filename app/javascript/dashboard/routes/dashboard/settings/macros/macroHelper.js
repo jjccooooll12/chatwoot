@@ -1,4 +1,5 @@
 import { MACRO_ACTION_TYPES as macroActionTypes } from 'dashboard/routes/dashboard/settings/macros/constants.js';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 export const emptyMacro = {
   name: '',
   actions: [
@@ -39,7 +40,7 @@ export const resolveAgents = (agents, ids) => {
       if (id === 'nil') return 'None';
       if (id === 'self') return 'Self';
       const agent = agents.find(i => i.id === id);
-      return agent ? agent.name : '';
+      return agent ? shortenAgentName(agent.name) : '';
     })
     .join(', ');
 };

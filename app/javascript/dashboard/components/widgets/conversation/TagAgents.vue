@@ -3,6 +3,7 @@ import Avatar from 'next/avatar/Avatar.vue';
 import { ref, computed, watch, nextTick } from 'vue';
 import { useStoreGetters, useMapGetter } from 'dashboard/composables/store';
 import { useKeyboardNavigableList } from 'dashboard/composables/useKeyboardNavigableList';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 import { useI18n } from 'vue-i18n';
 
 const props = defineProps({
@@ -30,7 +31,8 @@ const items = computed(() => {
       .map(item => ({
         ...item,
         type,
-        displayName: item.name,
+        // Agents mention as "First L."; teams keep their own name.
+        displayName: type === 'user' ? shortenAgentName(item.name) : item.name,
         displayInfo: item[infoKey],
       }))
       .filter(item =>

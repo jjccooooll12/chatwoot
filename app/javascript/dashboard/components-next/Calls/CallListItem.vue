@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 import { relativeDayTimestamp } from 'shared/helpers/timeHelper';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import AudioPlayer from 'dashboard/components-next/audio/AudioPlayer.vue';
 import {
@@ -112,12 +113,12 @@ const ticketNumber = computed(() => getTicketNumber(props.call.conversation));
         </span>
         <Avatar
           :src="call.agent.avatar"
-          :name="call.agent.name"
+          :name="shortenAgentName(call.agent.name)"
           :size="20"
           rounded-full
         />
         <span class="text-body-main truncate text-n-slate-12 min-w-0">
-          {{ call.agent.name }}
+          {{ shortenAgentName(call.agent.name) }}
         </span>
       </template>
       <span v-else class="text-body-main truncate text-n-slate-10 min-w-0">
@@ -181,18 +182,18 @@ const ticketNumber = computed(() => getTicketNumber(props.call.conversation));
           <span class="flex items-center gap-1.5 min-w-16 shrink-[20]">
             <Avatar
               :src="call.agent.avatar"
-              :name="call.agent.name"
+              :name="shortenAgentName(call.agent.name)"
               :size="20"
               rounded-full
             />
             <span
               v-tooltip.top="{
-                content: call.agent.name,
+                content: shortenAgentName(call.agent.name),
                 delay: { show: 500, hide: 0 },
               }"
               class="text-body-main truncate text-n-slate-12 min-w-0"
             >
-              {{ call.agent.name }}
+              {{ shortenAgentName(call.agent.name) }}
             </span>
           </span>
         </template>
