@@ -6,11 +6,19 @@ class Agents::DestroyJob < ApplicationJob
       destroy_notification_setting(account, user)
       remove_user_from_teams(account, user)
       remove_user_from_inboxes(account, user)
+      remove_user_from_voice_routing(account, user)
       unassign_conversations(account, user)
     end
   end
 
   private
+
+  # An agent who is no longer on the account can't take its calls, so leaving
+  # their country rules behind would silently shrink the eligible-agent set
+  # for that prefix (see Webhooks::TwilioVoiceController#online_agent_ids).
+  def remove_user_from_voice_routing(account, user)
+    user.voice_country_routes.where(account_id: account.id).destroy_all
+  end
 
   def remove_user_from_inboxes(account, user)
     inboxes = account.inboxes.all

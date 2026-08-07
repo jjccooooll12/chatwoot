@@ -1082,6 +1082,8 @@
     "AGENT": "Agent",
     "SELECT_AGENT": "Select an agent",
     "ADD": "Add rule",
+    "INCOMPLETE": "Pick a country, a phone prefix and an agent first",
+    "ADDED": "Routing rule added",
     "REMOVE": "Remove",
     "FETCH_ERROR": "Could not load routing rules",
     "ADD_ERROR": "Could not add routing rule",

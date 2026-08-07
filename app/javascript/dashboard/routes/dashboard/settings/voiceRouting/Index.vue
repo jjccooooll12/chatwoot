@@ -12,6 +12,7 @@ import {
   DropdownItem,
 } from 'next/dropdown-menu/base';
 import voiceCountryRoutesAPI from 'dashboard/api/voiceCountryRoutes';
+import { shortenAgentName } from 'shared/helpers/agentNameHelper';
 
 const { t } = useI18n();
 const store = useStore();
@@ -23,13 +24,17 @@ const voiceInbox = computed(() => inboxes.value.find(i => i.name === 'Voice'));
 
 const routes = ref([]);
 const isLoading = ref(false);
+const isSaving = ref(false);
 const countryName = ref('');
 const phonePrefix = ref('');
 const selectedAgentId = ref('');
 
+const agentLabel = agent =>
+  shortenAgentName(agent?.available_name || agent?.name);
+
 const selectedAgentName = computed(() => {
   const agent = agents.value.find(a => a.id === selectedAgentId.value);
-  return agent?.name;
+  return agent ? agentLabel(agent) : '';
 });
 
 const fetchRoutes = async () => {
@@ -46,9 +51,13 @@ const fetchRoutes = async () => {
 };
 
 const addRoute = async () => {
+  // Silently returning here read as "the button does nothing" — say which
+  // field is missing instead.
   if (!countryName.value || !phonePrefix.value || !selectedAgentId.value) {
+    useAlert(t('VOICE_ROUTING.INCOMPLETE'));
     return;
   }
+  isSaving.value = true;
   try {
     await voiceCountryRoutesAPI.create(voiceInbox.value.id, {
       countryName: countryName.value,
@@ -59,10 +68,13 @@ const addRoute = async () => {
     phonePrefix.value = '';
     selectedAgentId.value = '';
     await fetchRoutes();
+    useAlert(t('VOICE_ROUTING.ADDED'));
   } catch (error) {
     const message =
       error?.response?.data?.errors?.join(', ') || t('VOICE_ROUTING.ADD_ERROR');
     useAlert(message);
+  } finally {
+    isSaving.value = false;
   }
 };
 
@@ -190,7 +202,7 @@ onMounted(async () => {
                   <DropdownItem
                     v-for="agent in agents"
                     :key="agent.id"
-                    :label="agent.name"
+                    :label="agentLabel(agent)"
                     class="cursor-pointer"
                     @click="selectedAgentId = agent.id"
                   />
@@ -200,6 +212,8 @@ onMounted(async () => {
             <NextButton
               :label="t('VOICE_ROUTING.ADD')"
               size="sm"
+              :is-loading="isSaving"
+              :disabled="isSaving"
               @click="addRoute"
             />
           </div>
