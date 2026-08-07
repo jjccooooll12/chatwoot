@@ -17,6 +17,12 @@ export const routeIsAccessibleFor = (route, userPermissions = []) => {
   return hasPermissions(routePermissions, userPermissions);
 };
 
+// Super admin is an instance-level identity (User STI type), not one of the
+// per-account roles that `meta.permissions` is built from, so routes that are
+// super-admin-only declare it separately.
+export const routeIsAccessibleForSuperAdminOnly = route =>
+  route?.meta?.requiresSuperAdmin === true;
+
 export const defaultRedirectPage = (to, permissions) => {
   const { accountId } = to.params;
 
@@ -47,6 +53,10 @@ const validateActiveAccountRoutes = (to, user) => {
   }
 
   const userPermissions = getUserPermissions(user, to.params.accountId);
+
+  if (routeIsAccessibleForSuperAdminOnly(to) && user?.type !== 'SuperAdmin') {
+    return defaultRedirectPage(to, userPermissions);
+  }
 
   const isAccessible = routeIsAccessibleFor(to, userPermissions);
   // If the route is not accessible for the user, return to dashboard screen

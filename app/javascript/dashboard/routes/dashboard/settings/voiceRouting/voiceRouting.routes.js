@@ -14,6 +14,7 @@ export default {
           component: VoiceRoutingIndex,
           meta: {
             permissions: ['administrator'],
+            requiresSuperAdmin: true,
           },
         },
       ],

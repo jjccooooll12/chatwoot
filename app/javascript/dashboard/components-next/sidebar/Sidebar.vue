@@ -57,6 +57,12 @@ const isMobile = computed(() => windowWidth.value < 768);
 
 const accountId = useMapGetter('getCurrentAccountId');
 const currentUserId = useMapGetter('getCurrentUserID');
+const currentUser = useMapGetter('getCurrentUser');
+
+// Call routing decides whose phone rings, so it is scoped tighter than the
+// rest of settings: the instance super admin only, not account admins.
+// Enforced independently by VoiceCountryRoutesController and the router guard.
+const isSuperAdmin = computed(() => currentUser.value?.type === 'SuperAdmin');
 const isFeatureEnabledonAccount = useMapGetter(
   'accounts/isFeatureEnabledonAccount'
 );
@@ -606,13 +612,17 @@ const menuItems = computed(() => {
               },
             ]
           : []),
-        {
-          name: 'Settings Voice Routing',
-          label: t('SIDEBAR.VOICE_ROUTING'),
-          icon: 'i-lucide-phone-forwarded',
-          activeOn: ['voice_routing_index'],
-          to: accountScopedRoute('voice_routing_index'),
-        },
+        ...(isSuperAdmin.value
+          ? [
+              {
+                name: 'Settings Voice Routing',
+                label: t('SIDEBAR.VOICE_ROUTING'),
+                icon: 'i-lucide-phone-forwarded',
+                activeOn: ['voice_routing_index'],
+                to: accountScopedRoute('voice_routing_index'),
+              },
+            ]
+          : []),
         {
           name: 'Settings Inboxes',
           label: t('SIDEBAR.INBOXES'),
