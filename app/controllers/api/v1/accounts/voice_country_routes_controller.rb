@@ -32,7 +32,7 @@ class Api::V1::Accounts::VoiceCountryRoutesController < Api::V1::Accounts::BaseC
   # narrower than the rest of settings: account administrators cannot reach it,
   # only the instance super admin.
   def ensure_super_admin!
-    render json: { error: 'Super administrators only' }, status: :forbidden unless current_user.is_a?(SuperAdmin)
+    render json: { error: 'Super administrators only' }, status: :forbidden unless Current.user.is_a?(SuperAdmin)
   end
 
   def fetch_inbox
