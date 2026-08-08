@@ -3,7 +3,8 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
   PENDING_PROVIDER_CALL_PREFIX = 'pending-'.freeze
 
   def index
-    calls = VoiceCall.where(account_id: Current.account.id)
+    calls = VoiceCall.joins(:conversation)
+                     .where(account_id: Current.account.id)
                      .includes(:contact, :inbox, :conversation, :message, :accepted_by_agent)
                      .order(created_at: :desc)
                      .page(current_page)
@@ -203,6 +204,8 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
   end
 
   def conversation_payload(conversation)
+    return nil unless conversation
+
     {
       id: conversation.id,
       display_id: conversation.display_id,
