@@ -54,6 +54,19 @@ class ActionCableListener < BaseListener
     broadcast(account, tokens, MESSAGE_UPDATED, message.push_event_data.merge(previous_changes: event.data[:previous_changes]))
   end
 
+  def voice_call_ended(event)
+    voice_call = event.data[:voice_call]
+    account = voice_call.account
+    tokens = user_tokens(account, voice_call.inbox.members)
+    payload = voice_call.push_event_data.merge(
+      call_id: voice_call.provider_call_id,
+      conversation_id: voice_call.conversation.display_id,
+      inbox_id: voice_call.inbox_id
+    )
+
+    broadcast(account, tokens, VOICE_CALL_ENDED, payload)
+  end
+
   def first_reply_created(event)
     message, account = extract_message_and_account(event)
     conversation = message.conversation

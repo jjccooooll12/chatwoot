@@ -45,6 +45,9 @@ const isFailed = computed(() =>
 
 const labelKey = computed(() => {
   if (LABEL_KEYS[props.status]) return LABEL_KEYS[props.status];
+  if (isFailed.value && isOutbound.value) {
+    return 'CONVERSATION.VOICE_CALL.OUTGOING_CALL';
+  }
   if (props.status === VOICE_CALL_STATUS.RINGING) {
     return isOutbound.value
       ? 'CONVERSATION.VOICE_CALL.OUTGOING_CALL'
@@ -56,12 +59,15 @@ const labelKey = computed(() => {
 });
 
 const iconName = computed(() => {
+  if (isFailed.value && isOutbound.value) return 'i-ph-phone-outgoing';
   if (ICON_MAP[props.status]) return ICON_MAP[props.status];
   return isOutbound.value ? 'i-ph-phone-outgoing' : 'i-ph-phone-incoming';
 });
 
-const statusColor = computed(
-  () => COLOR_MAP[props.status] || 'text-n-slate-11'
+const statusColor = computed(() =>
+  isFailed.value && isOutbound.value
+    ? 'text-n-slate-11'
+    : COLOR_MAP[props.status] || 'text-n-slate-11'
 );
 </script>
 

@@ -24,6 +24,7 @@ import { useCallsStore } from 'dashboard/stores/calls';
 import { useWhatsappCallSession } from 'dashboard/composables/useWhatsappCallSession';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import { dynamicTimeStrict } from 'shared/helpers/timeHelper';
+import countries from 'shared/constants/countries';
 import {
   VOICE_CALL_DIRECTION,
   VOICE_CALL_OUTBOUND_INIT_STATUS,
@@ -36,21 +37,44 @@ const props = defineProps({
   },
 });
 
-const COUNTRIES = [
-  { name: 'Italy', code: '+39' },
-  { name: 'United States', code: '+1' },
-  { name: 'Netherlands', code: '+31' },
-  { name: 'Belgium', code: '+32' },
-  { name: 'Germany', code: '+49' },
-  { name: 'France', code: '+33' },
-  { name: 'United Kingdom', code: '+44' },
-  { name: 'Spain', code: '+34' },
+const COMMON_COUNTRY_IDS = [
+  'IT',
+  'US',
+  'GB',
+  'DE',
+  'FR',
+  'ES',
+  'NL',
+  'BE',
+  'PL',
+  'CH',
+  'AT',
+  'IE',
+  'PT',
+  'SE',
+  'DK',
+  'NO',
+  'CA',
+  'AU',
 ];
+
+const COUNTRY_OPTIONS = [
+  ...COMMON_COUNTRY_IDS.map(id =>
+    countries.find(country => country.id === id)
+  ).filter(Boolean),
+  ...countries.filter(country => !COMMON_COUNTRY_IDS.includes(country.id)),
+].map(country => ({
+  id: country.id,
+  name: country.name,
+  code: country.dial_code,
+}));
 
 const TEXT = {
   phoneTitle: 'Phone',
   openPhoneDialer: 'Open phone dialer',
   countryCode: 'Country code',
+  countrySearchPlaceholder: 'Search country or code',
+  noCountriesFound: 'No countries found.',
   voiceInbox: 'Voice inbox',
   inputPlaceholder: 'Type name or number to call',
   recentCalls: 'Recent calls',
@@ -70,9 +94,12 @@ const { accountScopedRoute } = useAccount();
 
 const isOpen = ref(false);
 const phoneNumber = ref('');
-const selectedCountryCode = ref(COUNTRIES[0].code);
+const selectedCountryCode = ref('+39');
 const selectedInboxId = ref(null);
 const inputRef = ref(null);
+const countrySearchRef = ref(null);
+const countrySearch = ref('');
+const isCountryPickerOpen = ref(false);
 const recentCalls = ref([]);
 const isFetchingCalls = ref(false);
 const isStartingTwilioCall = ref(false);
@@ -117,6 +144,22 @@ const panelPositionClass = computed(() =>
     ? 'ltr:left-[4.5rem] rtl:right-[4.5rem] bottom-[5.25rem]'
     : 'ltr:left-3 rtl:right-3 bottom-[5.25rem]'
 );
+const selectedCountry = computed(
+  () =>
+    COUNTRY_OPTIONS.find(
+      country => country.code === selectedCountryCode.value
+    ) || COUNTRY_OPTIONS[0]
+);
+const filteredCountries = computed(() => {
+  const query = countrySearch.value.trim().toLowerCase();
+  if (!query) return COUNTRY_OPTIONS;
+
+  return COUNTRY_OPTIONS.filter(country =>
+    [country.name, country.code, country.id].some(value =>
+      value.toLowerCase().includes(query)
+    )
+  );
+});
 
 watch(
   voiceInboxes,
@@ -154,6 +197,7 @@ const openDialer = () => {
 
 const closeDialer = () => {
   isOpen.value = false;
+  isCountryPickerOpen.value = false;
 };
 
 const toggleDialer = () => {
@@ -163,6 +207,20 @@ const toggleDialer = () => {
 
 const formatPhoneInput = event => {
   phoneNumber.value = event.target.value.replace(/[^\d+\s()-]/g, '');
+};
+
+const toggleCountryPicker = () => {
+  isCountryPickerOpen.value = !isCountryPickerOpen.value;
+  if (isCountryPickerOpen.value) {
+    countrySearch.value = '';
+    nextTick(() => countrySearchRef.value?.focus());
+  }
+};
+
+const selectCountry = country => {
+  selectedCountryCode.value = country.code;
+  isCountryPickerOpen.value = false;
+  focusInput();
 };
 
 const findContactByPhone = async phone => {
@@ -244,6 +302,7 @@ const startTwilioCall = async ({ contactId, inboxId }) => {
       conversationId,
       inboxId,
       callDirection: VOICE_CALL_DIRECTION.OUTBOUND,
+      provider: VOICE_CALL_PROVIDERS.TWILIO,
     });
     useAlert('Call initiated.');
     navigateToConversation(conversationId);
@@ -278,23 +337,40 @@ const startCall = async (number = normalizedPhoneNumber.value) => {
 };
 
 const callRecent = call => {
-  const number = call.contact?.phoneNumber || call.contact?.phone_number;
+  const number =
+    call.direction === VOICE_CALL_DIRECTION.OUTBOUND
+      ? call.toNumber || call.to_number
+      : call.contact?.phoneNumber ||
+        call.contact?.phone_number ||
+        call.fromNumber ||
+        call.from_number;
   if (!number) return;
   phoneNumber.value = number;
   startCall(number);
 };
 
-const recentContactLabel = call =>
-  call.contact?.phoneNumber ||
-  call.contact?.phone_number ||
-  call.contact?.name ||
-  'Unknown';
+const recentContactLabel = call => {
+  const number =
+    call.direction === VOICE_CALL_DIRECTION.OUTBOUND
+      ? call.toNumber || call.to_number
+      : call.contact?.phoneNumber ||
+        call.contact?.phone_number ||
+        call.fromNumber ||
+        call.from_number;
+  const name = call.contact?.name;
+  return name && name !== number ? name : number || 'Unknown';
+};
 
 const recentCallTime = call =>
   call.createdAt ? dynamicTimeStrict(call.createdAt) : '';
 
 const onKeydown = event => {
-  if (event.key === 'Escape') closeDialer();
+  if (event.key !== 'Escape') return;
+  if (isCountryPickerOpen.value) {
+    isCountryPickerOpen.value = false;
+    return;
+  }
+  closeDialer();
 };
 
 onMounted(() => {
@@ -335,20 +411,60 @@ onBeforeUnmount(() => {
     >
       <div class="bg-[#123852] text-white">
         <div class="flex h-11 items-center justify-between px-4">
-          <select
-            v-model="selectedCountryCode"
-            class="max-w-[9rem] appearance-none bg-transparent text-sm font-semibold outline-none"
-            :aria-label="TEXT.countryCode"
-          >
-            <option
-              v-for="country in COUNTRIES"
-              :key="country.code"
-              class="text-n-slate-12"
-              :value="country.code"
+          <div class="relative min-w-0">
+            <button
+              type="button"
+              class="flex h-8 max-w-[10.5rem] items-center gap-2 rounded px-1 text-left text-sm font-semibold hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+              :aria-label="TEXT.countryCode"
+              :aria-expanded="isCountryPickerOpen"
+              @click="toggleCountryPicker"
             >
-              {{ country.name }}
-            </option>
-          </select>
+              <span class="truncate">{{ selectedCountry.name }}</span>
+              <span class="shrink-0 text-white/75">{{
+                selectedCountry.code
+              }}</span>
+              <span
+                class="i-lucide-chevron-down size-3 shrink-0 text-white/75"
+              />
+            </button>
+            <div
+              v-if="isCountryPickerOpen"
+              class="absolute left-0 top-9 z-[80] w-[264px] overflow-hidden rounded-md border border-n-weak bg-white text-n-slate-12 shadow-xl dark:bg-n-solid-2 dark:text-n-slate-12"
+            >
+              <div
+                class="flex h-10 items-center gap-2 border-b border-n-weak px-3"
+              >
+                <span class="i-lucide-search size-4 text-n-slate-10" />
+                <input
+                  ref="countrySearchRef"
+                  v-model="countrySearch"
+                  class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-n-slate-10"
+                  :placeholder="TEXT.countrySearchPlaceholder"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="max-h-[240px] overflow-y-auto py-1">
+                <button
+                  v-for="country in filteredCountries"
+                  :key="country.id"
+                  type="button"
+                  class="flex h-9 w-full items-center justify-between gap-3 px-3 text-left text-sm hover:bg-n-alpha-1"
+                  @click="selectCountry(country)"
+                >
+                  <span class="min-w-0 truncate">{{ country.name }}</span>
+                  <span class="shrink-0 text-n-slate-10">{{
+                    country.code
+                  }}</span>
+                </button>
+                <div
+                  v-if="!filteredCountries.length"
+                  class="px-3 py-6 text-center text-sm text-n-slate-10"
+                >
+                  {{ TEXT.noCountriesFound }}
+                </div>
+              </div>
+            </div>
+          </div>
           <label
             v-if="voiceInboxes.length"
             class="flex h-7 max-w-[8.5rem] items-center gap-1 rounded bg-white px-2 text-[#123852]"

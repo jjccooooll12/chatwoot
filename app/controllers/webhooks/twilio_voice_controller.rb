@@ -104,12 +104,20 @@ class Webhooks::TwilioVoiceController < ApplicationController
       # webhook below sends for a conference-sourced recording - it does NOT
       # send FriendlyName there, only here. Capture it now; without it, an
       # answered call's recording can never be matched back to this VoiceCall.
-      if voice_call.ringing?
-        voice_call.transition_to!(status: 'in_progress', started_at: Time.current, twilio_conference_sid: params[:ConferenceSid])
+      if voice_call.completed?
+        voice_call.update!(twilio_conference_sid: params[:ConferenceSid])
+      elsif voice_call.in_progress?
+        voice_call.update!(twilio_conference_sid: params[:ConferenceSid])
+      else
+        voice_call.transition_to!(status: 'in_progress',
+                                  started_at: voice_call.started_at || Time.current,
+                                  ended_at: nil,
+                                  end_reason: nil,
+                                  twilio_conference_sid: params[:ConferenceSid])
         relabel_as_answered!(voice_call)
       end
     when 'conference-end'
-      finalize_completed_call(voice_call) if voice_call.in_progress?
+      finalize_completed_call(voice_call) if voice_call.in_progress? || voice_call.started_at.present?
     end
 
     head :no_content
@@ -227,7 +235,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
   # abandoned/voicemail side) to who it's actually with, same as any other
   # channel's ticket title reflects its subject.
   def relabel_as_answered!(voice_call)
-    label = "Incoming call with #{voice_call.caller_display_name}"
+    label = voice_call.answered_label
     voice_call.message.update!(content: label)
     voice_call.message.send_update_event
 

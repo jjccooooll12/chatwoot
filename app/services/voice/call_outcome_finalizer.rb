@@ -9,6 +9,7 @@ class Voice::CallOutcomeFinalizer
   def perform
     voice_call.reload
     return if voice_call.message.nil?
+    return if voice_call.outgoing?
     return if voice_call.message.content == voice_call.outcome_label
 
     relabel!

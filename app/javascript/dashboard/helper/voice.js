@@ -11,6 +11,7 @@ export const TERMINAL_STATUSES = [
   'busy',
   'failed',
   'rejected',
+  'no_answer',
   'no-answer',
   'canceled',
   'missed',

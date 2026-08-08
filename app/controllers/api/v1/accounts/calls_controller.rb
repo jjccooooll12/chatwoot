@@ -99,7 +99,7 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
   end
 
   def create_outbound_call_record!
-    label = "Outgoing call to #{@to_number}"
+    label = outgoing_call_label
     message = @conversation.messages.create!(
       account: Current.account,
       inbox: @inbox,
@@ -171,7 +171,7 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
       provider_call_id: call.provider_call_id,
       provider: 'twilio',
       direction: normalized_direction(call.direction),
-      status: call.status,
+      status: call.display_status,
       duration_seconds: call.duration_seconds,
       end_reason: call.end_reason,
       conference_sid: call.conference_sid,
@@ -188,6 +188,15 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
       conversation: conversation_payload(call.conversation),
       message_id: call.message_id
     }
+  end
+
+  def outgoing_call_label
+    display_name = if @contact.name.present? && @contact.name != @to_number
+                     @contact.name
+                   else
+                     @to_number
+                   end
+    "Outgoing call to #{display_name}"
   end
 
   def normalized_direction(direction)

@@ -163,8 +163,7 @@ const handledBy = computed(() =>
 const labelKey = computed(() => {
   if (LABEL_MAP[status.value]) return LABEL_MAP[status.value];
   if (isFailed.value) {
-    if (isOutbound.value)
-      return 'CONVERSATION.VOICE_CALL.NO_ANSWER_OUTBOUND_LABEL';
+    if (isOutbound.value) return 'CONVERSATION.VOICE_CALL.OUTGOING_CALL';
     return recordingAttachment.value
       ? 'CONVERSATION.VOICE_CALL.VOICEMAIL'
       : 'CONVERSATION.VOICE_CALL.MISSED_CALL';
@@ -189,7 +188,7 @@ const subtext = computed(() => {
   if (isFailed.value) {
     // Missed/failed calls have no handler, so keep the reason rather than "Handled by".
     if (isOutbound.value) {
-      return t('CONVERSATION.VOICE_CALL.NO_ANSWER_OUTBOUND_SUBTEXT');
+      return handledBy.value;
     }
     if (wasDeclinedByAgent.value && displayAgentName.value) {
       return t('CONVERSATION.VOICE_CALL.MISSED_CALL_DECLINED_BY', {
@@ -206,6 +205,7 @@ const subtext = computed(() => {
 });
 
 const iconName = computed(() => {
+  if (isFailed.value && isOutbound.value) return 'i-ph-phone-outgoing-bold';
   if (ICON_MAP[status.value]) return ICON_MAP[status.value];
   return isOutbound.value
     ? 'i-ph-phone-outgoing-bold'

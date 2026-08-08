@@ -40,6 +40,9 @@ module Events::Types
   REPLY_CREATED = 'reply.created'
   MESSAGE_UPDATED = 'message.updated'
 
+  # voice call events
+  VOICE_CALL_ENDED = 'voice_call.ended'
+
   # contact events
   CONTACT_CREATED = 'contact.created'
   CONTACT_UPDATED = 'contact.updated'

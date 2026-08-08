@@ -31,6 +31,9 @@
 
 class VoiceCall < ApplicationRecord
   include Rails.application.routes.url_helpers
+  include Events::Types
+
+  TERMINAL_STATUSES = %w[completed no_answer no-answer failed rejected].freeze
 
   enum status: {
     ringing: 'ringing',
@@ -58,7 +61,7 @@ class VoiceCall < ApplicationRecord
       provider_call_id: provider_call_id,
       provider: 'twilio',
       direction: direction,
-      status: status,
+      status: display_status,
       duration_seconds: duration_seconds,
       end_reason: end_reason,
       conference_sid: conference_sid,
@@ -75,8 +78,10 @@ class VoiceCall < ApplicationRecord
   end
 
   def transition_to!(status:, **attrs)
+    previous_status = self.status
     update!(attrs.merge(status: status))
     message&.send_update_event
+    broadcast_ended! if terminal_status?(self.status) && previous_status != self.status
   end
 
   # Empty list means no country route matched this call — every online
@@ -91,7 +96,21 @@ class VoiceCall < ApplicationRecord
   end
 
   def outcome_label
+    return outgoing_label if outgoing?
+
     outcome_kind == :voicemail ? 'Voicemail' : 'Abandoned call'
+  end
+
+  def outgoing_label
+    "Outgoing call to #{callee_display_name}"
+  end
+
+  def answered_label
+    outgoing? ? outgoing_label : "Incoming call with #{caller_display_name}"
+  end
+
+  def outgoing?
+    %w[outgoing outbound].include?(direction)
   end
 
   # Contact#name defaults to the raw phone number at creation (see
@@ -101,9 +120,27 @@ class VoiceCall < ApplicationRecord
     contact.name == from_number ? from_number : contact.name
   end
 
+  def callee_display_name
+    return to_number if contact.name.blank?
+
+    contact.name == to_number ? to_number : contact.name
+  end
+
+  def display_status
+    status.to_s.tr('_', '-')
+  end
+
   private
 
   def recording_url
     recording.attached? ? url_for(recording) : nil
+  end
+
+  def terminal_status?(value)
+    TERMINAL_STATUSES.include?(value)
+  end
+
+  def broadcast_ended!
+    Rails.configuration.dispatcher.dispatch(VOICE_CALL_ENDED, Time.zone.now, voice_call: self)
   end
 end

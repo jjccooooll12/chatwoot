@@ -404,12 +404,14 @@ class ActionCableConnector extends BaseActionCableConnector {
 
   // eslint-disable-next-line class-methods-use-this
   onVoiceCallEnded = async data => {
-    if (data?.provider !== VOICE_CALL_PROVIDERS.WHATSAPP) return;
     // The store entry should always be removed for this account-wide broadcast,
     // but the WebRTC/recorder teardown must only run for the call this tab owns
     // — otherwise an unrelated agent's call ending would stop this tab's
     // recorder and upload its chunks against the wrong call id.
-    if (isLocalWhatsappCall(data.id)) {
+    if (
+      data?.provider === VOICE_CALL_PROVIDERS.WHATSAPP &&
+      isLocalWhatsappCall(data.id)
+    ) {
       // Await upload before removeCall — the store's sync teardown would otherwise
       // wipe the recorder chunks before they reach the server.
       try {

@@ -58,6 +58,7 @@ const resultLabel = computed(() => {
       ? t('CALLS_PAGE.ROW.RINGING')
       : t('CALLS_PAGE.ROW.IN_PROGRESS');
   }
+  if (kind.value === CALL_KIND.OUTGOING) return t('CALLS_PAGE.STATUS.OUTGOING');
   return t('CALLS_PAGE.ROW.ANSWERED');
 });
 

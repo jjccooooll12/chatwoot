@@ -30,7 +30,7 @@ export const getCallKind = call => {
   }
   const isInbound = call.direction === VOICE_CALL_DIRECTION.INBOUND;
   if (call.status === VOICE_CALL_STATUS.NO_ANSWER) {
-    return isInbound ? CALL_KIND.MISSED : CALL_KIND.NO_REPLY;
+    return isInbound ? CALL_KIND.MISSED : CALL_KIND.OUTGOING;
   }
   return isInbound ? CALL_KIND.INCOMING : CALL_KIND.OUTGOING;
 };
