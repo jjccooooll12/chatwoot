@@ -9,6 +9,10 @@ class CallsAPI extends ApiClient {
   get(params = {}) {
     return axios.get(this.url, { params });
   }
+
+  create(data = {}) {
+    return axios.post(this.url, data);
+  }
 }
 
 export default new CallsAPI();

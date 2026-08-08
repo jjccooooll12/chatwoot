@@ -16,6 +16,7 @@ import { useAlert } from 'dashboard/composables';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import { useCallsStore } from 'dashboard/stores/calls';
 import { useWhatsappCallSession } from 'dashboard/composables/useWhatsappCallSession';
+import CallsAPI from 'dashboard/api/calls';
 
 import Button from 'dashboard/components-next/button/Button.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
@@ -41,6 +42,7 @@ const store = useStore();
 const { t } = useI18n();
 
 const dialogRef = ref(null);
+const isStartingTwilioCall = ref(false);
 
 const callsStore = useCallsStore();
 const inboxesList = useMapGetter('inboxes/getInboxes');
@@ -54,7 +56,7 @@ const hasVoiceInboxes = computed(() => voiceInboxes.value.length > 0);
 const shouldRender = computed(() => hasVoiceInboxes.value && !!props.phone);
 
 const isInitiatingCall = computed(() => {
-  return contactsUiFlags.value?.isInitiatingCall || false;
+  return contactsUiFlags.value?.isInitiatingCall || isStartingTwilioCall.value;
 });
 
 // Mirror the conversation-header button: block a new call whenever any provider
@@ -137,10 +139,12 @@ const startCall = async (inboxId, conversationIdHint = null) => {
   }
 
   try {
-    const response = await store.dispatch('contacts/initiateCall', {
-      contactId: props.contactId,
-      inboxId,
-      conversationId: conversationIdHint,
+    isStartingTwilioCall.value = true;
+    const { data: response } = await CallsAPI.create({
+      contact_id: props.contactId,
+      inbox_id: inboxId,
+      conversation_id: conversationIdHint,
+      phone_number: props.phone,
     });
     const { call_sid: callSid, conversation_id: conversationId } = response;
 
@@ -156,6 +160,8 @@ const startCall = async (inboxId, conversationIdHint = null) => {
   } catch (error) {
     const apiError = error?.message;
     useAlert(apiError || t('CONTACT_PANEL.CALL_FAILED'));
+  } finally {
+    isStartingTwilioCall.value = false;
   }
 };
 

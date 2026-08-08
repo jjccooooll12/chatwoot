@@ -55,13 +55,10 @@ const TEXT = {
   inputPlaceholder: 'Type name or number to call',
   recentCalls: 'Recent calls',
   viewAll: 'View all',
-  noVoiceInbox: 'Set up a voice inbox to make outbound calls.',
+  noVoiceInbox: 'No voice inbox available.',
   loadingRecentCalls: 'Loading recent calls...',
   noRecentCalls: 'No recent calls.',
   startCall: 'Start call',
-  poweredBy: 'Powered by',
-  freshcaller: 'Freshcaller',
-  testConnection: 'Test your connection',
 };
 
 const route = useRoute();
@@ -78,6 +75,7 @@ const selectedInboxId = ref(null);
 const inputRef = ref(null);
 const recentCalls = ref([]);
 const isFetchingCalls = ref(false);
+const isStartingTwilioCall = ref(false);
 
 const inboxesList = useMapGetter('inboxes/getInboxes');
 const contactsUiFlags = useMapGetter('contacts/getUIFlags');
@@ -90,6 +88,7 @@ const selectedInbox = computed(() =>
 const isInitiatingCall = computed(
   () =>
     contactsUiFlags.value?.isInitiatingCall ||
+    isStartingTwilioCall.value ||
     whatsappCallSession.isInitiating.value
 );
 const hasCallInProgress = computed(
@@ -232,19 +231,25 @@ const startWhatsappCall = async ({ contactId, inboxId }) => {
 };
 
 const startTwilioCall = async ({ contactId, inboxId }) => {
-  const response = await store.dispatch('contacts/initiateCall', {
-    contactId,
-    inboxId,
-  });
-  const { call_sid: callSid, conversation_id: conversationId } = response;
-  callsStore.addCall({
-    callSid,
-    conversationId,
-    inboxId,
-    callDirection: VOICE_CALL_DIRECTION.OUTBOUND,
-  });
-  useAlert('Call initiated.');
-  navigateToConversation(conversationId);
+  isStartingTwilioCall.value = true;
+  try {
+    const { data: response } = await CallsAPI.create({
+      contact_id: contactId,
+      inbox_id: inboxId,
+      phone_number: normalizedPhoneNumber.value,
+    });
+    const { call_sid: callSid, conversation_id: conversationId } = response;
+    callsStore.addCall({
+      callSid,
+      conversationId,
+      inboxId,
+      callDirection: VOICE_CALL_DIRECTION.OUTBOUND,
+    });
+    useAlert('Call initiated.');
+    navigateToConversation(conversationId);
+  } finally {
+    isStartingTwilioCall.value = false;
+  }
 };
 
 const startCall = async (number = normalizedPhoneNumber.value) => {
@@ -403,13 +408,7 @@ onBeforeUnmount(() => {
         class="max-h-[260px] min-h-[204px] overflow-y-auto bg-white dark:bg-n-solid-2"
       >
         <div
-          v-if="!voiceInboxes.length"
-          class="flex h-[204px] items-center justify-center px-6 text-center text-sm text-n-slate-11"
-        >
-          {{ TEXT.noVoiceInbox }}
-        </div>
-        <div
-          v-else-if="isFetchingCalls"
+          v-if="isFetchingCalls"
           class="flex h-[204px] items-center justify-center text-sm text-n-slate-11"
         >
           {{ TEXT.loadingRecentCalls }}
@@ -447,32 +446,17 @@ onBeforeUnmount(() => {
       </div>
 
       <div
-        class="flex h-16 flex-col items-center justify-between border-t border-n-weak bg-n-slate-1 px-4 pb-2 pt-3 dark:bg-n-solid-3"
+        class="flex h-14 items-center justify-center border-t border-n-weak bg-n-slate-1 px-4 dark:bg-n-solid-3"
       >
         <button
           type="button"
-          class="grid size-6 place-content-center text-[#4f5b66] hover:text-n-brand"
+          class="grid size-10 place-content-center rounded-full bg-[#22c55e] text-white shadow-sm transition-colors hover:bg-[#16a34a] disabled:cursor-not-allowed disabled:bg-n-slate-7 disabled:text-n-slate-10"
           :disabled="!canStartCall"
           :title="TEXT.startCall"
           @click="startCall()"
         >
-          <span class="i-lucide-grip size-5" />
+          <span class="i-lucide-phone-call size-5" />
         </button>
-        <div class="flex w-full items-center justify-between text-[10px]">
-          <span class="text-[#4f5b66]">
-            {{ TEXT.poweredBy }}
-            <span class="font-medium text-n-brand">
-              {{ TEXT.freshcaller }}
-            </span>
-          </span>
-          <RouterLink
-            :to="accountScopedRoute('calls_dashboard_index')"
-            class="text-n-brand underline"
-            @click="closeDialer"
-          >
-            {{ TEXT.testConnection }}
-          </RouterLink>
-        </div>
       </div>
     </div>
   </div>

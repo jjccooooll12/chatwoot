@@ -257,8 +257,9 @@ Rails.application.routes.draw do
           end
           resources :reporting_events, only: [:index] if ChatwootApp.enterprise?
 
+          resources :calls, only: [:index, :create]
+
           if ChatwootApp.enterprise?
-            resources :calls, only: [:index]
             resources :whatsapp_calls, only: [:show] do
               member do
                 post :accept
@@ -654,6 +655,8 @@ Rails.application.routes.draw do
   post 'webhooks/sms/:phone_number', to: 'webhooks/sms#process_payload'
   post 'webhooks/twilio_voice/:phone_number', to: 'webhooks/twilio_voice#call_twiml', as: :voice_webhook_call
   post 'webhooks/twilio_voice/:phone_number/agent', to: 'webhooks/twilio_voice#agent_twiml', as: :voice_webhook_agent
+  post 'webhooks/twilio_voice/:phone_number/outbound/:conference_sid', to: 'webhooks/twilio_voice#outbound_twiml', as: :voice_webhook_outbound
+  post 'webhooks/twilio_voice/:phone_number/outbound/:conference_sid/status', to: 'webhooks/twilio_voice#outbound_status', as: :voice_webhook_outbound_status
   post 'webhooks/twilio_voice/:phone_number/status', to: 'webhooks/twilio_voice#status', as: :voice_webhook_status
   post 'webhooks/twilio_voice/:phone_number/conference_status', to: 'webhooks/twilio_voice#conference_status', as: :voice_webhook_conference_status
   post 'webhooks/twilio_voice/:phone_number/recording_status', to: 'webhooks/twilio_voice#recording_status', as: :voice_webhook_recording_status

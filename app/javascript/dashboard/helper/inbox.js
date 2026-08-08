@@ -43,6 +43,18 @@ export const getVoiceCallProvider = inbox => {
   // Callers pass either snake_case (raw API) or camelCase (after camelcaseKeys) shapes.
   const channelType = inbox.channel_type || inbox.channelType;
   const voiceEnabled = inbox.voice_enabled || inbox.voiceEnabled;
+  const additionalAttributes =
+    inbox.additional_attributes || inbox.additionalAttributes || {};
+
+  if (
+    channelType === INBOX_TYPES.API &&
+    additionalAttributes.phone_number &&
+    additionalAttributes.twilio_account_sid &&
+    additionalAttributes.twilio_api_key_sid &&
+    additionalAttributes.twilio_twiml_app_sid
+  ) {
+    return VOICE_CALL_PROVIDERS.TWILIO;
+  }
 
   if (!voiceEnabled) return null;
 

@@ -1,6 +1,5 @@
 <script setup>
-import { computed } from 'vue';
-import { useStore } from 'dashboard/composables/store';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import {
   getVoiceCallProvider,
@@ -17,6 +16,7 @@ import { useAccount } from 'dashboard/composables/useAccount';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { useAlert } from 'dashboard/composables';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import CallsAPI from 'dashboard/api/calls';
 
 const props = defineProps({
   inbox: {
@@ -30,10 +30,10 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
-const store = useStore();
 const callsStore = useCallsStore();
 const whatsappCallSession = useWhatsappCallSession();
 const contactsUiFlags = useMapGetter('contacts/getUIFlags');
+const isStartingTwilioCall = ref(false);
 const { isCloudFeatureEnabled } = useAccount();
 
 const voiceCallProvider = computed(() => getVoiceCallProvider(props.inbox));
@@ -51,7 +51,7 @@ const isCallButtonDisabled = computed(() => {
   if (isWhatsappVoiceInbox.value) {
     return whatsappCallSession.isInitiating.value;
   }
-  return contactsUiFlags.value?.isInitiatingCall || false;
+  return contactsUiFlags.value?.isInitiatingCall || isStartingTwilioCall.value;
 });
 
 const isCallButtonLoading = computed(() =>
@@ -105,10 +105,14 @@ const startWhatsappCall = async () => {
 const startTwilioCall = async () => {
   if (contactsUiFlags.value?.isInitiatingCall) return;
   try {
-    const response = await store.dispatch('contacts/initiateCall', {
-      contactId: props.chat?.meta?.sender?.id,
-      inboxId: props.inbox?.id,
-      conversationId: props.chat.id,
+    isStartingTwilioCall.value = true;
+    const { data: response } = await CallsAPI.create({
+      contact_id: props.chat?.meta?.sender?.id,
+      inbox_id: props.inbox?.id,
+      conversation_id: props.chat.id,
+      phone_number:
+        props.chat?.meta?.sender?.phone_number ||
+        props.chat?.meta?.sender?.phoneNumber,
     });
 
     callsStore.addCall({
@@ -119,6 +123,8 @@ const startTwilioCall = async () => {
     });
   } catch (error) {
     useAlert(error?.message || t('CONVERSATION.HEADER.VOICE_CALL_FAILED'));
+  } finally {
+    isStartingTwilioCall.value = false;
   }
 };
 

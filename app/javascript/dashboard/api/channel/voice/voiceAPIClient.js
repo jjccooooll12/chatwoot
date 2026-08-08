@@ -1,6 +1,6 @@
 /* global axios */
 import ApiClient from '../../ApiClient';
-import ContactsAPI from '../../contacts';
+import CallsAPI from '../../calls';
 
 class VoiceAPI extends ApiClient {
   constructor() {
@@ -9,7 +9,9 @@ class VoiceAPI extends ApiClient {
 
   // eslint-disable-next-line class-methods-use-this
   initiateCall(contactId, inboxId) {
-    return ContactsAPI.initiateCall(contactId, inboxId).then(r => r.data);
+    return CallsAPI.create({ contact_id: contactId, inbox_id: inboxId }).then(
+      r => r.data
+    );
   }
 
   leaveConference({ inboxId, conversationId, callSid }) {

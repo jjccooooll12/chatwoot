@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useStore } from 'vuex';
 import { useMapGetter } from 'dashboard/composables/store';
@@ -14,6 +14,7 @@ import {
 } from '../constants';
 import { useCallActions } from 'dashboard/composables/useCallSession';
 import { useWhatsappCallSession } from 'dashboard/composables/useWhatsappCallSession';
+import CallsAPI from 'dashboard/api/calls';
 import { useCallsStore } from 'dashboard/stores/calls';
 import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 import { formatDuration } from 'shared/helpers/timeHelper';
@@ -55,8 +56,9 @@ const { joinCall, endCall, activeCall, hasActiveCall, isJoining } =
 const whatsappCallSession = useWhatsappCallSession();
 const callsStore = useCallsStore();
 const contactsUiFlags = useMapGetter('contacts/getUIFlags');
+const isStartingTwilioCall = ref(false);
 const isInitiatingCall = computed(
-  () => contactsUiFlags.value?.isInitiatingCall || false
+  () => contactsUiFlags.value?.isInitiatingCall || isStartingTwilioCall.value
 );
 
 const status = computed(() => call.value?.status);
@@ -294,10 +296,12 @@ const handleCallBack = async () => {
       });
       return;
     }
-    const response = await store.dispatch('contacts/initiateCall', {
-      contactId: sender.value?.id,
-      inboxId: inboxId.value,
-      conversationId: conversationId.value,
+    isStartingTwilioCall.value = true;
+    const { data: response } = await CallsAPI.create({
+      contact_id: sender.value?.id,
+      inbox_id: inboxId.value,
+      conversation_id: conversationId.value,
+      phone_number: sender.value?.phone_number || sender.value?.phoneNumber,
     });
     callsStore.addCall({
       callSid: response?.call_sid,
@@ -307,6 +311,8 @@ const handleCallBack = async () => {
     });
   } catch (error) {
     useAlert(error?.message || t('CONTACT_PANEL.CALL_FAILED'));
+  } finally {
+    isStartingTwilioCall.value = false;
   }
 };
 </script>

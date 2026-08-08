@@ -4,6 +4,7 @@ import {
 } from 'shared/helpers/CustomErrors';
 import snakecaseKeys from 'snakecase-keys';
 import AccountActionsAPI from '../../../api/accountActions';
+import CallsAPI from '../../../api/calls';
 import ContactAPI from '../../../api/contacts';
 import AnalyticsHelper from '../../../helper/AnalyticsHelper';
 import { CONTACTS_EVENTS } from '../../../helper/AnalyticsHelper/events';
@@ -329,14 +330,18 @@ export const actions = {
     commit(types.CLEAR_CONTACT_FILTERS);
   },
 
-  initiateCall: async ({ commit }, { contactId, inboxId, conversationId }) => {
+  initiateCall: async (
+    { commit },
+    { contactId, inboxId, conversationId, phoneNumber }
+  ) => {
     commit(types.SET_CONTACT_UI_FLAG, { isInitiatingCall: true });
     try {
-      const response = await ContactAPI.initiateCall(
-        contactId,
-        inboxId,
-        conversationId
-      );
+      const response = await CallsAPI.create({
+        contact_id: contactId,
+        inbox_id: inboxId,
+        conversation_id: conversationId,
+        phone_number: phoneNumber,
+      });
       commit(types.SET_CONTACT_UI_FLAG, { isInitiatingCall: false });
       return response.data;
     } catch (error) {

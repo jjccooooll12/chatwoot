@@ -41,6 +41,31 @@ class Webhooks::TwilioVoiceController < ApplicationController
     render xml: response.to_s
   end
 
+  # Outbound customer leg. The authenticated dashboard API creates a VoiceCall
+  # with a stable conference_sid, then Twilio requests this TwiML when the
+  # customer's phone answers.
+  def outbound_twiml
+    voice_call = VoiceCall.find_by(conference_sid: params[:conference_sid], account_id: @account.id)
+    return render(xml: Twilio::TwiML::VoiceResponse.new.reject.to_s) unless voice_call
+
+    sync_provider_call_id!(voice_call)
+
+    response = Twilio::TwiML::VoiceResponse.new
+    response.say(message: 'Connecting you now.')
+    response.dial do |dial|
+      dial.conference(
+        voice_call.conference_sid,
+        start_conference_on_enter: false,
+        record: 'record-from-start',
+        recording_status_callback: voice_webhook_recording_status_url(phone_number: params[:phone_number]),
+        recording_status_callback_event: 'completed',
+        status_callback: voice_webhook_conference_status_url(phone_number: params[:phone_number]),
+        status_callback_event: 'start end'
+      )
+    end
+    render xml: response.to_s
+  end
+
   # Phone number's "Call status changes" webhook — the customer leg's own
   # CallStatus. Only acts while the call is still 'ringing': the conference
   # join/leave events (below) are the source of truth once a conference
@@ -49,19 +74,17 @@ class Webhooks::TwilioVoiceController < ApplicationController
     voice_call = VoiceCall.find_by(provider_call_id: params[:CallSid], account_id: @account.id)
     return head :no_content unless voice_call && voice_call.ringing?
 
-    case params[:CallStatus]
-    when 'no-answer', 'canceled'
-      voice_call.transition_to!(status: 'no_answer', ended_at: Time.current, end_reason: params[:CallStatus])
-      schedule_outcome_check!(voice_call)
-    when 'busy', 'failed'
-      voice_call.transition_to!(status: 'failed', ended_at: Time.current, end_reason: params[:CallStatus])
-      schedule_outcome_check!(voice_call)
-    when 'completed'
-      # The call ended without ever reaching a conference (e.g. hung up
-      # while ringing, before the voicemail Record verb or any agent joined).
-      voice_call.transition_to!(status: 'no_answer', ended_at: Time.current, end_reason: 'no_answer')
-      schedule_outcome_check!(voice_call)
-    end
+    apply_call_status!(voice_call)
+
+    head :no_content
+  end
+
+  def outbound_status
+    voice_call = VoiceCall.find_by(conference_sid: params[:conference_sid], account_id: @account.id)
+    return head :no_content unless voice_call
+
+    sync_provider_call_id!(voice_call)
+    apply_call_status!(voice_call) if voice_call.ringing?
 
     head :no_content
   end
@@ -219,6 +242,29 @@ class Webhooks::TwilioVoiceController < ApplicationController
   # settled as a plain abandoned attempt — see Voice::CallOutcomeFinalizer.
   def schedule_outcome_check!(voice_call)
     VoiceCallOutcomeCheckJob.set(wait: VoiceCallOutcomeCheckJob::WAIT).perform_later(voice_call.id)
+  end
+
+  def apply_call_status!(voice_call)
+    case params[:CallStatus]
+    when 'no-answer', 'canceled'
+      voice_call.transition_to!(status: 'no_answer', ended_at: Time.current, end_reason: params[:CallStatus])
+      schedule_outcome_check!(voice_call)
+    when 'busy', 'failed'
+      voice_call.transition_to!(status: 'failed', ended_at: Time.current, end_reason: params[:CallStatus])
+      schedule_outcome_check!(voice_call)
+    when 'completed'
+      # The call ended without ever reaching a conference (e.g. hung up
+      # while ringing, before the voicemail Record verb or any agent joined).
+      voice_call.transition_to!(status: 'no_answer', ended_at: Time.current, end_reason: 'no_answer')
+      schedule_outcome_check!(voice_call)
+    end
+  end
+
+  def sync_provider_call_id!(voice_call)
+    return if params[:CallSid].blank?
+    return unless voice_call.provider_call_id.start_with?('pending-')
+
+    voice_call.update!(provider_call_id: params[:CallSid])
   end
 
   def online_agent_ids
