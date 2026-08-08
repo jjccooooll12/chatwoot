@@ -3,12 +3,11 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
   PENDING_PROVIDER_CALL_PREFIX = 'pending-'.freeze
 
   def index
-    calls = Current.account.voice_calls
-                           .where(inbox_id: policy_scope(Current.account.inboxes).select(:id))
-                           .includes(:contact, :inbox, :conversation, :message, :accepted_by_agent)
-                           .order(created_at: :desc)
-                           .page(current_page)
-                           .per(RESULTS_PER_PAGE)
+    calls = VoiceCall.where(account_id: Current.account.id)
+                     .includes(:contact, :inbox, :conversation, :message, :accepted_by_agent)
+                     .order(created_at: :desc)
+                     .page(current_page)
+                     .per(RESULTS_PER_PAGE)
 
     render json: {
       payload: calls.map { |call| call_payload(call) },

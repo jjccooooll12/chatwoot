@@ -74,6 +74,7 @@ const TEXT = {
   openPhoneDialer: 'Open phone dialer',
   countryCode: 'Country code',
   countrySearchPlaceholder: 'Search country or code',
+  closeCountrySearch: 'Close country search',
   noCountriesFound: 'No countries found.',
   voiceInbox: 'Voice inbox',
   inputPlaceholder: 'Type name or number to call',
@@ -442,6 +443,14 @@ onBeforeUnmount(() => {
                   :placeholder="TEXT.countrySearchPlaceholder"
                   autocomplete="off"
                 />
+                <button
+                  type="button"
+                  class="grid size-7 shrink-0 place-content-center rounded text-n-slate-10 hover:bg-n-alpha-1 hover:text-n-slate-12"
+                  :title="TEXT.closeCountrySearch"
+                  @click="isCountryPickerOpen = false"
+                >
+                  <span class="i-lucide-x size-4" />
+                </button>
               </div>
               <div class="max-h-[240px] overflow-y-auto py-1">
                 <button
@@ -465,26 +474,6 @@ onBeforeUnmount(() => {
               </div>
             </div>
           </div>
-          <label
-            v-if="voiceInboxes.length"
-            class="flex h-7 max-w-[8.5rem] items-center gap-1 rounded bg-white px-2 text-[#123852]"
-          >
-            <span class="i-lucide-monitor size-4 shrink-0" />
-            <select
-              v-model="selectedInboxId"
-              class="min-w-0 flex-1 appearance-none bg-transparent text-xs outline-none"
-              :aria-label="TEXT.voiceInbox"
-            >
-              <option
-                v-for="inbox in voiceInboxes"
-                :key="inbox.id"
-                :value="inbox.id"
-              >
-                {{ inbox.name }}
-              </option>
-            </select>
-            <span class="i-lucide-chevron-down size-3 shrink-0" />
-          </label>
         </div>
         <form
           class="flex h-14 items-center border-t border-white/5"
@@ -504,7 +493,7 @@ onBeforeUnmount(() => {
       </div>
 
       <div
-        class="flex h-8 items-center justify-between bg-n-slate-1 px-5 dark:bg-n-solid-3"
+        class="flex h-12 items-end justify-between bg-n-slate-1 px-5 pb-2 dark:bg-n-solid-3"
       >
         <span
           class="border-b-2 border-n-brand px-1 pb-2 text-xs font-medium text-n-brand"
