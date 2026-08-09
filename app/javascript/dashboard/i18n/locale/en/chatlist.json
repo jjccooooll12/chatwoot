@@ -128,7 +128,7 @@
         "CANCEL": "Cancel",
         "CLOSE": "Close merge panel",
         "CONFIRM": "Merge",
-        "DESCRIPTION": "Choose one or more tickets to merge, then select which ticket stays primary. The other selected tickets will be closed and linked from the primary ticket history.",
+        "DESCRIPTION": "Choose one or more tickets to merge. Use the star on a selected row to make that ticket primary; otherwise the current ticket stays primary.",
         "EMPTY": "No matching tickets found.",
         "ERROR": "Could not merge tickets. Please try again.",
         "LOAD_ERROR": "Could not load tickets.",

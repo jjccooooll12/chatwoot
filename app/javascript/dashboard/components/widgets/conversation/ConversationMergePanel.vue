@@ -19,7 +19,6 @@ const emit = defineEmits(['close', 'merged']);
 const { t } = useI18n();
 const TEXT = {
   ticketsToMerge: 'Tickets to merge',
-  choosePrimary: 'Choose primary ticket',
   selectedCount: count => `${count} selected`,
 };
 
@@ -31,22 +30,6 @@ const isLoading = ref(false);
 const isMerging = ref(false);
 const error = ref('');
 const searchMode = ref(false);
-
-const additionalAttributes = computed(
-  () =>
-    props.chat.additional_attributes || props.chat.additionalAttributes || {}
-);
-
-const primaryTicketNumber = computed(() => getTicketNumber(props.chat));
-
-const primarySubject = computed(
-  () =>
-    additionalAttributes.value.mail_subject ||
-    props.chat.messages?.[0]?.content ||
-    t('CHAT_LIST.NO_CONTENT')
-);
-
-const primaryContact = computed(() => props.chat.meta?.sender || {});
 
 const hasSelectedTickets = computed(
   () => selectedConversationIds.value.length > 0
@@ -65,10 +48,6 @@ const selectedConversations = computed(() =>
       )
     )
     .filter(Boolean)
-);
-
-const isCurrentTicketPrimary = computed(
-  () => String(primaryConversationId.value) === String(props.chat.id)
 );
 
 const mergeConversations = computed(() => [
@@ -169,27 +148,11 @@ const toggleConversation = conversationId => {
   ];
 };
 
-const selectPrimaryConversation = conversationId => {
-  if (
-    String(conversationId) !== String(props.chat.id) &&
-    !isSelectedConversation(conversationId)
-  ) {
-    selectedConversationIds.value = [
-      ...selectedConversationIds.value,
-      conversationId,
-    ];
-  }
-
-  if (
-    !mergeConversations.value.some(
-      conversation => String(conversation.id) === String(conversationId)
-    )
-  ) {
-    primaryConversationId.value = props.chat.id;
-    return;
-  }
-
-  primaryConversationId.value = conversationId;
+const toggleCandidatePrimary = conversationId => {
+  if (!isSelectedConversation(conversationId)) return;
+  primaryConversationId.value = isPrimaryConversation(conversationId)
+    ? props.chat.id
+    : conversationId;
 };
 
 const searchTicket = () => {
@@ -286,103 +249,7 @@ watch(
         </header>
 
         <div class="flex-1 overflow-y-auto px-5 py-4">
-          <section>
-            <p class="mb-2 text-xs font-semibold uppercase text-fd-muted">
-              {{ TEXT.choosePrimary }}
-            </p>
-            <label
-              class="block cursor-pointer rounded-md border p-3 text-sm transition hover:bg-n-slate-1"
-              :class="
-                isCurrentTicketPrimary
-                  ? 'border-fd-primary bg-fd-blueSoft'
-                  : 'border-fd-border bg-n-slate-1'
-              "
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="m-0 text-xs text-fd-primary">
-                    {{ `#${primaryTicketNumber}` }}
-                  </p>
-                  <p class="m-0 mt-1 truncate font-semibold text-fd-text">
-                    {{ primarySubject }}
-                  </p>
-                  <p class="m-0 mt-1 truncate text-xs text-fd-muted">
-                    {{ primaryContact.email || primaryContact.name }}
-                  </p>
-                </div>
-                <div class="flex shrink-0 items-center gap-2">
-                  <span
-                    v-if="isCurrentTicketPrimary"
-                    class="rounded bg-fd-blueSoft px-2 py-1 text-xxs font-semibold text-fd-blue"
-                  >
-                    {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.PRIMARY_BADGE') }}
-                  </span>
-                  <input
-                    v-model="primaryConversationId"
-                    type="radio"
-                    class="size-4 accent-fd-primary"
-                    :value="props.chat.id"
-                    :aria-label="
-                      t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.SELECT_AS_PRIMARY', {
-                        ticket: `#${primaryTicketNumber}`,
-                      })
-                    "
-                    @change="selectPrimaryConversation(props.chat.id)"
-                  />
-                </div>
-              </div>
-            </label>
-            <label
-              v-for="conversation in selectedConversations"
-              :key="conversation.id"
-              class="mt-2 block cursor-pointer rounded-md border p-3 text-sm transition hover:bg-n-slate-1"
-              :class="
-                isPrimaryConversation(conversation.id)
-                  ? 'border-fd-primary bg-fd-blueSoft'
-                  : 'border-fd-border bg-n-slate-1'
-              "
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="m-0 text-xs text-fd-primary">
-                    {{ `#${ticketNumberOf(conversation)}` }}
-                  </p>
-                  <p class="m-0 mt-1 truncate font-semibold text-fd-text">
-                    {{ subjectOf(conversation) }}
-                  </p>
-                  <p class="m-0 mt-1 truncate text-xs text-fd-muted">
-                    {{
-                      `${statusOf(conversation)} ${t(
-                        'CHAT_LIST.FRESHDESK_CARD.SEPARATOR'
-                      )} ${assigneeOf(conversation)}`
-                    }}
-                  </p>
-                </div>
-                <div class="flex shrink-0 items-center gap-2">
-                  <span
-                    v-if="isPrimaryConversation(conversation.id)"
-                    class="rounded bg-fd-blueSoft px-2 py-1 text-xxs font-semibold text-fd-blue"
-                  >
-                    {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.PRIMARY_BADGE') }}
-                  </span>
-                  <input
-                    v-model="primaryConversationId"
-                    type="radio"
-                    class="size-4 accent-fd-primary"
-                    :value="conversation.id"
-                    :aria-label="
-                      t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.SELECT_AS_PRIMARY', {
-                        ticket: `#${ticketNumberOf(conversation)}`,
-                      })
-                    "
-                    @change="selectPrimaryConversation(conversation.id)"
-                  />
-                </div>
-              </div>
-            </label>
-          </section>
-
-          <form class="mt-4 flex gap-2" @submit.prevent="searchTicket">
+          <form class="flex gap-2" @submit.prevent="searchTicket">
             <label class="relative min-w-0 flex-1">
               <span
                 class="pointer-events-none absolute left-0 top-0 grid h-9 w-9 place-content-center text-fd-muted"
@@ -498,7 +365,32 @@ watch(
                       {{ timeOf(conversation) }}
                     </span>
                   </span>
-                  <div class="flex shrink-0 items-start">
+                  <div class="flex shrink-0 items-start gap-2">
+                    <button
+                      type="button"
+                      class="mt-0.5 grid size-7 place-content-center rounded-md border transition disabled:cursor-not-allowed disabled:opacity-40"
+                      :class="
+                        isPrimaryConversation(conversation.id)
+                          ? 'border-fd-primary bg-fd-blueSoft text-fd-primary'
+                          : 'border-fd-border text-fd-muted hover:border-fd-primary hover:text-fd-primary'
+                      "
+                      :disabled="!isSelectedConversation(conversation.id)"
+                      :title="
+                        t(
+                          'CHAT_LIST.FRESHDESK_DETAIL.MERGE.SELECT_AS_PRIMARY',
+                          { ticket: `#${ticketNumberOf(conversation)}` }
+                        )
+                      "
+                      @click.stop="toggleCandidatePrimary(conversation.id)"
+                    >
+                      <span
+                        :class="
+                          isPrimaryConversation(conversation.id)
+                            ? 'i-lucide-star size-4 fill-current'
+                            : 'i-lucide-star size-4'
+                        "
+                      />
+                    </button>
                     <a
                       :href="conversationUrl(conversation)"
                       class="mt-0.5 text-fd-muted hover:text-fd-primary"
