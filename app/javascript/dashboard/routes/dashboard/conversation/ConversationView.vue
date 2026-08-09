@@ -85,7 +85,10 @@ export default {
     },
 
     shouldShowSidebar() {
-      return Boolean(this.currentChat.id);
+      return (
+        Boolean(this.currentChat.id) &&
+        this.currentChat.dataFetched !== undefined
+      );
     },
   },
   watch: {
