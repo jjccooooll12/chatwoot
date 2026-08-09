@@ -7,11 +7,9 @@ import { useMapGetter, useStore } from 'dashboard/composables/store';
 import { useAlert } from 'dashboard/composables';
 import { useAdmin } from 'dashboard/composables/useAdmin';
 import { isVoiceCallEnabled } from 'dashboard/helper/inbox';
-import { FEATURE_FLAGS } from 'dashboard/featureFlags';
 import { useCallHistoryStore } from 'dashboard/stores/callHistory';
 
 import CallListItem from 'dashboard/components-next/Calls/CallListItem.vue';
-import CallsEmptyState from 'dashboard/components-next/Calls/CallsEmptyState.vue';
 import CallsFilterBar from 'dashboard/components-next/Calls/CallsFilterBar.vue';
 import { CALL_ACTIVITY_PARAMS } from 'dashboard/components-next/Calls/constants';
 import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
@@ -26,26 +24,14 @@ const store = useStore();
 const callHistoryStore = useCallHistoryStore();
 
 const inboxes = useMapGetter('inboxes/getInboxes');
-const accountId = useMapGetter('getCurrentAccountId');
 const currentUserId = useMapGetter('getCurrentUserID');
 const agents = useMapGetter('agents/getVerifiedAgents');
-const isFeatureEnabledonAccount = useMapGetter(
-  'accounts/isFeatureEnabledonAccount'
-);
 
 // CallFinder scopes non-admins to their own accepted calls, so the assignee
 // filter is only meaningful for admins; everyone else defaults to themselves.
 const { isAdmin } = useAdmin();
 
 const voiceInboxes = computed(() => inboxes.value.filter(isVoiceCallEnabled));
-
-const isVoiceEnabled = computed(
-  () =>
-    isFeatureEnabledonAccount.value(
-      accountId.value,
-      FEATURE_FLAGS.CHANNEL_VOICE
-    ) && voiceInboxes.value.length > 0
-);
 
 const calls = computed(() => callHistoryStore.records);
 const meta = computed(() => callHistoryStore.meta);
@@ -107,7 +93,6 @@ onMounted(async () => {
       store.dispatch('inboxes/get'),
       until(() => accountUiFlags.value.isFetchingItem).toBe(false),
     ]);
-    if (!isVoiceEnabled.value) return;
     // Only admins see the assignee filter, so only they need the agent list.
     if (isAdmin.value) store.dispatch('agents/get');
     await fetchCalls();
@@ -124,7 +109,6 @@ onMounted(async () => {
   >
     <Spinner :size="24" />
   </div>
-  <CallsEmptyState v-else-if="!isVoiceEnabled" />
   <section
     v-else
     class="flex flex-col w-full h-full overflow-hidden bg-n-surface-1"
