@@ -40,6 +40,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isTicketSelectionPersisted: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -57,17 +61,22 @@ const TICKET_PREFIX = '#';
 const TEXT = {
   createNewTicket: 'Create new ticket',
   addToExistingTicket: 'Add to existing ticket',
+  recentTickets: 'Recent tickets',
   ticketId: 'Ticket ID',
+  searchTicketId: 'Search ticket ID',
   loadingTickets: 'Loading tickets...',
   noRecentTickets: 'No recent tickets found.',
+  callEnded: 'Call ended',
+  openTicketActions: 'Open ticket actions',
   updateTicketError: 'Could not update the call ticket.',
 };
 
 const isTicketMenuOpen = ref(false);
-const ticketMode = ref(null);
+const ticketMode = ref('recent');
 const ticketSearch = ref('');
 const ticketConversations = ref([]);
 const isFetchingTickets = ref(false);
+const isUpdatingTicket = ref(false);
 let ticketSearchTimer = null;
 
 const isOngoing = computed(() => props.state === VOICE_CALL_DIRECTION.ONGOING);
@@ -97,7 +106,22 @@ const channelIcon = computed(() => {
 });
 
 const canManageTicket = computed(
-  () => props.showTicketAction && props.call?.callId
+  () =>
+    props.showTicketAction &&
+    props.call?.callId &&
+    (isOngoing.value || props.isTicketSelectionPersisted)
+);
+
+const ticketPanelStatusLabel = computed(() =>
+  props.isTicketSelectionPersisted ? TEXT.callEnded : statusLabel.value
+);
+
+const ticketPanelDuration = computed(() =>
+  props.isTicketSelectionPersisted ? '' : props.duration
+);
+
+const currentTicketLabel = computed(
+  () => props.callInfo.ticketNumber || props.call?.conversationId
 );
 
 const fetchTicketConversations = async () => {
@@ -126,24 +150,38 @@ const fetchTicketConversations = async () => {
 };
 
 const openExistingTickets = () => {
-  ticketMode.value = 'existing';
+  ticketMode.value = 'search';
+  ticketSearch.value = '';
+  isTicketMenuOpen.value = false;
+  fetchTicketConversations();
+};
+
+const loadRecentTickets = () => {
+  ticketMode.value = 'recent';
+  ticketSearch.value = '';
   isTicketMenuOpen.value = false;
   fetchTicketConversations();
 };
 
 const attachToTicket = async payload => {
   if (!props.call?.callId) return;
+  isUpdatingTicket.value = true;
   try {
     const { data } = await CallsAPI.ticket(props.call.callId, payload);
     emit('ticketUpdated', camelcaseKeys(data.call || {}, { deep: true }));
-    ticketMode.value = null;
+    ticketMode.value = 'recent';
     isTicketMenuOpen.value = false;
   } catch (error) {
     useAlert(error?.response?.data?.error || TEXT.updateTicketError);
+  } finally {
+    isUpdatingTicket.value = false;
   }
 };
 
-const createNewTicket = () => attachToTicket({ ticket_action: 'new' });
+const createNewTicket = () => {
+  isTicketMenuOpen.value = false;
+  attachToTicket({ ticket_action: 'new' });
+};
 
 const selectTicketConversation = conversation =>
   attachToTicket({
@@ -151,11 +189,38 @@ const selectTicketConversation = conversation =>
     conversation_id: conversation.ticketNumber || conversation.displayId,
   });
 
+const selectFirstTicketFromSearch = () => {
+  if (ticketMode.value !== 'search' || !ticketConversations.value.length) {
+    return;
+  }
+
+  const query = ticketSearch.value.trim();
+  const exactTicket = ticketConversations.value.find(conversation =>
+    [conversation.ticketNumber, conversation.displayId?.toString()].includes(
+      query
+    )
+  );
+  selectTicketConversation(exactTicket || ticketConversations.value[0]);
+};
+
 watch(ticketSearch, () => {
-  if (ticketMode.value !== 'existing') return;
+  if (ticketMode.value !== 'search') return;
   clearTimeout(ticketSearchTimer);
   ticketSearchTimer = setTimeout(fetchTicketConversations, 250);
 });
+
+watch(
+  () => [
+    canManageTicket.value,
+    props.callInfo.phoneNumber,
+    props.call?.callSid,
+  ],
+  ([enabled]) => {
+    if (!enabled) return;
+    loadRecentTickets();
+  },
+  { immediate: true }
+);
 
 onBeforeUnmount(() => {
   clearTimeout(ticketSearchTimer);
@@ -164,6 +229,227 @@ onBeforeUnmount(() => {
 
 <template>
   <div
+    v-if="canManageTicket"
+    class="w-[316px] overflow-hidden rounded-md border border-n-weak bg-white shadow-xl dark:bg-n-solid-2"
+  >
+    <div class="bg-[#123852] text-white">
+      <div class="flex h-14 items-center gap-3 px-4">
+        <div
+          class="grid size-8 shrink-0 place-content-center rounded-full bg-[#9ee6aa] text-sm font-semibold text-[#123852]"
+        >
+          {{ TICKET_PREFIX }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="mb-0 truncate text-sm font-semibold leading-5">
+            {{ callInfo.phoneNumber || callInfo.contactName }}
+          </p>
+          <p class="mb-0 truncate text-xs leading-4 text-white/75">
+            {{ ticketPanelStatusLabel }}
+          </p>
+        </div>
+        <span
+          v-if="ticketPanelDuration"
+          class="shrink-0 rounded-full bg-white px-2 py-0.5 text-xs font-medium tabular-nums text-[#123852]"
+        >
+          {{ ticketPanelDuration }}
+        </span>
+        <button
+          v-if="isTicketSelectionPersisted"
+          type="button"
+          class="grid size-7 shrink-0 place-content-center rounded-full bg-white/10 text-white hover:bg-white/20"
+          @click="$emit('dismiss')"
+        >
+          <span class="i-lucide-x size-4" />
+        </button>
+        <button
+          v-else
+          type="button"
+          class="grid size-7 shrink-0 place-content-center rounded-full bg-white text-[#ef4b6f]"
+          disabled
+        >
+          <span class="i-lucide-pause size-3.5" />
+        </button>
+      </div>
+
+      <div class="flex h-10 items-center gap-2 bg-[#0f3148] px-4">
+        <button
+          type="button"
+          class="flex h-7 min-w-0 flex-1 items-center justify-between gap-2 rounded bg-white/10 px-3 text-left text-xs font-medium text-white hover:bg-white/15"
+          @click="loadRecentTickets"
+        >
+          <span class="truncate">{{ TEXT.recentTickets }}</span>
+          <span class="i-lucide-chevron-down size-3.5 shrink-0 text-white/75" />
+        </button>
+        <button
+          type="button"
+          class="grid size-8 place-content-center rounded-full text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:text-white/35"
+          :disabled="!call?.conversationId"
+          @click="$emit('goToConversation')"
+        >
+          <span class="i-lucide-link size-4" />
+        </button>
+        <div class="relative">
+          <button
+            type="button"
+            class="grid size-8 place-content-center rounded-full bg-white/10 text-white hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
+            :title="TEXT.openTicketActions"
+            :disabled="isUpdatingTicket"
+            @click="isTicketMenuOpen = !isTicketMenuOpen"
+          >
+            <span class="i-lucide-plus size-4" />
+          </button>
+          <div
+            v-if="isTicketMenuOpen"
+            class="absolute right-0 top-9 z-[80] w-[190px] overflow-hidden rounded-md border border-n-weak bg-white py-1 text-n-slate-12 shadow-xl dark:bg-n-solid-2 dark:text-n-slate-12"
+          >
+            <button
+              type="button"
+              class="flex h-9 w-full items-center px-3 text-left text-sm hover:bg-n-alpha-1 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="isUpdatingTicket"
+              @click="createNewTicket"
+            >
+              {{ TEXT.createNewTicket }}
+            </button>
+            <button
+              type="button"
+              class="flex h-9 w-full items-center px-3 text-left text-sm hover:bg-n-alpha-1 disabled:cursor-not-allowed disabled:opacity-60"
+              :disabled="isUpdatingTicket"
+              @click="openExistingTickets"
+            >
+              {{ TEXT.addToExistingTicket }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="h-[312px] overflow-y-auto bg-white dark:bg-n-solid-2">
+      <div v-if="ticketMode === 'search'" class="border-b border-n-weak p-3">
+        <label
+          class="flex h-10 items-center gap-2 rounded border border-n-weak bg-n-slate-1 px-3 dark:bg-n-solid-3"
+        >
+          <span class="i-lucide-search size-4 text-n-slate-10" />
+          <input
+            v-model="ticketSearch"
+            class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-n-slate-10"
+            :placeholder="TEXT.searchTicketId"
+            inputmode="numeric"
+            @keydown.enter.prevent="selectFirstTicketFromSearch"
+          />
+        </label>
+      </div>
+
+      <div
+        v-if="isFetchingTickets"
+        class="flex h-full items-center justify-center text-sm text-n-slate-11"
+      >
+        {{ TEXT.loadingTickets }}
+      </div>
+      <div
+        v-else-if="!ticketConversations.length"
+        class="flex h-full flex-col items-center justify-center gap-3 text-sm text-[#123852]"
+      >
+        <div
+          class="grid size-16 place-content-center rounded-full bg-[#eef3f6] text-[#8ba2b2]"
+        >
+          <span class="i-lucide-ticket size-8" />
+        </div>
+        <span>{{ TEXT.noRecentTickets }}</span>
+      </div>
+      <template v-else>
+        <button
+          v-for="conversation in ticketConversations"
+          :key="conversation.id"
+          type="button"
+          class="group flex h-[58px] w-full items-center gap-3 border-b border-n-weak px-4 text-left transition-colors hover:bg-[#f4f8fb] disabled:cursor-not-allowed disabled:opacity-60"
+          :disabled="isUpdatingTicket"
+          @click="selectTicketConversation(conversation)"
+        >
+          <span
+            class="grid size-8 shrink-0 place-content-center rounded-full bg-[#eef3f6] text-xs font-semibold text-[#123852]"
+          >
+            {{ TICKET_PREFIX }}
+          </span>
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-semibold text-[#123852]">
+              <span>{{ TICKET_PREFIX }}</span>
+              <span>{{
+                conversation.ticketNumber || conversation.displayId
+              }}</span>
+            </span>
+            <span class="block truncate text-xs text-n-slate-10">
+              {{ conversation.subject || conversation.inbox?.name }}
+            </span>
+          </span>
+          <span
+            class="i-lucide-check size-4 shrink-0 text-n-brand opacity-0 transition-opacity group-hover:opacity-100"
+          />
+        </button>
+      </template>
+    </div>
+
+    <div
+      class="flex h-14 items-center justify-between border-t border-n-weak bg-white px-4 dark:bg-n-solid-2"
+    >
+      <button
+        type="button"
+        class="grid size-8 place-content-center rounded-full text-[#123852] hover:bg-n-alpha-1"
+        :disabled="!currentTicketLabel"
+        @click="$emit('goToConversation')"
+      >
+        <span class="i-lucide-file size-4" />
+      </button>
+      <button
+        type="button"
+        class="grid size-8 place-content-center rounded-full text-[#123852] opacity-70"
+        disabled
+      >
+        <span class="i-lucide-phone-forwarded size-4" />
+      </button>
+      <button
+        type="button"
+        class="grid size-8 place-content-center rounded-full text-[#123852] opacity-70"
+        disabled
+      >
+        <span class="i-lucide-pause size-4" />
+      </button>
+      <button
+        type="button"
+        class="grid size-8 place-content-center rounded-full text-[#123852] hover:bg-n-alpha-1"
+        :class="{ 'bg-[#e8f6f3] text-[#0f766e]': !isMuted }"
+        :disabled="!showMute || isTicketSelectionPersisted"
+        @click="$emit('toggleMute')"
+      >
+        <span
+          :class="isMuted ? 'i-lucide-mic-off size-4' : 'i-lucide-mic size-4'"
+        />
+      </button>
+      <button
+        type="button"
+        class="grid size-8 place-content-center rounded-full text-[#123852] opacity-70"
+        disabled
+      >
+        <span class="i-lucide-grid-3x3 size-4" />
+      </button>
+      <button
+        type="button"
+        class="grid size-8 place-content-center rounded-full text-[#123852] opacity-70"
+        disabled
+      >
+        <span class="i-lucide-users size-4" />
+      </button>
+      <button
+        type="button"
+        class="grid size-9 place-content-center rounded-full bg-[#dc3345] text-white hover:bg-[#c72d3e]"
+        @click="isTicketSelectionPersisted ? $emit('dismiss') : $emit('end')"
+      >
+        <span class="i-lucide-phone size-4 rotate-[135deg]" />
+      </button>
+    </div>
+  </div>
+
+  <div
+    v-else
     class="flex flex-col gap-1 pt-4 bg-n-call-widget rounded-2xl shadow-xl outline outline-1 outline-n-call-widget-border backdrop-blur-md"
     :class="call?.conversationId ? 'pb-2' : 'pb-4'"
   >

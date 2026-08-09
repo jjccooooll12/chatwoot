@@ -36,9 +36,13 @@ const {
 // Mute routes by provider: WhatsApp toggles the local mic track, Twilio uses
 // the Voice SDK connection's native mute. Both surface the same button.
 const isMuted = ref(false);
+const ticketSelectionCall = ref(null);
 const isWhatsappActive = computed(
   () => activeCall.value?.provider === VOICE_CALL_PROVIDERS.WHATSAPP
 );
+
+const isOutboundCall = call =>
+  call?.callDirection === VOICE_CALL_DIRECTION.OUTBOUND;
 
 const primaryIncomingCall = computed(() =>
   hasActiveCall.value ? null : incomingCalls.value[0] || null
@@ -55,6 +59,30 @@ const mainCardState = computed(() => {
     ? VOICE_CALL_DIRECTION.OUTGOING
     : VOICE_CALL_DIRECTION.INCOMING;
 });
+
+const displayCall = computed(
+  () =>
+    activeCall.value || primaryIncomingCall.value || ticketSelectionCall.value
+);
+
+const displayCardState = computed(() => {
+  if (
+    ticketSelectionCall.value &&
+    !activeCall.value &&
+    !primaryIncomingCall.value
+  ) {
+    return VOICE_CALL_DIRECTION.ONGOING;
+  }
+
+  return mainCardState.value;
+});
+
+const shouldShowWidget = computed(
+  () =>
+    incomingCalls.value.length ||
+    hasActiveCall.value ||
+    ticketSelectionCall.value
+);
 
 // Stacked cards are always non-active (ringing) calls, so reflect each call's
 // real direction. An outbound call must render as OUTGOING — otherwise it shows
@@ -76,6 +104,23 @@ const toggleMute = () => {
 
 watch(hasActiveCall, active => {
   if (!active) isMuted.value = false;
+});
+
+watch(activeCall, (call, previousCall) => {
+  if (call || !isOutboundCall(previousCall) || previousCall.conversationId) {
+    return;
+  }
+
+  ticketSelectionCall.value = {
+    ...previousCall,
+    isTicketSelectionPersisted: true,
+  };
+});
+
+watch(activeCall, call => {
+  if (isOutboundCall(call)) {
+    ticketSelectionCall.value = null;
+  }
 });
 
 // Convert ISO 3166-1 alpha-2 country code (e.g. "US") to its regional indicator
@@ -191,16 +236,37 @@ const handleJoinCall = async call => {
 
 const handleTicketUpdated = callPayload => {
   if (!callPayload?.providerCallId) return;
-  callsStore.addCall({
+  const updatedCall = {
     callSid: callPayload.providerCallId,
     callId: callPayload.id,
     conversationId:
       callPayload.conversation?.displayId || callPayload.conversation?.id,
+    ticketNumber: callPayload.conversation?.ticketNumber,
     inboxId: activeCall.value?.inboxId || callPayload.inbox?.id,
     callDirection: VOICE_CALL_DIRECTION.OUTBOUND,
     provider: activeCall.value?.provider || VOICE_CALL_PROVIDERS.TWILIO,
     phoneNumber: callPayload.toNumber || activeCall.value?.phoneNumber,
-  });
+  };
+
+  if (ticketSelectionCall.value?.callSid === updatedCall.callSid) {
+    ticketSelectionCall.value = {
+      ...ticketSelectionCall.value,
+      ...updatedCall,
+      isTicketSelectionPersisted: true,
+    };
+    return;
+  }
+
+  callsStore.addCall(updatedCall);
+};
+
+const dismissTicketSelectionCall = callSid => {
+  if (ticketSelectionCall.value?.callSid === callSid) {
+    ticketSelectionCall.value = null;
+    return;
+  }
+
+  dismissCall(callSid);
 };
 
 // Auto-join outbound calls when window is visible. WhatsApp outbound has no
@@ -259,43 +325,48 @@ onBeforeUnmount(stopRingtone);
 </script>
 
 <template>
-  <div
-    v-if="incomingCalls.length || hasActiveCall"
-    class="fixed ltr:left-4 rtl:right-4 bottom-4 z-50 flex flex-col gap-3 w-[400px]"
-  >
-    <!-- Stacked incoming calls (shown above the primary card) -->
-    <CallCard
-      v-for="call in stackedIncomingCalls"
-      :key="call.callSid"
-      :call="call"
-      :state="stackedCardState(call)"
-      :call-info="getCallInfo(call)"
-      @accept="handleJoinCall(call)"
-      @reject="rejectIncomingCall(call.callSid)"
-      @dismiss="dismissCall(call.callSid)"
-      @go-to-conversation="goToConversation(call)"
-    />
+  <div class="contents">
+    <div
+      v-if="shouldShowWidget"
+      class="fixed ltr:left-4 rtl:right-4 bottom-4 z-50 flex flex-col gap-3 w-[400px]"
+    >
+      <!-- Stacked incoming calls (shown above the primary card) -->
+      <CallCard
+        v-for="call in stackedIncomingCalls"
+        :key="call.callSid"
+        :call="call"
+        :state="stackedCardState(call)"
+        :call-info="getCallInfo(call)"
+        @accept="handleJoinCall(call)"
+        @reject="rejectIncomingCall(call.callSid)"
+        @dismiss="dismissCall(call.callSid)"
+        @go-to-conversation="goToConversation(call)"
+      />
 
-    <!-- Main Call Widget -->
-    <CallCard
-      v-if="hasActiveCall || primaryIncomingCall"
-      :call="activeCall || primaryIncomingCall"
-      :state="mainCardState"
-      :call-info="getCallInfo(activeCall || primaryIncomingCall)"
-      :duration="hasActiveCall ? formattedCallDuration : ''"
-      :is-muted="isMuted"
-      :show-mute="hasActiveCall"
-      :show-ticket-action="
-        (activeCall || primaryIncomingCall)?.callDirection ===
-        VOICE_CALL_DIRECTION.OUTBOUND
-      "
-      @accept="handleJoinCall(primaryIncomingCall)"
-      @reject="rejectIncomingCall(primaryIncomingCall?.callSid)"
-      @dismiss="dismissCall(primaryIncomingCall?.callSid)"
-      @end="handleEndCall"
-      @toggle-mute="toggleMute"
-      @ticket-updated="handleTicketUpdated"
-      @go-to-conversation="goToConversation(activeCall || primaryIncomingCall)"
-    />
+      <!-- Main Call Widget -->
+      <CallCard
+        v-if="displayCall"
+        :call="displayCall"
+        :state="displayCardState"
+        :call-info="getCallInfo(displayCall)"
+        :duration="hasActiveCall ? formattedCallDuration : ''"
+        :is-muted="isMuted"
+        :show-mute="hasActiveCall"
+        :show-ticket-action="
+          displayCall?.callDirection === VOICE_CALL_DIRECTION.OUTBOUND &&
+          (hasActiveCall || displayCall?.isTicketSelectionPersisted)
+        "
+        :is-ticket-selection-persisted="
+          !!displayCall?.isTicketSelectionPersisted
+        "
+        @accept="handleJoinCall(primaryIncomingCall)"
+        @reject="rejectIncomingCall(primaryIncomingCall?.callSid)"
+        @dismiss="dismissTicketSelectionCall(displayCall?.callSid)"
+        @end="handleEndCall"
+        @toggle-mute="toggleMute"
+        @ticket-updated="handleTicketUpdated"
+        @go-to-conversation="goToConversation(displayCall)"
+      />
+    </div>
   </div>
 </template>

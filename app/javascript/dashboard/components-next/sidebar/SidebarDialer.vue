@@ -335,6 +335,7 @@ const startCall = async (number = normalizedPhoneNumber.value) => {
       await startTwilioCall(payload);
     }
     phoneNumber.value = '';
+    closeDialer();
     fetchRecentCalls();
   } catch (error) {
     useAlert(error?.message || 'Could not start this call.');
