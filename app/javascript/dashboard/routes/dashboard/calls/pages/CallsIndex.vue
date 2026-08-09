@@ -17,7 +17,7 @@ import { CALL_ACTIVITY_PARAMS } from 'dashboard/components-next/Calls/constants'
 import PaginationFooter from 'dashboard/components-next/pagination/PaginationFooter.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 
-const RESULTS_PER_PAGE = 25;
+const RESULTS_PER_PAGE = 100;
 
 const { t } = useI18n();
 const route = useRoute();

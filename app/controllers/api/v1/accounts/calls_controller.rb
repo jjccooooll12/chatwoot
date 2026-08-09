@@ -1,5 +1,5 @@
 class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
-  RESULTS_PER_PAGE = 20
+  RESULTS_PER_PAGE = 100
   PENDING_PROVIDER_CALL_PREFIX = 'pending-'.freeze
 
   def index

@@ -190,9 +190,9 @@ const fetchRecentCalls = async () => {
   }
 };
 
-const openDialer = () => {
+const openDialer = async () => {
+  await fetchRecentCalls();
   isOpen.value = true;
-  fetchRecentCalls();
   focusInput();
 };
 
@@ -493,34 +493,32 @@ onBeforeUnmount(() => {
       </div>
 
       <div
-        class="flex h-12 items-end justify-between bg-n-slate-1 px-5 pb-2 dark:bg-n-solid-3"
+        class="flex h-16 items-center justify-between bg-n-slate-1 px-5 pt-4 dark:bg-n-solid-3"
       >
         <span
-          class="border-b-2 border-n-brand px-1 pb-2 text-xs font-medium text-n-brand"
+          class="border-b-2 border-n-brand px-1 leading-5 text-xs font-medium text-n-brand"
         >
           {{ TEXT.recentCalls }}
         </span>
         <RouterLink
           :to="accountScopedRoute('calls_dashboard_index')"
-          class="text-xs font-medium text-n-brand hover:underline"
+          class="text-xs font-medium leading-5 text-n-brand hover:underline"
           @click="closeDialer"
         >
           {{ TEXT.viewAll }}
         </RouterLink>
       </div>
 
-      <div
-        class="max-h-[260px] min-h-[204px] overflow-y-auto bg-white dark:bg-n-solid-2"
-      >
+      <div class="h-[260px] overflow-y-auto bg-white dark:bg-n-solid-2">
         <div
           v-if="isFetchingCalls"
-          class="flex h-[204px] items-center justify-center text-sm text-n-slate-11"
+          class="flex h-full items-center justify-center text-sm text-n-slate-11"
         >
           {{ TEXT.loadingRecentCalls }}
         </div>
         <div
           v-else-if="!recentCalls.length"
-          class="flex h-[204px] items-center justify-center text-sm text-n-slate-11"
+          class="flex h-full items-center justify-center text-sm text-n-slate-11"
         >
           {{ TEXT.noRecentCalls }}
         </div>
