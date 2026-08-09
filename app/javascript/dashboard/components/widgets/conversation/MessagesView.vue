@@ -535,6 +535,7 @@ export default {
 
     async fetchPreviousMessages(scrollTop = 0) {
       this.setScrollParams();
+      const wasAtTop = scrollTop <= 1;
       const shouldLoadMoreMessages =
         this.currentChat.dataFetched === true &&
         !this.listLoadingStatus &&
@@ -551,10 +552,14 @@ export default {
             conversationId: this.currentChat.id,
             before: this.currentChat.messages[0].id,
           });
+          await new Promise(resolve => {
+            this.$nextTick(resolve);
+          });
           const heightDifference =
             this.conversationPanel.scrollHeight - this.heightBeforeLoad;
-          this.conversationPanel.scrollTop =
-            this.scrollTopBeforeLoad + heightDifference;
+          this.conversationPanel.scrollTop = wasAtTop
+            ? 0
+            : this.scrollTopBeforeLoad + heightDifference;
           this.setScrollParams();
         } catch (error) {
           // Ignore Error
@@ -617,7 +622,7 @@ export default {
     </div>
     <MessageList
       ref="conversationPanelRef"
-      class="conversation-panel flex-shrink flex-grow basis-px flex flex-col overflow-y-auto relative h-full m-0 bg-fd-surface px-[var(--conv-gutter)] pb-4 [--conv-gutter:clamp(0.75rem,1.4vw,1.25rem)]"
+      class="conversation-panel flex-shrink flex-grow basis-px flex flex-col overflow-y-auto relative h-full m-0 bg-fd-surface px-[var(--conv-gutter)] pb-4 pt-4 scroll-pt-4 [--conv-gutter:clamp(0.75rem,1.4vw,1.25rem)]"
       :class="{ 'justify-center': isVoiceCallConversation }"
       :current-user-id="currentUserId"
       :first-unread-id="unReadMessages[0]?.id"
