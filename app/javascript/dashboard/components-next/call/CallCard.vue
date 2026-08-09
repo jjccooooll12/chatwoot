@@ -210,10 +210,10 @@ watch(ticketSearch, () => {
 });
 
 watch(
-  () => [
-    canManageTicket.value,
-    props.callInfo.phoneNumber,
-    props.call?.callSid,
+  [
+    canManageTicket,
+    () => props.callInfo.phoneNumber,
+    () => props.call?.callSid,
   ],
   ([enabled]) => {
     if (!enabled) return;
