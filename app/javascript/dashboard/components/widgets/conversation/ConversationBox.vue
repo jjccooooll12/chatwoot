@@ -47,8 +47,10 @@ export default {
     return {
       activeIndex: 0,
       showCannedResponsesPanel: false,
+      isTicketBodyMounted: false,
       isTicketBodyReady: false,
       revealFrame: null,
+      revealReadyFrame: null,
     };
   },
   computed: {
@@ -79,8 +81,11 @@ export default {
     isCurrentChatDataReady() {
       return this.hasCurrentChat && this.currentChat.dataFetched !== undefined;
     },
+    shouldMountTicketBody() {
+      return this.hasCurrentChat && this.isTicketBodyMounted;
+    },
     shouldShowTicketBody() {
-      return this.hasCurrentChat && this.isTicketBodyReady;
+      return this.shouldMountTicketBody && this.isTicketBodyReady;
     },
   },
   watch: {
@@ -142,9 +147,14 @@ export default {
         cancelAnimationFrame(this.revealFrame);
         this.revealFrame = null;
       }
+      if (this.revealReadyFrame) {
+        cancelAnimationFrame(this.revealReadyFrame);
+        this.revealReadyFrame = null;
+      }
     },
     resetTicketBodyReveal() {
       this.cancelTicketBodyReveal();
+      this.isTicketBodyMounted = false;
       this.isTicketBodyReady = false;
     },
     scheduleTicketBodyReveal() {
@@ -153,15 +163,23 @@ export default {
         return;
       }
 
-      if (!this.isCurrentChatDataReady || this.isTicketBodyReady) {
+      if (
+        !this.isCurrentChatDataReady ||
+        this.isTicketBodyReady ||
+        this.revealFrame ||
+        this.revealReadyFrame
+      ) {
         return;
       }
 
+      this.isTicketBodyMounted = true;
       this.$nextTick(() => {
-        this.cancelTicketBodyReveal();
         this.revealFrame = requestAnimationFrame(() => {
           this.revealFrame = null;
-          this.isTicketBodyReady = true;
+          this.revealReadyFrame = requestAnimationFrame(() => {
+            this.revealReadyFrame = null;
+            this.isTicketBodyReady = true;
+          });
         });
       });
     },
@@ -176,53 +194,67 @@ export default {
       'border-l rtl:border-l-0 rtl:border-r border-n-weak': !isOnExpandedLayout,
     }"
   >
-    <template v-if="shouldShowTicketBody">
-      <ConversationHeader
-        :chat="currentChat"
-        :show-back-button="isOnExpandedLayout && !isInboxView"
+    <template v-if="shouldMountTicketBody">
+      <div
+        class="flex min-h-0 flex-1 flex-col"
         :class="{
-          'border-b border-b-n-weak': !dashboardApps.length,
+          'opacity-0 pointer-events-none': !shouldShowTicketBody,
         }"
-      />
-      <woot-tabs
-        v-if="dashboardApps.length"
-        :index="activeIndex"
-        class="h-10"
-        @change="onDashboardAppTabChange"
+        :aria-hidden="!shouldShowTicketBody"
       >
-        <woot-tabs-item
-          v-for="tab in dashboardAppTabs"
-          :key="tab.key"
-          :index="tab.index"
-          :name="tab.name"
-          :show-badge="false"
-          is-compact
+        <ConversationHeader
+          :chat="currentChat"
+          :show-back-button="isOnExpandedLayout && !isInboxView"
+          :class="{
+            'border-b border-b-n-weak': !dashboardApps.length,
+          }"
         />
-      </woot-tabs>
-      <div v-show="!activeIndex" class="flex h-full min-h-0 m-0">
-        <div class="flex min-w-0 flex-1 flex-col bg-fd-surface">
-          <FreshdeskTicketTitle :chat="currentChat" />
-          <MessagesView :inbox-id="inboxId" :is-inbox-view="isInboxView" />
+        <woot-tabs
+          v-if="dashboardApps.length"
+          :index="activeIndex"
+          class="h-10"
+          @change="onDashboardAppTabChange"
+        >
+          <woot-tabs-item
+            v-for="tab in dashboardAppTabs"
+            :key="tab.key"
+            :index="tab.index"
+            :name="tab.name"
+            :show-badge="false"
+            is-compact
+          />
+        </woot-tabs>
+        <div v-show="!activeIndex" class="flex h-full min-h-0 m-0">
+          <div class="flex min-w-0 flex-1 flex-col bg-fd-surface">
+            <FreshdeskTicketTitle :chat="currentChat" />
+            <MessagesView :inbox-id="inboxId" :is-inbox-view="isInboxView" />
+          </div>
+          <CannedResponsesPanel
+            v-if="showCannedResponsesPanel"
+            @close="showCannedResponsesPanel = false"
+          />
+          <template v-else>
+            <FreshdeskTicketProperties :chat="currentChat" />
+            <FreshdeskContactInfo :chat="currentChat" />
+          </template>
+          <slot />
         </div>
-        <CannedResponsesPanel
-          v-if="showCannedResponsesPanel"
-          @close="showCannedResponsesPanel = false"
+        <DashboardAppFrame
+          v-for="(dashboardApp, index) in dashboardApps"
+          v-show="activeIndex - 1 === index"
+          :key="currentChat.id + '-' + dashboardApp.id"
+          :is-visible="activeIndex - 1 === index"
+          :config="dashboardApps[index].content"
+          :position="index"
+          :current-chat="currentChat"
         />
-        <template v-else>
-          <FreshdeskTicketProperties :chat="currentChat" />
-          <FreshdeskContactInfo :chat="currentChat" />
-        </template>
-        <slot />
       </div>
-      <DashboardAppFrame
-        v-for="(dashboardApp, index) in dashboardApps"
-        v-show="activeIndex - 1 === index"
-        :key="currentChat.id + '-' + dashboardApp.id"
-        :is-visible="activeIndex - 1 === index"
-        :config="dashboardApps[index].content"
-        :position="index"
-        :current-chat="currentChat"
-      />
+      <div
+        v-if="!shouldShowTicketBody"
+        class="absolute inset-0 z-10 flex items-center justify-center bg-fd-surface text-fd-muted"
+      >
+        <Spinner class="text-fd-primary" />
+      </div>
     </template>
     <div
       v-else-if="hasCurrentChat"
