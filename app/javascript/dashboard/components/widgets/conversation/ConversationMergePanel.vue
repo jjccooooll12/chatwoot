@@ -374,12 +374,12 @@ watch(
                   <div class="flex shrink-0 items-start gap-2">
                     <button
                       type="button"
-                      class="flex w-12 shrink-0 flex-col items-center gap-0.5 rounded-md px-1 py-0.5 text-xxs font-medium transition"
-                      :class="
+                      class="flex shrink-0 flex-col items-center gap-0.5 rounded-md px-1 py-0.5 text-xxs font-medium transition"
+                      :class="[
                         isPrimaryConversation(conversation.id)
-                          ? 'text-fd-primary'
-                          : 'text-fd-muted hover:text-fd-primary'
-                      "
+                          ? 'w-12 text-fd-primary'
+                          : 'w-7 text-fd-muted hover:text-fd-primary',
+                      ]"
                       :title="
                         t(
                           'CHAT_LIST.FRESHDESK_DETAIL.MERGE.SELECT_AS_PRIMARY',
@@ -396,11 +396,8 @@ watch(
                         "
                       />
                       <span
-                        :class="
-                          isPrimaryConversation(conversation.id)
-                            ? 'text-fd-primary'
-                            : 'text-fd-muted'
-                        "
+                        v-if="isPrimaryConversation(conversation.id)"
+                        class="text-fd-primary"
                       >
                         {{
                           t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.PRIMARY_BADGE')
