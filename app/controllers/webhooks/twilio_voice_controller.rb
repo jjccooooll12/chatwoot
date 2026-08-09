@@ -34,8 +34,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
     response.dial do |dial|
       dial.conference(
         voice_call.conference_sid,
-        start_conference_on_enter: true,
-        end_conference_on_exit: true
+        conference_options(start_conference_on_enter: true, end_conference_on_exit: true)
       )
     end
     render xml: response.to_s
@@ -55,12 +54,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
     response.dial do |dial|
       dial.conference(
         voice_call.conference_sid,
-        start_conference_on_enter: false,
-        record: 'record-from-start',
-        recording_status_callback: voice_webhook_recording_status_url(phone_number: params[:phone_number]),
-        recording_status_callback_event: 'completed',
-        status_callback: voice_webhook_conference_status_url(phone_number: params[:phone_number]),
-        status_callback_event: 'start end'
+        conference_options(start_conference_on_enter: false)
       )
     end
     render xml: response.to_s
@@ -201,15 +195,23 @@ class Webhooks::TwilioVoiceController < ApplicationController
     response.dial do |dial|
       dial.conference(
         voice_call.conference_sid,
-        start_conference_on_enter: false,
-        record: 'record-from-start',
-        recording_status_callback: voice_webhook_recording_status_url(phone_number: params[:phone_number]),
-        recording_status_callback_event: 'completed',
-        status_callback: voice_webhook_conference_status_url(phone_number: params[:phone_number]),
-        status_callback_event: 'start end'
+        conference_options(start_conference_on_enter: false)
       )
     end
     response
+  end
+
+  def conference_options(start_conference_on_enter:, end_conference_on_exit: nil)
+    {
+      start_conference_on_enter: start_conference_on_enter,
+      record: 'record-from-start',
+      recording_status_callback: voice_webhook_recording_status_url(phone_number: params[:phone_number]),
+      recording_status_callback_event: 'completed',
+      status_callback: voice_webhook_conference_status_url(phone_number: params[:phone_number]),
+      status_callback_event: 'start end'
+    }.tap do |options|
+      options[:end_conference_on_exit] = end_conference_on_exit unless end_conference_on_exit.nil?
+    end
   end
 
   def voicemail_twiml

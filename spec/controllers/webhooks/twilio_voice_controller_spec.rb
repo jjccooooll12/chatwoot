@@ -196,6 +196,25 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
     end
   end
 
+  describe 'POST .../agent' do
+    let(:conversation) { create(:conversation, account: account, inbox: inbox) }
+    let!(:voice_call) do
+      create(:voice_call, account: account, inbox: inbox, conversation: conversation, contact: conversation.contact,
+                          provider_call_id: 'CA_agent_1', conference_sid: 'voice-agent-conf-1')
+    end
+    let(:phone_digits) { channel.additional_attributes['phone_number'].delete_prefix('+') }
+
+    it 'joins the agent leg with conference recording enabled' do
+      signed_post "/webhooks/twilio_voice/#{phone_digits}/agent",
+                  { 'call_sid' => 'CA_agent_1', 'To' => 'voice-agent-conf-1', 'is_agent' => 'true' }
+
+      expect(response.body).to include('<Conference')
+      expect(response.body).to include('record="record-from-start"')
+      expect(response.body).to include('/recording_status')
+      expect(response.body).to include('/conference_status')
+    end
+  end
+
   describe 'POST .../conference_status' do
     let(:conversation) { create(:conversation, account: account, inbox: inbox) }
     let!(:voice_call) do
