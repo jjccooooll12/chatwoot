@@ -18,7 +18,7 @@
 #  accepted_by_agent_id     :bigint
 #  account_id               :bigint           not null
 #  contact_id               :bigint           not null
-#  conversation_id          :bigint           not null
+#  conversation_id          :bigint
 #  inbox_id                 :bigint           not null
 #  message_id               :bigint
 #
@@ -46,7 +46,7 @@ class VoiceCall < ApplicationRecord
 
   belongs_to :account
   belongs_to :inbox
-  belongs_to :conversation
+  belongs_to :conversation, optional: true
   belongs_to :contact
   belongs_to :message, optional: true, inverse_of: :call
   belongs_to :accepted_by_agent, class_name: 'User', optional: true

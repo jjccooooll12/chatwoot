@@ -60,7 +60,7 @@ class ActionCableListener < BaseListener
     tokens = user_tokens(account, voice_call.inbox.members)
     payload = voice_call.push_event_data.merge(
       call_id: voice_call.provider_call_id,
-      conversation_id: voice_call.conversation.display_id,
+      conversation_id: voice_call.conversation&.display_id,
       inbox_id: voice_call.inbox_id
     )
 

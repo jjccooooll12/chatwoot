@@ -53,7 +53,9 @@ class Api::V1::Accounts::VoiceConferenceController < Api::V1::Accounts::BaseCont
     # Auto-assignment is off for the Voice inbox (every online agent needs to
     # see the ringing popup, not just whoever it round-robins to) — assign
     # the conversation here instead, to whoever actually answered.
-    @voice_call.conversation.update!(assignee_id: current_user.id) if @voice_call.conversation.assignee_id.blank?
+    if @voice_call.conversation&.assignee_id.blank?
+      @voice_call.conversation.update!(assignee_id: current_user.id)
+    end
 
     render json: { conference_sid: @voice_call.conference_sid }
   end
@@ -80,8 +82,11 @@ class Api::V1::Accounts::VoiceConferenceController < Api::V1::Accounts::BaseCont
   end
 
   def fetch_voice_call
-    conversation = Current.account.conversations.find_by!(display_id: params[:conversation_id])
-    @voice_call = VoiceCall.find_by!(provider_call_id: params[:call_sid], conversation_id: conversation.id)
+    @voice_call = VoiceCall.find_by!(
+      account_id: Current.account.id,
+      inbox_id: @inbox.id,
+      provider_call_id: params[:call_sid]
+    )
   end
 
   def terminate_provider_call!

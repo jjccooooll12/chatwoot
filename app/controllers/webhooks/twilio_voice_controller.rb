@@ -34,7 +34,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
     response.dial do |dial|
       dial.conference(
         voice_call.conference_sid,
-        conference_options(start_conference_on_enter: true, end_conference_on_exit: true)
+        **conference_options(start_conference_on_enter: true, end_conference_on_exit: true)
       )
     end
     render xml: response.to_s
@@ -54,7 +54,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
     response.dial do |dial|
       dial.conference(
         voice_call.conference_sid,
-        conference_options(start_conference_on_enter: false)
+        **conference_options(start_conference_on_enter: false)
       )
     end
     render xml: response.to_s
@@ -195,7 +195,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
     response.dial do |dial|
       dial.conference(
         voice_call.conference_sid,
-        conference_options(start_conference_on_enter: false)
+        **conference_options(start_conference_on_enter: false)
       )
     end
     response

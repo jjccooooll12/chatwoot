@@ -294,7 +294,6 @@ const startTwilioCall = async ({ contactId, inboxId }) => {
       contact_id: contactId,
       inbox_id: inboxId,
       phone_number: normalizedPhoneNumber.value,
-      ticket_action: 'new',
     });
     const { call_sid: callSid, conversation_id: responseConversationId } =
       response;
@@ -308,7 +307,7 @@ const startTwilioCall = async ({ contactId, inboxId }) => {
       phoneNumber: normalizedPhoneNumber.value,
     });
     useAlert('Call initiated.');
-    navigateToConversation(responseConversationId);
+    if (responseConversationId) navigateToConversation(responseConversationId);
   } finally {
     isStartingTwilioCall.value = false;
   }

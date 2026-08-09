@@ -20,6 +20,9 @@ import {
 import Timer from 'dashboard/helper/Timer';
 
 const isWhatsappCall = call => call?.provider === VOICE_CALL_PROVIDERS.WHATSAPP;
+const isOutboundTwilioCall = call =>
+  call?.callDirection === VOICE_CALL_DIRECTION.OUTBOUND &&
+  !isWhatsappCall(call);
 
 // Dismissed call sids must not be re-seeded by the conversation-load watcher.
 // Lives at module scope so all consumers share the same set.
@@ -167,10 +170,21 @@ const buildCallActions = ({ callsStore, whatsappSession, t }) => {
         markDismissed(callSid);
         callsStore.dismissCall(callSid);
       } else if (!isWhatsappCall(call)) {
+        if (isOutboundTwilioCall(call) && call?.inboxId) {
+          await VoiceAPI.leaveConference({
+            inboxId: call.inboxId,
+            conversationId: call.conversationId,
+            callSid,
+          }).catch(() => {});
+        }
         // Tear down the Twilio Device on any other join error so a retry
         // starts from a clean state — joinClientCall can leave the device
         // half-initialized after a network blip.
         TwilioVoiceClient.endClientCall();
+        if (isOutboundTwilioCall(call)) {
+          markDismissed(callSid);
+          callsStore.dismissCall(callSid);
+        }
       }
       // eslint-disable-next-line no-console
       console.error('Failed to join call:', error);
@@ -196,10 +210,11 @@ const buildCallActions = ({ callsStore, whatsappSession, t }) => {
         } else {
           await whatsappSession.rejectIncomingCall(call.callId);
         }
-      } else if (call?.inboxId && call?.conversationId) {
+      } else if (call?.inboxId && call?.callSid) {
         // Twilio incoming reject: agent hasn't joined the Device yet, so
-        // endClientCall is a no-op. End the conference server-side instead
-        // so Twilio hangs up the inbound leg.
+        // endClientCall is a no-op. Outbound ringing also needs this path,
+        // otherwise the local card can disappear while the PSTN leg keeps
+        // ringing at the receiver.
         await VoiceAPI.leaveConference({
           inboxId: call.inboxId,
           conversationId: call.conversationId,

@@ -74,12 +74,15 @@ const conversationRoute = computed(() => ({
   name: 'inbox_conversation',
   params: {
     accountId: route.params.accountId,
-    conversation_id: props.call.conversation.displayId,
+    conversation_id: props.call.conversation?.displayId,
   },
   query: { messageId: props.call.messageId },
 }));
 
-const ticketNumber = computed(() => getTicketNumber(props.call.conversation));
+const hasConversation = computed(() => !!props.call.conversation?.displayId);
+const ticketNumber = computed(() =>
+  hasConversation.value ? getTicketNumber(props.call.conversation) : ''
+);
 </script>
 
 <template>
@@ -99,6 +102,7 @@ const ticketNumber = computed(() => getTicketNumber(props.call.conversation));
       </span>
       <CallStatusBadge :kind="kind" class="ms-auto shrink-0" />
       <RouterLink
+        v-if="hasConversation"
         :to="conversationRoute"
         class="inline-flex items-center h-6 gap-1 px-2 text-label-small outline outline-1 -outline-offset-1 rounded-md outline-n-weak text-n-slate-11 hover:bg-n-alpha-1 shrink-0"
       >
@@ -225,6 +229,7 @@ const ticketNumber = computed(() => getTicketNumber(props.call.conversation));
       </span>
     </div>
     <RouterLink
+      v-if="hasConversation"
       :to="conversationRoute"
       class="inline-flex items-center h-6 gap-1 px-2 text-label-small py-3.5 outline outline-1 -outline-offset-1 rounded-md outline-n-weak text-n-slate-11 hover:bg-n-alpha-1 shrink-0 justify-self-start"
     >

@@ -3,8 +3,7 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
   PENDING_PROVIDER_CALL_PREFIX = 'pending-'.freeze
 
   def index
-    calls = VoiceCall.joins(:conversation)
-                     .where(account_id: Current.account.id)
+    calls = VoiceCall.where(account_id: Current.account.id)
                      .includes(:contact, :inbox, :conversation, :message, :accepted_by_agent)
                      .order(created_at: :desc)
                      .page(current_page)
@@ -90,18 +89,20 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
 
     @contact = Current.account.contacts.find(call_params[:contact_id])
     @to_number = normalize_phone_number(call_params[:phone_number].presence || @contact.phone_number)
-    @conversation = fetch_or_create_conversation!
+    @conversation = fetch_outbound_conversation
     @contact = @conversation.contact if call_params[:conversation_id].present?
   end
 
-  def fetch_or_create_conversation!
+  def fetch_outbound_conversation
     conversation_id = call_params[:conversation_id].presence
     return find_conversation!(conversation_id) if conversation_id
 
-    unless call_params[:ticket_action] == 'new'
-      raise ArgumentError, 'Choose Create new ticket or Add to existing ticket before starting a call.'
-    end
+    return create_conversation_for_contact! if call_params[:ticket_action] == 'new'
 
+    nil
+  end
+
+  def create_conversation_for_contact!
     contact_inbox = ContactInboxBuilder.new(
       contact: @contact,
       inbox: @inbox,
@@ -145,19 +146,7 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
 
   def create_outbound_call_record!
     label = outgoing_call_label
-    message = @conversation.messages.create!(
-      account: Current.account,
-      inbox: @inbox,
-      sender: Current.user,
-      message_type: :outgoing,
-      content_type: :voice_call,
-      content: label
-    )
-
-    @conversation.update_columns( # rubocop:disable Rails/SkipsModelValidations
-      additional_attributes: @conversation.additional_attributes.merge('mail_subject' => label),
-      assignee_id: Current.user.id
-    )
+    message = create_outbound_message!(label) if @conversation
 
     VoiceCall.create!(
       account: Current.account,
@@ -174,6 +163,24 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
       accepted_by_agent_id: Current.user.id,
       eligible_agent_ids: [Current.user.id]
     )
+  end
+
+  def create_outbound_message!(label)
+    message = @conversation.messages.create!(
+      account: Current.account,
+      inbox: @inbox,
+      sender: Current.user,
+      message_type: :outgoing,
+      content_type: :voice_call,
+      content: label
+    )
+
+    @conversation.update_columns( # rubocop:disable Rails/SkipsModelValidations
+      additional_attributes: @conversation.additional_attributes.merge('mail_subject' => label),
+      assignee_id: Current.user.id
+    )
+
+    message
   end
 
   def create_twilio_outbound_call!(voice_call)
@@ -205,7 +212,7 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
   def outbound_payload(voice_call)
     {
       call_sid: voice_call.provider_call_id,
-      conversation_id: voice_call.conversation.display_id,
+      conversation_id: voice_call.conversation&.display_id,
       call: call_payload(voice_call)
     }
   end
