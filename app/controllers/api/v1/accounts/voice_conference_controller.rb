@@ -58,13 +58,14 @@ class Api::V1::Accounts::VoiceConferenceController < Api::V1::Accounts::BaseCont
     render json: { conference_sid: @voice_call.conference_sid }
   end
 
-  # DELETE .../conference — agent leaves/declines. If this agent is the
-  # connected one, the browser's own Device disconnect (end_conference_on_exit
-  # on the agent leg) is what actually ends the call on Twilio's side;
-  # conference_status finalizes the VoiceCall. If this agent never joined,
-  # other ringing agents may still answer, so nothing is torn down here —
-  # see the plan's documented v1 limitation.
+  # DELETE .../conference — agent leaves/declines. Do not rely only on the
+  # browser Device disconnect: for outbound PSTN calls that can leave the
+  # customer's Twilio leg alive. Complete the provider call explicitly so the
+  # red button always hangs up the real phone call too.
   def destroy
+    terminate_provider_call!
+    finalize_agent_ended_call!
+
     head :ok
   end
 
@@ -81,5 +82,39 @@ class Api::V1::Accounts::VoiceConferenceController < Api::V1::Accounts::BaseCont
   def fetch_voice_call
     conversation = Current.account.conversations.find_by!(display_id: params[:conversation_id])
     @voice_call = VoiceCall.find_by!(provider_call_id: params[:call_sid], conversation_id: conversation.id)
+  end
+
+  def terminate_provider_call!
+    return if @voice_call.provider_call_id.start_with?(Api::V1::Accounts::CallsController::PENDING_PROVIDER_CALL_PREFIX)
+
+    twilio_client.calls(@voice_call.provider_call_id).update(status: 'completed')
+  rescue Twilio::REST::RestError => e
+    Rails.logger.warn(
+      "[VoiceConferenceController] Failed to terminate Twilio call #{@voice_call.provider_call_id}: #{e.code} #{e.message}"
+    )
+  end
+
+  def finalize_agent_ended_call!
+    return if VoiceCall::TERMINAL_STATUSES.include?(@voice_call.status)
+
+    duration = @voice_call.started_at ? (Time.current - @voice_call.started_at).round : nil
+    @voice_call.transition_to!(
+      status: 'completed',
+      ended_at: Time.current,
+      duration_seconds: duration,
+      end_reason: 'agent_hangup'
+    )
+  end
+
+  def twilio_client
+    @twilio_client ||= ::Twilio::REST::Client.new(
+      twilio_voice_attributes['twilio_api_key_sid'],
+      ENV.fetch('TWILIO_VOICE_API_KEY_SECRET'),
+      twilio_voice_attributes['twilio_account_sid']
+    )
+  end
+
+  def twilio_voice_attributes
+    @twilio_voice_attributes ||= @inbox.channel.additional_attributes || {}
   end
 end
