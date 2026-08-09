@@ -123,7 +123,7 @@ const closeMergePanel = () => {
 
 const onTicketMerged = async (
   mergedConversation,
-  { secondaryConversation } = {}
+  { secondaryConversation, secondaryConversations = [] } = {}
 ) => {
   const mergeActivity = mergedConversation?.messages?.[0];
   if (mergeActivity) {
@@ -134,13 +134,17 @@ const onTicketMerged = async (
   // The merge response only returns the primary (surviving) conversation, but
   // the backend has already resolved the secondary one — patch it locally too
   // so its row shows Closed immediately, without the user refreshing the page.
-  if (secondaryConversation?.id) {
+  const mergedSecondaryConversations = secondaryConversations.length
+    ? secondaryConversations
+    : [secondaryConversation].filter(Boolean);
+
+  mergedSecondaryConversations.forEach(conversation => {
     store.dispatch('updateConversation', {
-      id: secondaryConversation.id,
+      id: conversation.id,
       status: wootConstants.STATUS_TYPE.RESOLVED,
       updated_at: Date.now() / 1000,
     });
-  }
+  });
 
   closeMergePanel();
   useAlert(t('CONVERSATION.MERGE_SUCCESS'));

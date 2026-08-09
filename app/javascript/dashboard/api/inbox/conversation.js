@@ -138,9 +138,10 @@ class ConversationApi extends ApiClient {
     });
   }
 
-  merge({ conversationId, secondaryConversationId }) {
+  merge({ conversationId, secondaryConversationId, secondaryConversationIds }) {
     return axios.post(`${this.url}/${conversationId}/merge`, {
       secondary_conversation_id: secondaryConversationId,
+      secondary_conversation_ids: secondaryConversationIds,
     });
   }
 

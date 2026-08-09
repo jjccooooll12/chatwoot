@@ -172,15 +172,19 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
   end
 
   def merge
-    secondary_conversation = find_merge_conversation(params[:secondary_conversation_id])
-    authorize secondary_conversation, :show?
+    secondary_conversations = merge_secondary_conversations
+    secondary_conversations.each { |secondary_conversation| authorize secondary_conversation, :show? }
 
-    @conversation = ::Conversations::MergeService.new(
-      account: Current.account,
-      primary_conversation: @conversation,
-      secondary_conversation: secondary_conversation,
-      user: Current.user
-    ).perform
+    ActiveRecord::Base.transaction do
+      secondary_conversations.each do |secondary_conversation|
+        @conversation = ::Conversations::MergeService.new(
+          account: Current.account,
+          primary_conversation: @conversation,
+          secondary_conversation: secondary_conversation,
+          user: Current.user
+        ).perform
+      end
+    end
   rescue ActiveRecord::RecordNotFound
     render json: { error: I18n.t('conversations.merge.not_found') }, status: :not_found
   rescue StandardError => e
@@ -323,6 +327,17 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
     Current.account.conversations.find_by(display_id: value) ||
       Current.account.conversations.find_by("conversations.additional_attributes->>'ticket_number' = ?", value) ||
       raise(ActiveRecord::RecordNotFound)
+  end
+
+  def merge_secondary_conversations
+    identifiers = params[:secondary_conversation_ids].presence || params[:secondary_conversation_id]
+    conversations = Array(identifiers)
+                    .map { |identifier| find_merge_conversation(identifier) }
+                    .uniq(&:id)
+                    .reject { |conversation| conversation.id == @conversation.id }
+    raise ActiveRecord::RecordNotFound if conversations.blank?
+
+    conversations
   end
 
   def assignee?

@@ -17,9 +17,14 @@ const props = defineProps({
 const emit = defineEmits(['close', 'merged']);
 
 const { t } = useI18n();
+const TEXT = {
+  ticketsToMerge: 'Tickets to merge',
+  choosePrimary: 'Choose primary ticket',
+  selectedCount: count => `${count} selected`,
+};
 
 const candidates = ref([]);
-const selectedConversationId = ref(null);
+const selectedConversationIds = ref([]);
 const primaryConversationId = ref(props.chat.id);
 const searchQuery = ref('');
 const isLoading = ref(false);
@@ -43,25 +48,50 @@ const primarySubject = computed(
 
 const primaryContact = computed(() => props.chat.meta?.sender || {});
 
-const hasSelectedTicket = computed(() => selectedConversationId.value !== null);
+const hasSelectedTickets = computed(
+  () => selectedConversationIds.value.length > 0
+);
 
-const selectedConversation = computed(() =>
-  candidates.value.find(
-    conversation =>
-      String(conversation.id) === String(selectedConversationId.value)
-  )
+const isSelectedConversation = conversationId =>
+  selectedConversationIds.value.some(
+    id => String(id) === String(conversationId)
+  );
+
+const selectedConversations = computed(() =>
+  selectedConversationIds.value
+    .map(conversationId =>
+      candidates.value.find(
+        conversation => String(conversation.id) === String(conversationId)
+      )
+    )
+    .filter(Boolean)
 );
 
 const isCurrentTicketPrimary = computed(
   () => String(primaryConversationId.value) === String(props.chat.id)
 );
 
+const mergeConversations = computed(() => [
+  props.chat,
+  ...selectedConversations.value,
+]);
+
 const primaryConversation = computed(() =>
-  isCurrentTicketPrimary.value ? props.chat : selectedConversation.value
+  mergeConversations.value.find(
+    conversation =>
+      String(conversation.id) === String(primaryConversationId.value)
+  )
 );
 
-const secondaryConversation = computed(() =>
-  isCurrentTicketPrimary.value ? selectedConversation.value : props.chat
+const secondaryConversations = computed(() =>
+  mergeConversations.value.filter(
+    conversation =>
+      String(conversation.id) !== String(primaryConversationId.value)
+  )
+);
+
+const secondaryConversationIds = computed(() =>
+  secondaryConversations.value.map(conversation => conversation.id)
 );
 
 const ticketNumberOf = conversation => getTicketNumber(conversation);
@@ -103,7 +133,7 @@ const conversationUrl = conversation =>
 const fetchCandidates = async (q = '') => {
   isLoading.value = true;
   error.value = '';
-  selectedConversationId.value = null;
+  selectedConversationIds.value = [];
   primaryConversationId.value = props.chat.id;
   try {
     const response = await ConversationApi.getMergeCandidates({
@@ -122,17 +152,43 @@ const fetchCandidates = async (q = '') => {
 const isPrimaryConversation = conversationId =>
   String(primaryConversationId.value) === String(conversationId);
 
-const selectConversation = conversationId => {
-  selectedConversationId.value = conversationId;
-  if (!isCurrentTicketPrimary.value && !isPrimaryConversation(conversationId)) {
-    primaryConversationId.value = props.chat.id;
+const toggleConversation = conversationId => {
+  if (isSelectedConversation(conversationId)) {
+    selectedConversationIds.value = selectedConversationIds.value.filter(
+      id => String(id) !== String(conversationId)
+    );
+    if (isPrimaryConversation(conversationId)) {
+      primaryConversationId.value = props.chat.id;
+    }
+    return;
   }
+
+  selectedConversationIds.value = [
+    ...selectedConversationIds.value,
+    conversationId,
+  ];
 };
 
 const selectPrimaryConversation = conversationId => {
-  if (String(conversationId) !== String(props.chat.id)) {
-    selectedConversationId.value = conversationId;
+  if (
+    String(conversationId) !== String(props.chat.id) &&
+    !isSelectedConversation(conversationId)
+  ) {
+    selectedConversationIds.value = [
+      ...selectedConversationIds.value,
+      conversationId,
+    ];
   }
+
+  if (
+    !mergeConversations.value.some(
+      conversation => String(conversation.id) === String(conversationId)
+    )
+  ) {
+    primaryConversationId.value = props.chat.id;
+    return;
+  }
+
   primaryConversationId.value = conversationId;
 };
 
@@ -150,9 +206,9 @@ const clearSearch = () => {
 
 const mergeTicket = async () => {
   if (
-    !hasSelectedTicket.value ||
+    !hasSelectedTickets.value ||
     !primaryConversation.value ||
-    !secondaryConversation.value ||
+    !secondaryConversationIds.value.length ||
     isMerging.value
   )
     return;
@@ -162,11 +218,11 @@ const mergeTicket = async () => {
   try {
     const response = await ConversationApi.merge({
       conversationId: primaryConversation.value.id,
-      secondaryConversationId: secondaryConversation.value.id,
+      secondaryConversationIds: secondaryConversationIds.value,
     });
     emit('merged', response.data, {
       primaryConversation: primaryConversation.value,
-      secondaryConversation: secondaryConversation.value,
+      secondaryConversations: secondaryConversations.value,
     });
   } catch (e) {
     error.value =
@@ -214,7 +270,7 @@ watch(
             <p class="m-0 mt-1 text-xs leading-5 text-fd-muted">
               {{
                 t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.DESCRIPTION', {
-                  count: hasSelectedTicket ? 1 : 0,
+                  count: selectedConversationIds.length,
                 })
               }}
             </p>
@@ -232,7 +288,7 @@ watch(
         <div class="flex-1 overflow-y-auto px-5 py-4">
           <section>
             <p class="mb-2 text-xs font-semibold uppercase text-fd-muted">
-              {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.PRIMARY') }}
+              {{ TEXT.choosePrimary }}
             </p>
             <label
               class="block cursor-pointer rounded-md border p-3 text-sm transition hover:bg-n-slate-1"
@@ -272,6 +328,54 @@ watch(
                       })
                     "
                     @change="selectPrimaryConversation(props.chat.id)"
+                  />
+                </div>
+              </div>
+            </label>
+            <label
+              v-for="conversation in selectedConversations"
+              :key="conversation.id"
+              class="mt-2 block cursor-pointer rounded-md border p-3 text-sm transition hover:bg-n-slate-1"
+              :class="
+                isPrimaryConversation(conversation.id)
+                  ? 'border-fd-primary bg-fd-blueSoft'
+                  : 'border-fd-border bg-n-slate-1'
+              "
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="m-0 text-xs text-fd-primary">
+                    {{ `#${ticketNumberOf(conversation)}` }}
+                  </p>
+                  <p class="m-0 mt-1 truncate font-semibold text-fd-text">
+                    {{ subjectOf(conversation) }}
+                  </p>
+                  <p class="m-0 mt-1 truncate text-xs text-fd-muted">
+                    {{
+                      `${statusOf(conversation)} ${t(
+                        'CHAT_LIST.FRESHDESK_CARD.SEPARATOR'
+                      )} ${assigneeOf(conversation)}`
+                    }}
+                  </p>
+                </div>
+                <div class="flex shrink-0 items-center gap-2">
+                  <span
+                    v-if="isPrimaryConversation(conversation.id)"
+                    class="rounded bg-fd-blueSoft px-2 py-1 text-xxs font-semibold text-fd-blue"
+                  >
+                    {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.PRIMARY_BADGE') }}
+                  </span>
+                  <input
+                    v-model="primaryConversationId"
+                    type="radio"
+                    class="size-4 accent-fd-primary"
+                    :value="conversation.id"
+                    :aria-label="
+                      t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.SELECT_AS_PRIMARY', {
+                        ticket: `#${ticketNumberOf(conversation)}`,
+                      })
+                    "
+                    @change="selectPrimaryConversation(conversation.id)"
                   />
                 </div>
               </div>
@@ -319,13 +423,18 @@ watch(
           </div>
 
           <section class="mt-5">
-            <p class="mb-2 text-xs font-semibold uppercase text-fd-muted">
-              {{
-                searchMode
-                  ? t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.SEARCH_RESULTS')
-                  : t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.MATCHING_TICKETS')
-              }}
-            </p>
+            <div class="mb-2 flex items-center justify-between gap-3">
+              <p class="m-0 text-xs font-semibold uppercase text-fd-muted">
+                {{
+                  searchMode
+                    ? t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.SEARCH_RESULTS')
+                    : TEXT.ticketsToMerge
+                }}
+              </p>
+              <span class="text-xs font-medium text-fd-muted">
+                {{ TEXT.selectedCount(selectedConversationIds.length) }}
+              </span>
+            </div>
             <div
               v-if="isLoading"
               class="rounded-md border border-dashed border-fd-border p-4 text-sm text-fd-muted"
@@ -345,7 +454,7 @@ watch(
                   tabindex="0"
                   class="flex cursor-pointer gap-3 rounded-md border p-3 transition hover:bg-n-slate-1"
                   :class="
-                    String(selectedConversationId) === String(conversation.id)
+                    isSelectedConversation(conversation.id)
                       ? 'border-fd-primary bg-fd-blueSoft'
                       : 'border-fd-border bg-fd-surface'
                   "
@@ -354,10 +463,21 @@ watch(
                       ticket: `#${ticketNumberOf(conversation)}`,
                     })
                   "
-                  @click="selectConversation(conversation.id)"
-                  @keydown.enter.prevent="selectConversation(conversation.id)"
-                  @keydown.space.prevent="selectConversation(conversation.id)"
+                  @click="toggleConversation(conversation.id)"
+                  @keydown.enter.prevent="toggleConversation(conversation.id)"
+                  @keydown.space.prevent="toggleConversation(conversation.id)"
                 >
+                  <input
+                    type="checkbox"
+                    class="mt-0.5 size-4 shrink-0 accent-fd-primary"
+                    :checked="isSelectedConversation(conversation.id)"
+                    :aria-label="
+                      t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.SELECT_TICKET', {
+                        ticket: `#${ticketNumberOf(conversation)}`,
+                      })
+                    "
+                    @click.stop="toggleConversation(conversation.id)"
+                  />
                   <span class="min-w-0 flex-1">
                     <span class="block text-xs font-medium text-fd-primary">
                       {{ `#${ticketNumberOf(conversation)}` }}
@@ -378,27 +498,7 @@ watch(
                       {{ timeOf(conversation) }}
                     </span>
                   </span>
-                  <div class="flex shrink-0 items-start gap-2">
-                    <span
-                      v-if="isPrimaryConversation(conversation.id)"
-                      class="rounded bg-fd-blueSoft px-2 py-1 text-xxs font-semibold text-fd-blue"
-                    >
-                      {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.PRIMARY_BADGE') }}
-                    </span>
-                    <input
-                      v-model="primaryConversationId"
-                      type="radio"
-                      class="mt-0.5 size-4 accent-fd-primary"
-                      :value="conversation.id"
-                      :aria-label="
-                        t(
-                          'CHAT_LIST.FRESHDESK_DETAIL.MERGE.SELECT_AS_PRIMARY',
-                          { ticket: `#${ticketNumberOf(conversation)}` }
-                        )
-                      "
-                      @click.stop
-                      @change="selectPrimaryConversation(conversation.id)"
-                    />
+                  <div class="flex shrink-0 items-start">
                     <a
                       :href="conversationUrl(conversation)"
                       class="mt-0.5 text-fd-muted hover:text-fd-primary"
@@ -428,7 +528,7 @@ watch(
           <button
             type="button"
             class="inline-flex h-9 items-center gap-2 rounded-md bg-fd-primary px-4 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="!hasSelectedTicket || isMerging"
+            :disabled="!hasSelectedTickets || isMerging"
             @click="mergeTicket"
           >
             <span
