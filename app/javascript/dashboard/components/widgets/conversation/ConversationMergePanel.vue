@@ -148,11 +148,14 @@ const toggleConversation = conversationId => {
   ];
 };
 
-const toggleCandidatePrimary = conversationId => {
-  if (!isSelectedConversation(conversationId)) return;
-  primaryConversationId.value = isPrimaryConversation(conversationId)
-    ? props.chat.id
-    : conversationId;
+const setCandidateAsPrimary = conversationId => {
+  if (!isSelectedConversation(conversationId)) {
+    selectedConversationIds.value = [
+      ...selectedConversationIds.value,
+      conversationId,
+    ];
+  }
+  primaryConversationId.value = conversationId;
 };
 
 const searchTicket = () => {
@@ -315,7 +318,11 @@ watch(
               {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.EMPTY') }}
             </div>
             <ul v-else class="m-0 flex list-none flex-col gap-2 p-0">
-              <li v-for="conversation in candidates" :key="conversation.id">
+              <li
+                v-for="conversation in candidates"
+                :key="conversation.id"
+                @click="toggleConversation(conversation.id)"
+              >
                 <div
                   role="button"
                   tabindex="0"
@@ -330,7 +337,6 @@ watch(
                       ticket: `#${ticketNumberOf(conversation)}`,
                     })
                   "
-                  @click="toggleConversation(conversation.id)"
                   @keydown.enter.prevent="toggleConversation(conversation.id)"
                   @keydown.space.prevent="toggleConversation(conversation.id)"
                 >
@@ -368,28 +374,38 @@ watch(
                   <div class="flex shrink-0 items-start gap-2">
                     <button
                       type="button"
-                      class="mt-0.5 grid size-7 place-content-center rounded-md border transition disabled:cursor-not-allowed disabled:opacity-40"
+                      class="flex w-12 shrink-0 flex-col items-center gap-0.5 rounded-md px-1 py-0.5 text-xxs font-medium transition"
                       :class="
                         isPrimaryConversation(conversation.id)
-                          ? 'border-fd-primary bg-fd-blueSoft text-fd-primary'
-                          : 'border-fd-border text-fd-muted hover:border-fd-primary hover:text-fd-primary'
+                          ? 'text-fd-primary'
+                          : 'text-fd-muted hover:text-fd-primary'
                       "
-                      :disabled="!isSelectedConversation(conversation.id)"
                       :title="
                         t(
                           'CHAT_LIST.FRESHDESK_DETAIL.MERGE.SELECT_AS_PRIMARY',
                           { ticket: `#${ticketNumberOf(conversation)}` }
                         )
                       "
-                      @click.stop="toggleCandidatePrimary(conversation.id)"
+                      @click.stop="setCandidateAsPrimary(conversation.id)"
                     >
                       <span
                         :class="
                           isPrimaryConversation(conversation.id)
-                            ? 'i-lucide-star size-4 fill-current'
-                            : 'i-lucide-star size-4'
+                            ? 'i-lucide-badge-check size-5'
+                            : 'i-lucide-badge-check size-5 opacity-60'
                         "
                       />
+                      <span
+                        :class="
+                          isPrimaryConversation(conversation.id)
+                            ? 'text-fd-primary'
+                            : 'text-fd-muted'
+                        "
+                      >
+                        {{
+                          t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.PRIMARY_BADGE')
+                        }}
+                      </span>
                     </button>
                     <a
                       :href="conversationUrl(conversation)"
