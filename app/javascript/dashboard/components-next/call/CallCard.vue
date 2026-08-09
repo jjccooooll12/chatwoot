@@ -1,6 +1,9 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
+import camelcaseKeys from 'camelcase-keys';
+import CallsAPI from 'dashboard/api/calls';
+import { useAlert } from 'dashboard/composables';
 import { VOICE_CALL_DIRECTION } from 'dashboard/components-next/message/constants';
 import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 import Avatar from 'dashboard/components-next/avatar/Avatar.vue';
@@ -33,18 +36,39 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showTicketAction: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-defineEmits([
+const emit = defineEmits([
   'accept',
   'reject',
   'end',
   'toggleMute',
   'goToConversation',
   'dismiss',
+  'ticketUpdated',
 ]);
 
 const { t } = useI18n();
+const TICKET_PREFIX = '#';
+const TEXT = {
+  createNewTicket: 'Create new ticket',
+  addToExistingTicket: 'Add to existing ticket',
+  ticketId: 'Ticket ID',
+  loadingTickets: 'Loading tickets...',
+  noRecentTickets: 'No recent tickets found.',
+  updateTicketError: 'Could not update the call ticket.',
+};
+
+const isTicketMenuOpen = ref(false);
+const ticketMode = ref(null);
+const ticketSearch = ref('');
+const ticketConversations = ref([]);
+const isFetchingTickets = ref(false);
+let ticketSearchTimer = null;
 
 const isOngoing = computed(() => props.state === VOICE_CALL_DIRECTION.ONGOING);
 const isIncoming = computed(
@@ -70,6 +94,71 @@ const channelIcon = computed(() => {
   if (props.call?.provider === VOICE_CALL_PROVIDERS.WHATSAPP)
     return 'i-ri-whatsapp-fill';
   return 'i-ph-phone-bold';
+});
+
+const canManageTicket = computed(
+  () => props.showTicketAction && props.call?.callId
+);
+
+const fetchTicketConversations = async () => {
+  if (!props.callInfo.phoneNumber) {
+    ticketConversations.value = [];
+    return;
+  }
+
+  isFetchingTickets.value = true;
+  try {
+    const { data } = await CallsAPI.conversations({
+      phone_number: props.callInfo.phoneNumber,
+      ...(ticketSearch.value.trim() && {
+        ticket_id: ticketSearch.value.trim(),
+      }),
+    });
+    ticketConversations.value = camelcaseKeys(data.payload || [], {
+      deep: true,
+    });
+  } catch (_) {
+    ticketConversations.value = [];
+    useAlert('Could not load tickets for this number.');
+  } finally {
+    isFetchingTickets.value = false;
+  }
+};
+
+const openExistingTickets = () => {
+  ticketMode.value = 'existing';
+  isTicketMenuOpen.value = false;
+  fetchTicketConversations();
+};
+
+const attachToTicket = async payload => {
+  if (!props.call?.callId) return;
+  try {
+    const { data } = await CallsAPI.ticket(props.call.callId, payload);
+    emit('ticketUpdated', camelcaseKeys(data.call || {}, { deep: true }));
+    ticketMode.value = null;
+    isTicketMenuOpen.value = false;
+  } catch (error) {
+    useAlert(error?.response?.data?.error || TEXT.updateTicketError);
+  }
+};
+
+const createNewTicket = () => attachToTicket({ ticket_action: 'new' });
+
+const selectTicketConversation = conversation =>
+  attachToTicket({
+    ticket_action: 'existing',
+    conversation_id: conversation.ticketNumber || conversation.displayId,
+  });
+
+watch(ticketSearch, () => {
+  if (ticketMode.value !== 'existing') return;
+  clearTimeout(ticketSearchTimer);
+  ticketSearchTimer = setTimeout(fetchTicketConversations, 250);
+});
+
+onBeforeUnmount(() => {
+  clearTimeout(ticketSearchTimer);
 });
 </script>
 
@@ -162,7 +251,34 @@ const channelIcon = computed(() => {
         </div>
 
         <!-- Actions -->
-        <div class="flex items-center gap-2 shrink-0">
+        <div class="relative flex items-center gap-2 shrink-0">
+          <NextButton
+            v-if="canManageTicket"
+            icon="i-lucide-plus"
+            slate
+            faded
+            class="!rounded-full"
+            @click="isTicketMenuOpen = !isTicketMenuOpen"
+          />
+          <div
+            v-if="isTicketMenuOpen"
+            class="absolute right-0 top-10 z-[80] w-[188px] overflow-hidden rounded-md border border-n-weak bg-white py-1 text-n-slate-12 shadow-xl dark:bg-n-solid-2 dark:text-n-slate-12"
+          >
+            <button
+              type="button"
+              class="flex h-9 w-full items-center px-3 text-left text-sm hover:bg-n-alpha-1"
+              @click="createNewTicket"
+            >
+              {{ TEXT.createNewTicket }}
+            </button>
+            <button
+              type="button"
+              class="flex h-9 w-full items-center px-3 text-left text-sm hover:bg-n-alpha-1"
+              @click="openExistingTickets"
+            >
+              {{ TEXT.addToExistingTicket }}
+            </button>
+          </div>
           <!-- Mute toggle (WhatsApp ongoing only) -->
           <NextButton
             v-if="isOngoing && showMute"
@@ -206,6 +322,80 @@ const channelIcon = computed(() => {
       </div>
     </div>
 
+    <div
+      v-if="ticketMode === 'existing'"
+      class="mx-3 mb-2 overflow-hidden rounded-lg border border-n-call-widget-border bg-white dark:bg-n-solid-2"
+    >
+      <div class="flex h-11 items-center gap-2 border-b border-n-weak px-3">
+        <button
+          type="button"
+          class="grid size-7 place-content-center rounded text-n-slate-10 hover:bg-n-alpha-1 hover:text-n-slate-12"
+          @click="ticketMode = null"
+        >
+          <span class="i-lucide-chevron-left size-4" />
+        </button>
+        <span class="min-w-0 flex-1 text-sm font-medium text-n-slate-12">
+          {{ TEXT.addToExistingTicket }}
+        </span>
+      </div>
+      <div class="p-3">
+        <label
+          class="flex h-10 items-center gap-2 rounded border border-n-weak bg-n-slate-1 px-3 dark:bg-n-solid-3"
+        >
+          <span class="i-lucide-search size-4 text-n-slate-10" />
+          <input
+            v-model="ticketSearch"
+            class="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-n-slate-10"
+            :placeholder="TEXT.ticketId"
+            inputmode="numeric"
+          />
+        </label>
+      </div>
+      <div class="max-h-[180px] overflow-y-auto">
+        <div
+          v-if="isFetchingTickets"
+          class="flex h-20 items-center justify-center text-sm text-n-slate-11"
+        >
+          {{ TEXT.loadingTickets }}
+        </div>
+        <div
+          v-else-if="!ticketConversations.length"
+          class="flex h-24 items-center justify-center text-sm text-n-slate-11"
+        >
+          {{ TEXT.noRecentTickets }}
+        </div>
+        <template v-else>
+          <button
+            v-for="conversation in ticketConversations"
+            :key="conversation.id"
+            type="button"
+            class="group flex h-[52px] w-full items-center gap-3 border-b border-n-weak px-3 text-left transition-colors hover:bg-n-alpha-1"
+            @click="selectTicketConversation(conversation)"
+          >
+            <span
+              class="grid size-7 shrink-0 place-content-center rounded-full bg-n-slate-2 text-xs font-semibold text-n-slate-11"
+            >
+              {{ TICKET_PREFIX }}
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-medium text-n-slate-12">
+                <span>{{ TICKET_PREFIX }}</span>
+                <span>{{
+                  conversation.ticketNumber || conversation.displayId
+                }}</span>
+              </span>
+              <span class="block truncate text-xs text-n-slate-10">
+                {{ conversation.subject || conversation.inbox?.name }}
+              </span>
+            </span>
+            <span
+              class="i-lucide-check size-4 shrink-0 text-n-brand opacity-0 transition-opacity group-hover:opacity-100"
+            />
+          </button>
+        </template>
+      </div>
+    </div>
+
     <!-- Footer: go to conversation thread -->
     <NextButton
       v-if="call?.conversationId"
@@ -224,7 +414,8 @@ const channelIcon = computed(() => {
             class="size-3.5 text-n-call-widget-sub-text shrink-0"
           />
           <span class="text-sm tracking-tight tabular-nums">
-            #{{ callInfo.ticketNumber || call.conversationId }}
+            <span>{{ TICKET_PREFIX }}</span>
+            <span>{{ callInfo.ticketNumber || call.conversationId }}</span>
           </span>
           <Icon
             icon="i-ph-caret-right-bold"

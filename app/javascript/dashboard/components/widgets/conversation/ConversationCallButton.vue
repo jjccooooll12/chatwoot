@@ -117,9 +117,14 @@ const startTwilioCall = async () => {
 
     callsStore.addCall({
       callSid: response?.call_sid,
+      callId: response?.call?.id,
       conversationId: response?.conversation_id ?? props.chat.id,
       inboxId: props.inbox?.id,
       callDirection: VOICE_CALL_DIRECTION.OUTBOUND,
+      provider: VOICE_CALL_PROVIDERS.TWILIO,
+      phoneNumber:
+        props.chat?.meta?.sender?.phone_number ||
+        props.chat?.meta?.sender?.phoneNumber,
     });
   } catch (error) {
     useAlert(error?.message || t('CONVERSATION.HEADER.VOICE_CALL_FAILED'));

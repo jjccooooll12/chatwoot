@@ -150,9 +150,12 @@ const startCall = async (inboxId, conversationIdHint = null) => {
 
     callsStore.addCall({
       callSid,
+      callId: response?.call?.id,
       conversationId,
       inboxId,
       callDirection: VOICE_CALL_DIRECTION.OUTBOUND,
+      provider: VOICE_CALL_PROVIDERS.TWILIO,
+      phoneNumber: props.phone,
     });
 
     useAlert(t('CONTACT_PANEL.CALL_INITIATED'));

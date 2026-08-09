@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import { useCallSession } from 'dashboard/composables/useCallSession';
 import { setWhatsappCallMuted } from 'dashboard/composables/useWhatsappCallSession';
+import { useCallsStore } from 'dashboard/stores/calls';
 import TwilioVoiceClient from 'dashboard/api/channel/voice/twilioVoiceClient';
 import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
@@ -18,6 +19,7 @@ const RINGTONE_URL = '/audio/dashboard/ringtone.mp3';
 const route = useRoute();
 const router = useRouter();
 const store = useStore();
+const callsStore = useCallsStore();
 
 const {
   activeCall,
@@ -127,9 +129,11 @@ const getCallInfo = call => {
       caller?.name ||
       sender?.name ||
       caller?.phone ||
+      call?.phoneNumber ||
       sender?.phone_number ||
       'Unknown caller',
-    phoneNumber: caller?.phone || sender?.phone_number || '',
+    phoneNumber:
+      caller?.phone || call?.phoneNumber || sender?.phone_number || '',
     inboxName: inbox?.name || 'Customer support',
     location,
     countryFlag: countryCodeToFlag(countryCode),
@@ -183,6 +187,20 @@ const handleJoinCall = async call => {
       params: { conversation_id: call.conversationId },
     });
   }
+};
+
+const handleTicketUpdated = callPayload => {
+  if (!callPayload?.providerCallId) return;
+  callsStore.addCall({
+    callSid: callPayload.providerCallId,
+    callId: callPayload.id,
+    conversationId:
+      callPayload.conversation?.displayId || callPayload.conversation?.id,
+    inboxId: activeCall.value?.inboxId || callPayload.inbox?.id,
+    callDirection: VOICE_CALL_DIRECTION.OUTBOUND,
+    provider: activeCall.value?.provider || VOICE_CALL_PROVIDERS.TWILIO,
+    phoneNumber: callPayload.toNumber || activeCall.value?.phoneNumber,
+  });
 };
 
 // Auto-join outbound calls when window is visible. WhatsApp outbound has no
@@ -267,11 +285,16 @@ onBeforeUnmount(stopRingtone);
       :duration="hasActiveCall ? formattedCallDuration : ''"
       :is-muted="isMuted"
       :show-mute="hasActiveCall"
+      :show-ticket-action="
+        (activeCall || primaryIncomingCall)?.callDirection ===
+        VOICE_CALL_DIRECTION.OUTBOUND
+      "
       @accept="handleJoinCall(primaryIncomingCall)"
       @reject="rejectIncomingCall(primaryIncomingCall?.callSid)"
       @dismiss="dismissCall(primaryIncomingCall?.callSid)"
       @end="handleEndCall"
       @toggle-mute="toggleMute"
+      @ticket-updated="handleTicketUpdated"
       @go-to-conversation="goToConversation(activeCall || primaryIncomingCall)"
     />
   </div>

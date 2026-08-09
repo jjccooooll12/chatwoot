@@ -261,6 +261,9 @@ Rails.application.routes.draw do
             collection do
               get :conversations
             end
+            member do
+              post :ticket
+            end
           end
 
           if ChatwootApp.enterprise?

@@ -31,6 +31,25 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
     render json: { error: e.message }, status: :unprocessable_entity
   end
 
+  def ticket
+    voice_call = VoiceCall.where(account_id: Current.account.id).find(params[:id])
+    authorize voice_call.inbox, :show?
+
+    conversation = case ticket_params[:ticket_action]
+                   when 'new'
+                     voice_call.conversation || create_conversation_for_call!(voice_call)
+                   when 'existing'
+                     find_conversation!(ticket_params[:conversation_id].presence)
+                   else
+                     raise ArgumentError, 'Choose Create new ticket or Add to existing ticket.'
+                   end
+
+    attach_call_to_conversation!(voice_call, conversation)
+    render json: { call: call_payload(voice_call.reload), conversation: conversation_payload(conversation) }
+  rescue ArgumentError => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  end
+
   def create
     fetch_outbound_resources!
     ensure_twilio_voice_inbox!
@@ -59,6 +78,10 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
 
   def call_params
     params.permit(:contact_id, :inbox_id, :conversation_id, :phone_number, :ticket_action)
+  end
+
+  def ticket_params
+    params.permit(:ticket_action, :conversation_id)
   end
 
   def fetch_outbound_resources!
@@ -259,6 +282,50 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
         email: conversation.contact.email
       }
     }
+  end
+
+  def create_conversation_for_call!(voice_call)
+    contact_inbox = ContactInboxBuilder.new(
+      contact: voice_call.contact,
+      inbox: voice_call.inbox,
+      source_id: "voice:#{voice_call.to_number}"
+    ).perform
+
+    ConversationBuilder.new(
+      params: ActionController::Parameters.new(status: 'open'),
+      contact_inbox: contact_inbox
+    ).perform
+  end
+
+  def attach_call_to_conversation!(voice_call, conversation)
+    label = voice_call.outgoing? ? voice_call.outgoing_label : voice_call.answered_label
+    old_conversation = voice_call.conversation
+    message = voice_call.message || conversation.messages.build(
+      account: Current.account,
+      sender: Current.user,
+      message_type: :outgoing,
+      content_type: :voice_call
+    )
+
+    message.update!(
+      account: Current.account,
+      inbox: conversation.inbox,
+      conversation: conversation,
+      content: label
+    )
+
+    voice_call.update!(
+      conversation: conversation,
+      contact: conversation.contact,
+      message: message
+    )
+
+    conversation.update_columns( # rubocop:disable Rails/SkipsModelValidations
+      additional_attributes: conversation.additional_attributes.merge('mail_subject' => label),
+      assignee_id: Current.user.id
+    )
+    message.send_update_event
+    old_conversation.destroy! if old_conversation && old_conversation != conversation && old_conversation.messages.reload.empty?
   end
 
   def conversation_payload(conversation)
