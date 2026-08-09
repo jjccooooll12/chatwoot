@@ -257,7 +257,11 @@ Rails.application.routes.draw do
           end
           resources :reporting_events, only: [:index] if ChatwootApp.enterprise?
 
-          resources :calls, only: [:index, :create]
+          resources :calls, only: [:index, :create] do
+            collection do
+              get :conversations
+            end
+          end
 
           if ChatwootApp.enterprise?
             resources :whatsapp_calls, only: [:show] do

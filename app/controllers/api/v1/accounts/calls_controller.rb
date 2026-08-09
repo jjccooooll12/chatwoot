@@ -20,6 +20,17 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
     }
   end
 
+  def conversations
+    phone_number = normalize_phone_number(params[:phone_number])
+    conversations = matching_conversations(phone_number)
+
+    render json: {
+      payload: conversations.map { |conversation| ticket_payload(conversation) }
+    }
+  rescue ArgumentError => e
+    render json: { error: e.message }, status: :unprocessable_entity
+  end
+
   def create
     fetch_outbound_resources!
     ensure_twilio_voice_inbox!
@@ -47,7 +58,7 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
   end
 
   def call_params
-    params.permit(:contact_id, :inbox_id, :conversation_id, :phone_number)
+    params.permit(:contact_id, :inbox_id, :conversation_id, :phone_number, :ticket_action)
   end
 
   def fetch_outbound_resources!
@@ -57,11 +68,16 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
     @contact = Current.account.contacts.find(call_params[:contact_id])
     @to_number = normalize_phone_number(call_params[:phone_number].presence || @contact.phone_number)
     @conversation = fetch_or_create_conversation!
+    @contact = @conversation.contact if call_params[:conversation_id].present?
   end
 
   def fetch_or_create_conversation!
     conversation_id = call_params[:conversation_id].presence
-    return Current.account.conversations.find_by!(display_id: conversation_id) if conversation_id
+    return find_conversation!(conversation_id) if conversation_id
+
+    unless call_params[:ticket_action] == 'new'
+      raise ArgumentError, 'Choose Create new ticket or Add to existing ticket before starting a call.'
+    end
 
     contact_inbox = ContactInboxBuilder.new(
       contact: @contact,
@@ -73,6 +89,12 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
       params: ActionController::Parameters.new(status: 'open'),
       contact_inbox: contact_inbox
     ).perform
+  end
+
+  def find_conversation!(value)
+    Current.account.conversations.find_by(display_id: value) ||
+      Current.account.conversations.find_by("conversations.additional_attributes->>'ticket_number' = ?", value.to_s) ||
+      Current.account.conversations.find(value)
   end
 
   def normalize_phone_number(number)
@@ -201,6 +223,42 @@ class Api::V1::Accounts::CallsController < Api::V1::Accounts::BaseController
 
   def normalized_direction(direction)
     direction == 'outgoing' ? 'outbound' : 'inbound'
+  end
+
+  def matching_conversations(phone_number)
+    ticket_id = params[:ticket_id].to_s.strip
+    scope = Current.account.conversations.includes(:contact, :inbox).order(updated_at: :desc)
+
+    if ticket_id.present?
+      return scope.where(
+        'conversations.display_id::text = :ticket_id OR conversations.additional_attributes->>\'ticket_number\' = :ticket_id',
+        ticket_id: ticket_id
+      ).limit(20)
+    end
+
+    contact_ids = Current.account.contacts.where(phone_number: phone_number).select(:id)
+    scope.where(contact_id: contact_ids).limit(20)
+  end
+
+  def ticket_payload(conversation)
+    {
+      id: conversation.id,
+      display_id: conversation.display_id,
+      ticket_number: conversation.ticket_number,
+      status: conversation.status,
+      subject: conversation.additional_attributes['mail_subject'],
+      updated_at: conversation.updated_at.to_i,
+      inbox: {
+        id: conversation.inbox.id,
+        name: conversation.inbox.name
+      },
+      contact: {
+        id: conversation.contact.id,
+        name: conversation.contact.name,
+        phone_number: conversation.contact.phone_number,
+        email: conversation.contact.email
+      }
+    }
   end
 
   def conversation_payload(conversation)
