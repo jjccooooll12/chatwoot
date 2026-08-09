@@ -623,7 +623,6 @@ export default {
     <MessageList
       ref="conversationPanelRef"
       class="conversation-panel flex-shrink flex-grow basis-px flex flex-col overflow-y-auto relative h-full m-0 bg-fd-surface px-[var(--conv-gutter)] pb-4 pt-4 scroll-pt-4 [--conv-gutter:clamp(0.75rem,1.4vw,1.25rem)]"
-      :class="{ 'justify-center': isVoiceCallConversation }"
       :current-user-id="currentUserId"
       :first-unread-id="unReadMessages[0]?.id"
       :is-an-email-channel="isAnEmailChannel"
