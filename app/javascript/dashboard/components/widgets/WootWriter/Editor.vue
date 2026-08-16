@@ -770,6 +770,23 @@ function createEditorView() {
         if (props.disabled) return;
         const { files } = event.clipboardData;
         if (!files.length) return;
+        const pastedImages = Array.from(files).filter(
+          file =>
+            file.size > 0 &&
+            INLINE_IMAGE_PASTE_TYPES.includes(file.type) &&
+            allowsInlineImagePaste.value
+        );
+        if (pastedImages.length) {
+          event.preventDefault();
+          event.stopPropagation();
+          const text = event.clipboardData.getData('text/plain');
+          if (text) {
+            view.dispatch(view.state.tr.insertText(text));
+            emitOnChange();
+          }
+          pastedImages.forEach(uploadImageIfWithinSizeLimit);
+          return;
+        }
         event.preventDefault();
         // Paste text content alongside files (e.g., spreadsheet data from Numbers app)
         // Numbers app includes invalid 0-byte attachments with text, so we paste the text here
