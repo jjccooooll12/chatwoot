@@ -75,10 +75,9 @@ remove_orphan_conversations_job:
   class: 'Internal::RemoveOrphanConversationsJob'
   queue: housekeeping
 
-# Checks hourly for pending tickets marked auto-follow-up = yes. Each customer is
-# emailed AT MOST ONCE PER 24h (NUDGE_INTERVAL) — the hourly run only finds the
-# tickets that have crossed their next 24h mark, so most runs send nothing. Also
-# reopens a ticket at its priority deadline. A customer reply reopens the ticket
+# Checks every pending ticket hourly and reopens it at its priority deadline.
+# Tickets marked auto-follow-up = yes may additionally email the customer AT MOST
+# ONCE PER 24h (NUDGE_INTERVAL). A customer reply reopens the ticket immediately
 # (Message#reopen_conversation), which stops the reminders.
 auto_follow_up_job:
   cron: '0 * * * *'

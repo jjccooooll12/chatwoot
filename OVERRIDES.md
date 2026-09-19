@@ -23,6 +23,12 @@ Git commits.
 | `app/javascript/dashboard/components/ChatListHeader.vue` | Freshdesk-style list header/top bar: bolder title, always-on purple total-count badge, subtler status chip, `+ New`, search, notifications, help/apps affordances, and agent avatar. | `chatwoot/chatwoot@v4.16.1` |
 | `app/javascript/dashboard/i18n/locale/en/chatlist.json`                             | Adds English strings for derived ticket-card and top-bar labels. Crowdin owns other locales.                                                                                                                                     | `chatwoot/chatwoot@v4.16.1` |
 
+## Backend
+
+| Path | Why | Upstream base |
+| --- | --- | --- |
+| `app/jobs/auto_follow_up_job.rb`, `app/services/conversations/auto_follow_up_service.rb`, `config/schedule.yml` | Reopens every Pending ticket at its priority deadline. The per-ticket auto-follow-up switch controls customer reminder emails only, so disabling reminders cannot strand a ticket in Pending forever. | Peach Labels custom feature |
+
 ## Deployment
 
 The deploy repo should point Compose at a pinned GHCR image tag, not at mutable

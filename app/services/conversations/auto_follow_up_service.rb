@@ -21,20 +21,19 @@ class Conversations::AutoFollowUpService
   pattr_initialize [:conversation!]
 
   def perform
-    return unless eligible?
-    return unless waiting_on_customer?
+    return unless conversation.pending?
 
     if Time.current >= reopen_at
       reopen_for_human
-    elsif due_for_nudge? && !handled_by_a_human?
+    elsif auto_follow_up? && waiting_on_customer? && due_for_nudge? && !handled_by_a_human?
       send_nudge
     end
   end
 
   private
 
-  def eligible?
-    conversation.pending? && conversation.custom_attributes['freshdesk_auto_follow_up'] == 'yes'
+  def auto_follow_up?
+    conversation.custom_attributes['freshdesk_auto_follow_up'] == 'yes'
   end
 
   # An assigned agent or an applied tag signals a human is already on this
@@ -85,7 +84,18 @@ class Conversations::AutoFollowUpService
   end
 
   def reopen_at
-    last_agent_reply.created_at + window
+    pending_since + window
+  end
+
+  # Status activity carries a machine-readable value, unlike the localized
+  # human message. Use the most recent Pending transition so assignment and
+  # property edits cannot silently postpone the deadline. updated_at is only a
+  # fallback for legacy/imported conversations without a status activity.
+  def pending_since
+    @pending_since ||= conversation.messages.activity
+                                   .where("(messages.content_attributes #>> '{}')::jsonb->'activity'->>'type' = ?", 'conversation_status_changed')
+                                   .where("(messages.content_attributes #>> '{}')::jsonb->'activity'->>'status' = ?", 'pending')
+                                   .maximum(:created_at) || conversation.updated_at
   end
 
   # Nudge cadence resets whenever we send a new genuine reply, so the baseline is
