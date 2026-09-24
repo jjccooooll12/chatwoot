@@ -46,15 +46,20 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
     end
 
     context 'when no agent is online' do
+      it 'records the whole voicemail instead of Twilio clipping defaults' do
+        signed_post "/webhooks/twilio_voice/#{phone_digits}", params
+
+        expect(response.body).to include('trim="do-not-trim"')
+        expect(response.body).to include('timeout="30"')
+        expect(response.body).to include('maxLength="600"')
+      end
+
       it 'creates the ringing call and renders voicemail TwiML' do
         expect do
           signed_post "/webhooks/twilio_voice/#{phone_digits}", params
         end.to change(VoiceCall, :count).by(1).and change(Message, :count).by(1)
 
         expect(response.body).to include('<Record')
-        expect(response.body).to include('trim="do-not-trim"')
-        expect(response.body).to include('timeout="30"')
-        expect(response.body).to include('maxLength="600"')
         expect(response.body).not_to include('<Dial>')
 
         voice_call = VoiceCall.find_by(provider_call_id: 'CA_inbound_1')
@@ -167,7 +172,7 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
     it 'marks a still-ringing call as no_answer on a no-answer callback' do
       signed_post "/webhooks/twilio_voice/#{phone_digits}/status", { 'CallSid' => 'CA_status_1', 'CallStatus' => 'no-answer' }
 
-      expect(voice_call.reload.status).to eq('no-answer')
+      expect(voice_call.reload).to be_no_answer
     end
 
     it 'does not override a call that already progressed past ringing' do
@@ -175,7 +180,7 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
 
       signed_post "/webhooks/twilio_voice/#{phone_digits}/status", { 'CallSid' => 'CA_status_1', 'CallStatus' => 'completed' }
 
-      expect(voice_call.reload.status).to eq('in-progress')
+      expect(voice_call.reload).to be_in_progress
     end
 
     it 'schedules an outcome check so the ticket gets relabeled/merged once the call settles' do
@@ -223,7 +228,7 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
     let(:conversation) { create(:conversation, account: account, inbox: inbox) }
     let!(:voice_call) do
       create(:voice_call, account: account, inbox: inbox, conversation: conversation, contact: conversation.contact,
-                           provider_call_id: 'CA_conf_1', conference_sid: 'voice-conf-1')
+                          provider_call_id: 'CA_conf_1', conference_sid: 'voice-conf-1')
     end
     let(:phone_digits) { channel.additional_attributes['phone_number'].delete_prefix('+') }
 
@@ -231,7 +236,7 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
       signed_post "/webhooks/twilio_voice/#{phone_digits}/conference_status",
                   { 'FriendlyName' => 'voice-conf-1', 'StatusCallbackEvent' => 'conference-start' }
 
-      expect(voice_call.reload.status).to eq('in-progress')
+      expect(voice_call.reload).to be_in_progress
       expect(voice_call.started_at).to be_present
     end
 
