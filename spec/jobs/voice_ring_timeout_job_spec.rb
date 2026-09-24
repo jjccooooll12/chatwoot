@@ -7,7 +7,7 @@ RSpec.describe VoiceRingTimeoutJob do
   let(:conversation) { create(:conversation, account: account, inbox: inbox) }
   let(:voice_call) do
     create(:voice_call, account: account, inbox: inbox, conversation: conversation, contact: conversation.contact,
-                         provider_call_id: 'CA_timeout_1', to_number: '+14358000172')
+                        provider_call_id: 'CA_timeout_1', to_number: '+14358000172')
   end
 
   around do |example|
@@ -22,7 +22,7 @@ RSpec.describe VoiceRingTimeoutJob do
   end
 
   it 'redirects the live call to the ring_timeout TwiML if still ringing' do
-    calls_resource = instance_double(Twilio::REST::Api::V2010::CallInstance)
+    calls_resource = instance_double(Twilio::REST::Api::V2010::AccountContext::CallContext)
     client = instance_double(Twilio::REST::Client)
     allow(Twilio::REST::Client).to receive(:new).with('AC_test', 'test_token').and_return(client)
     allow(client).to receive(:calls).with('CA_timeout_1').and_return(calls_resource)
@@ -40,7 +40,7 @@ RSpec.describe VoiceRingTimeoutJob do
   # a call that had already moved on to voicemail.
   it 'settles the call as no_answer immediately and schedules the outcome check, so the popup actually stops' do
     client = instance_double(Twilio::REST::Client)
-    calls_resource = instance_double(Twilio::REST::Api::V2010::CallInstance)
+    calls_resource = instance_double(Twilio::REST::Api::V2010::AccountContext::CallContext)
     allow(Twilio::REST::Client).to receive(:new).and_return(client)
     allow(client).to receive(:calls).and_return(calls_resource)
     allow(calls_resource).to receive(:update)
@@ -50,19 +50,19 @@ RSpec.describe VoiceRingTimeoutJob do
     end.to have_enqueued_job(VoiceCallOutcomeCheckJob).with(voice_call.id)
 
     voice_call.reload
-    expect(voice_call.status).to eq('no-answer')
+    expect(voice_call).to be_no_answer
     expect(voice_call.end_reason).to eq('no_answer')
     expect(voice_call.ended_at).to be_present
   end
 
   it 'does not raise if the call already ended on Twilio\'s side, and does not settle the call locally' do
     client = instance_double(Twilio::REST::Client)
-    calls_resource = instance_double(Twilio::REST::Api::V2010::CallInstance)
+    calls_resource = instance_double(Twilio::REST::Api::V2010::AccountContext::CallContext)
     allow(Twilio::REST::Client).to receive(:new).and_return(client)
     allow(client).to receive(:calls).and_return(calls_resource)
     allow(calls_resource).to receive(:update).and_raise(Twilio::REST::RestError.new('not in-progress', double(status_code: 400, body: {}))) # rubocop:disable RSpec/VerifiedDoubles
 
     expect { described_class.new.perform(voice_call.id) }.not_to raise_error
-    expect(voice_call.reload.status).to eq('ringing')
+    expect(voice_call.reload).to be_ringing
   end
 end
