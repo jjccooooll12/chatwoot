@@ -16,7 +16,7 @@ RSpec.describe VoiceRecordingDownloadJob do
   end
 
   before do
-    stub_request(:get, "#{recording_url}.mp3").to_return(status: 200, body: 'fake-audio-bytes')
+    stub_request(:get, "#{recording_url}.wav").to_return(status: 200, body: 'fake-audio-bytes')
   end
 
   context 'when the call never got answered (voicemail)' do
@@ -59,5 +59,31 @@ RSpec.describe VoiceRecordingDownloadJob do
       expect(voice_call.reload.recording).to be_attached
       expect(message.reload.content).to eq('Incoming call')
     end
+  end
+
+  context 'when Twilio has not made the recording available yet' do
+    let(:voice_call) do
+      create(:voice_call, account: account, inbox: inbox, conversation: conversation, contact: conversation.contact,
+                           message: message, status: 'no_answer', provider_call_id: 'CA_pending')
+    end
+
+    before { stub_request(:get, "#{recording_url}.wav").to_return(status: 404) }
+
+    it 're-enqueues instead of dropping the recording' do
+      expect do
+        described_class.perform_now(voice_call.id, recording_url)
+      end.to have_enqueued_job(described_class).with(voice_call.id, recording_url)
+
+      expect(voice_call.reload.recording).not_to be_attached
+    end
+  end
+
+  it 'stores the lossless WAV original' do
+    voice_call = create(:voice_call, account: account, inbox: inbox, conversation: conversation, contact: conversation.contact,
+                                     message: message, status: 'completed', provider_call_id: 'CA_wav')
+
+    described_class.perform_now(voice_call.id, recording_url)
+
+    expect(voice_call.reload.recording.content_type).to eq('audio/wav')
   end
 end

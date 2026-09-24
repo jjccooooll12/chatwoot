@@ -205,6 +205,9 @@ class Webhooks::TwilioVoiceController < ApplicationController
     {
       start_conference_on_enter: start_conference_on_enter,
       record: 'record-from-start',
+      # <Conference> defaults to trim="trim-silence", which cuts the leading
+      # and trailing audio of the call recording. Keep the whole call.
+      trim: 'do-not-trim',
       recording_status_callback: voice_webhook_recording_status_url(phone_number: params[:phone_number]),
       recording_status_callback_event: 'completed',
       status_callback: voice_webhook_conference_status_url(phone_number: params[:phone_number]),
@@ -214,11 +217,21 @@ class Webhooks::TwilioVoiceController < ApplicationController
     end
   end
 
+  # Twilio's <Record> defaults all shorten voicemails: trim="trim-silence"
+  # clips the start and end, timeout=5 stops recording at the first 5-second
+  # pause (the TwiML then ends and the caller is hung up on mid-message), and
+  # max_length=120 is a hard stop at 2 minutes. Recording ends when the caller
+  # hangs up anyway, so the generous limits cost nothing.
+  VOICEMAIL_SILENCE_TIMEOUT = 30
+  VOICEMAIL_MAX_LENGTH = 600
+
   def voicemail_twiml
     response = Twilio::TwiML::VoiceResponse.new
     response.say(message: 'Please leave a message after the beep.')
     response.record(
-      max_length: 120,
+      max_length: VOICEMAIL_MAX_LENGTH,
+      timeout: VOICEMAIL_SILENCE_TIMEOUT,
+      trim: 'do-not-trim',
       play_beep: true,
       recording_status_callback: voice_webhook_recording_status_url(phone_number: params[:phone_number]),
       recording_status_callback_event: 'completed'

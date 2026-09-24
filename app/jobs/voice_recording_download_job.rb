@@ -4,21 +4,28 @@
 # downloads directly rather than going through the SSRF-guarded SafeFetch
 # helper used for arbitrary user-submitted URLs (e.g. avatar imports).
 class VoiceRecordingDownloadJob < ApplicationJob
-  queue_as :low
+  # Twilio can answer a just-completed recording with a 404 for a short while,
+  # and the network can fail. Either used to drop the recording silently, so
+  # raise and let ActiveJob retry instead.
+  class RecordingUnavailable < StandardError; end
 
-  # Twilio appends the format to the recording URL; .mp3 keeps the download small.
+  queue_as :low
+  retry_on RecordingUnavailable, Net::OpenTimeout, Net::ReadTimeout, wait: 30.seconds, attempts: 10
+
+  # The .wav is Twilio's lossless original; the .mp3 variant is a 32 kbps
+  # transcode, so we keep the original.
   def perform(voice_call_id, recording_url)
     voice_call = VoiceCall.find_by(id: voice_call_id)
     return if voice_call.nil? || voice_call.recording.attached?
 
-    uri = URI("#{recording_url}.mp3")
+    uri = URI("#{recording_url}.wav")
     response = fetch(uri, account_sid: twilio_account_sid(voice_call))
-    return unless response.is_a?(Net::HTTPSuccess)
+    raise RecordingUnavailable, "#{uri} returned #{response.code}" unless response.is_a?(Net::HTTPSuccess)
 
     voice_call.recording.attach(
       io: StringIO.new(response.body),
-      filename: "voice_call_#{voice_call.id}.mp3",
-      content_type: 'audio/mpeg'
+      filename: "voice_call_#{voice_call.id}.wav",
+      content_type: 'audio/wav'
     )
 
     voice_call.transition_to!(status: 'no_answer', ended_at: Time.current, end_reason: 'no_answer') if voice_call.ringing?
@@ -41,7 +48,7 @@ class VoiceRecordingDownloadJob < ApplicationJob
     request = Net::HTTP::Get.new(uri)
     request.basic_auth(account_sid, ENV.fetch('TWILIO_VOICE_AUTH_TOKEN'))
 
-    Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 5, read_timeout: 20) do |http|
+    Net::HTTP.start(uri.host, uri.port, use_ssl: true, open_timeout: 10, read_timeout: 60) do |http|
       http.request(request)
     end
   end

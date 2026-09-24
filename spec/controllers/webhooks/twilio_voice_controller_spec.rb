@@ -52,6 +52,9 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
         end.to change(VoiceCall, :count).by(1).and change(Message, :count).by(1)
 
         expect(response.body).to include('<Record')
+        expect(response.body).to include('trim="do-not-trim"')
+        expect(response.body).to include('timeout="30"')
+        expect(response.body).to include('maxLength="600"')
         expect(response.body).not_to include('<Dial>')
 
         voice_call = VoiceCall.find_by(provider_call_id: 'CA_inbound_1')
@@ -210,6 +213,7 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
 
       expect(response.body).to include('<Conference')
       expect(response.body).to include('record="record-from-start"')
+      expect(response.body).to include('trim="do-not-trim"')
       expect(response.body).to include('/recording_status')
       expect(response.body).to include('/conference_status')
     end
