@@ -49,9 +49,11 @@ class VoiceCountryRoute < ApplicationRecord
 
   # Accept "39", "0039" or "+39" — the leading + is presentation, not
   # information, and rejecting it as a format error read as "adding a rule
-  # does nothing" from the settings page.
+  # does nothing" from the settings page. "00" is the international dialling
+  # prefix, not part of the code: kept, "0039" became "+0039", which passes
+  # the format check but never matches a caller's +39 number.
   def normalize_phone_prefix
-    digits = phone_prefix.to_s.gsub(/\D/, '')
+    digits = phone_prefix.to_s.gsub(/\D/, '').delete_prefix('00')
     self.phone_prefix = "+#{digits}" if digits.present?
   end
 

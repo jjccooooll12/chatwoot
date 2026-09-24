@@ -4,7 +4,7 @@ RSpec.describe 'Voice Conference API', type: :request do
   let(:account) { create(:account) }
   let(:channel) do
     create(:channel_api, account: account,
-                          additional_attributes: { twilio_account_sid: 'AC_test', twilio_twiml_app_sid: 'AP_test', twilio_api_key_sid: 'SK_test' })
+                         additional_attributes: { twilio_account_sid: 'AC_test', twilio_twiml_app_sid: 'AP_test', twilio_api_key_sid: 'SK_test' })
   end
   let(:inbox) { channel.inbox }
   let(:agent) { create(:user, account: account, role: :agent) }
@@ -122,11 +122,28 @@ RSpec.describe 'Voice Conference API', type: :request do
   end
 
   describe 'DELETE /inboxes/:inbox_id/conference' do
-    it 'returns ok' do
+    let(:twilio_hangup_url) { 'https://api.twilio.com/2010-04-01/Accounts/AC_test/Calls/CA_join_1.json' }
+
+    it 'hangs up the Twilio call and completes the voice call' do
+      hangup = stub_request(:post, twilio_hangup_url).with(body: { 'Status' => 'completed' }).to_return(status: 200, body: '{}')
+
       delete "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/conference",
              params: { conversation_id: conversation.display_id, call_sid: 'CA_join_1' }, headers: agent.create_new_auth_token
 
       expect(response).to have_http_status(:success)
+      expect(hangup).to have_been_requested
+      expect(voice_call.reload).to be_completed
+      expect(voice_call.end_reason).to eq('agent_hangup')
+    end
+
+    it 'still completes the call when Twilio says it already ended' do
+      stub_request(:post, twilio_hangup_url).to_return(status: 404, body: { code: 20_404, message: 'Not found' }.to_json)
+
+      delete "/api/v1/accounts/#{account.id}/inboxes/#{inbox.id}/conference",
+             params: { conversation_id: conversation.display_id, call_sid: 'CA_join_1' }, headers: agent.create_new_auth_token
+
+      expect(response).to have_http_status(:success)
+      expect(voice_call.reload).to be_completed
     end
   end
 end

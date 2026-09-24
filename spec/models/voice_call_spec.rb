@@ -62,7 +62,7 @@ RSpec.describe VoiceCall do
 
       voice_call.transition_to!(status: 'in_progress', started_at: Time.current)
 
-      expect(voice_call.reload.status).to eq('in-progress')
+      expect(voice_call.reload).to be_in_progress
     end
 
     it 'is a no-op on the message side when there is no linked message' do

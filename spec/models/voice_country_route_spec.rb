@@ -11,8 +11,17 @@ RSpec.describe VoiceCountryRoute do
     expect(route).to be_valid
   end
 
-  it 'rejects a prefix without a leading +' do
-    route = described_class.new(account: account, inbox: inbox, user: agent, country_name: 'Italy', phone_prefix: '39')
+  it 'normalizes a prefix typed without the leading + or with 00' do
+    %w[39 0039].each do |typed|
+      route = described_class.new(account: account, inbox: inbox, user: agent, country_name: 'Italy', phone_prefix: typed)
+
+      expect(route).to be_valid
+      expect(route.phone_prefix).to eq('+39')
+    end
+  end
+
+  it 'rejects a prefix that is not a country calling code' do
+    route = described_class.new(account: account, inbox: inbox, user: agent, country_name: 'Italy', phone_prefix: 'not-a-prefix')
     expect(route).not_to be_valid
   end
 

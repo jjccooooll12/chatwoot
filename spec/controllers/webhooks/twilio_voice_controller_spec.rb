@@ -236,8 +236,33 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
       signed_post "/webhooks/twilio_voice/#{phone_digits}/conference_status",
                   { 'FriendlyName' => 'voice-conf-1', 'StatusCallbackEvent' => 'conference-start' }
 
+      expect(response).to have_http_status(:no_content)
       expect(voice_call.reload).to be_in_progress
       expect(voice_call.started_at).to be_present
+    end
+
+    it 'relabels the ticket once an agent answers' do
+      message = create(:message, account: account, conversation: conversation, sender: conversation.contact,
+                                 content_type: :voice_call, content: 'Incoming call')
+      voice_call.update!(message: message)
+
+      signed_post "/webhooks/twilio_voice/#{phone_digits}/conference_status",
+                  { 'FriendlyName' => 'voice-conf-1', 'StatusCallbackEvent' => 'conference-start' }
+
+      expect(message.reload.content).to eq(voice_call.reload.answered_label)
+      expect(conversation.reload.additional_attributes['mail_subject']).to eq(voice_call.answered_label)
+    end
+
+    # Outbound calls stay detached (no message, no conversation) until the agent
+    # picks a ticket; answering one used to crash relabel_as_answered! with a 500.
+    it 'answers a detached outbound call without a ticket to relabel' do
+      voice_call.update!(direction: 'outgoing', message: nil, conversation: nil)
+
+      signed_post "/webhooks/twilio_voice/#{phone_digits}/conference_status",
+                  { 'FriendlyName' => 'voice-conf-1', 'StatusCallbackEvent' => 'conference-start', 'ConferenceSid' => 'CF_1' }
+
+      expect(response).to have_http_status(:no_content)
+      expect(voice_call.reload).to be_in_progress
     end
 
     it 'marks the call completed with a duration on conference-end' do

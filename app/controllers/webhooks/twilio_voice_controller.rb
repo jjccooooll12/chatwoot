@@ -249,7 +249,11 @@ class Webhooks::TwilioVoiceController < ApplicationController
   # gap - see Voice::CallOutcomeFinalizer for the equivalent on the
   # abandoned/voicemail side) to who it's actually with, same as any other
   # channel's ticket title reflects its subject.
+  # An outbound call stays detached (no message, no conversation) until the
+  # agent picks a ticket for it, so there may be nothing to relabel yet.
   def relabel_as_answered!(voice_call)
+    return if voice_call.message.nil? || voice_call.conversation.nil?
+
     label = voice_call.answered_label
     voice_call.message.update!(content: label)
     voice_call.message.send_update_event
