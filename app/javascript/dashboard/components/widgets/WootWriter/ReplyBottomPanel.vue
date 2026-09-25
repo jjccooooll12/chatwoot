@@ -1,6 +1,9 @@
 <script>
 import { ref } from 'vue';
-import { useUISettings } from 'dashboard/composables/useUISettings';
+import {
+  useUISettings,
+  MESSAGE_SIGNATURES_ENABLED,
+} from 'dashboard/composables/useUISettings';
 import { useKeyboardEvents } from 'dashboard/composables/useKeyboardEvents';
 import FileUpload from 'vue-upload-component';
 import * as ActiveStorage from 'activestorage';
@@ -238,7 +241,7 @@ export default {
       }
     },
     showMessageSignatureButton() {
-      if (this.isEditorDisabled) return false;
+      if (!MESSAGE_SIGNATURES_ENABLED || this.isEditorDisabled) return false;
       return !this.isOnPrivateNote;
     },
     // Canned responses only trigger on '/' when not writing a private note

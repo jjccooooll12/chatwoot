@@ -1,7 +1,10 @@
 <script setup>
 import { defineAsyncComponent, ref, computed, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { useUISettings } from 'dashboard/composables/useUISettings';
+import {
+  useUISettings,
+  MESSAGE_SIGNATURES_ENABLED,
+} from 'dashboard/composables/useUISettings';
 import { useFileUpload } from 'dashboard/composables/useFileUpload';
 import { vOnClickOutside } from '@vueuse/components';
 import { useEventListener } from '@vueuse/core';
@@ -84,7 +87,10 @@ const isRegularMessageMode = computed(() => {
 
 const shouldShowSignatureButton = computed(() => {
   return (
-    props.hasSelectedInbox && isRegularMessageMode.value && !props.voiceEnabled
+    MESSAGE_SIGNATURES_ENABLED &&
+    props.hasSelectedInbox &&
+    isRegularMessageMode.value &&
+    !props.voiceEnabled
   );
 });
 

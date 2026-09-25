@@ -95,6 +95,12 @@ const setQuotedReplyFlagForInbox = (channelType, value, updateUISettings) => {
   updateUISettings({ [`${slugifiedChannel}_quoted_reply_enabled`]: value });
 };
 
+// Peach Labels: agent signatures are switched off everywhere. Every composer
+// (reply box, editor, new conversation) reads the flag through the function
+// below, so this is the single place that keeps a saved signature from being
+// injected into replies — and stale ones are stripped from restored drafts.
+export const MESSAGE_SIGNATURES_ENABLED = false;
+
 /**
  * Fetches the signature flag for a specific channel type from UI settings.
  * @param {string} channelType - The type of the channel.
@@ -102,7 +108,7 @@ const setQuotedReplyFlagForInbox = (channelType, value, updateUISettings) => {
  * @returns {boolean} The value of the signature enabled flag.
  */
 const fetchSignatureFlagFromUISettings = (channelType, uiSettings) => {
-  if (!channelType) return false;
+  if (!MESSAGE_SIGNATURES_ENABLED || !channelType) return false;
 
   const slugifiedChannel = slugifyChannel(channelType);
   return uiSettings.value[`${slugifiedChannel}_signature_enabled`];
