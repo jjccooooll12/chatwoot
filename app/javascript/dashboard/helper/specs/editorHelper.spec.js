@@ -27,6 +27,7 @@ import {
   stripInlineBase64Images,
   stripUnsupportedFormatting,
   stripUnsupportedMarkdown,
+  SIGNATURE_DELIMITER,
 } from '../editorHelper';
 
 // Define a basic ProseMirror schema
@@ -144,6 +145,12 @@ describe('appendSignature', () => {
         appendSignature(body, signature).includes(cleanedSignature)
       ).toBeTruthy();
     });
+  });
+  it('appends the signature without a -- delimiter', () => {
+    const signature = 'Kind regards,\nLibero';
+    const result = appendSignature('Hello', signature);
+    expect(result).toBe(`Hello\n\n${cleanSignature(signature)}`);
+    expect(result).not.toContain(SIGNATURE_DELIMITER);
   });
   it('does not append signature if already present', () => {
     Object.keys(HAS_SIGNATURE).forEach(key => {
@@ -412,27 +419,27 @@ describe('replaceSignature', () => {
     Object.keys(DOES_NOT_HAVE_SIGNATURE).forEach(key => {
       const { body, signature } = DOES_NOT_HAVE_SIGNATURE[key];
       expect(replaceSignature(body, signature, NEW_SIGNATURE)).toBe(
-        `${body}\n\n--\n\n${NEW_SIGNATURE}`
+        `${body}\n\n${NEW_SIGNATURE}`
       );
     });
   });
   it('removes signature if present at the end', () => {
     const { body, signature } = HAS_SIGNATURE['signature at end'];
     expect(replaceSignature(body, signature, NEW_SIGNATURE)).toBe(
-      `This is a test\n\n--\n\n${NEW_SIGNATURE}`
+      `This is a test\n\n${NEW_SIGNATURE}`
     );
   });
   it('removes signature if present with spaces and new lines', () => {
     const { body, signature } =
       HAS_SIGNATURE['signature at end with spaces and new lines'];
     expect(replaceSignature(body, signature, NEW_SIGNATURE)).toBe(
-      `This is a test\n\n--\n\n${NEW_SIGNATURE}`
+      `This is a test\n\n${NEW_SIGNATURE}`
     );
   });
   it('removes signature if present without text before it', () => {
     const { body, signature } = HAS_SIGNATURE['no text before signature'];
     expect(replaceSignature(body, signature, NEW_SIGNATURE)).toBe(
-      `\n\n--\n\n${NEW_SIGNATURE}`
+      `\n\n${NEW_SIGNATURE}`
     );
   });
 });

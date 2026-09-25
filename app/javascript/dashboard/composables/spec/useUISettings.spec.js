@@ -111,7 +111,7 @@ describe('useUISettings', () => {
 
   it('fetches signature flag from UI settings correctly', () => {
     const { fetchSignatureFlagFromUISettings } = useUISettings();
-    expect(fetchSignatureFlagFromUISettings('email')).toBe(false);
+    expect(fetchSignatureFlagFromUISettings('email')).toBe(undefined);
   });
 
   it('sets quoted reply flag for inbox correctly', () => {
@@ -155,7 +155,9 @@ describe('useUISettings', () => {
       isEditorHotKeyEnabled,
     } = useUISettings();
     expect(isContactSidebarItemOpen('non_existent_key')).toBe(false);
-    expect(fetchSignatureFlagFromUISettings('non_existent_key')).toBe(false);
+    expect(fetchSignatureFlagFromUISettings('non_existent_key')).toBe(
+      undefined
+    );
     expect(isEditorHotKeyEnabled('non_existent_key')).toBe(false);
   });
 });

@@ -95,7 +95,9 @@ export function stripUnsupportedMarkdown(
 }
 
 /**
- * The delimiter used to separate the signature from the rest of the body.
+ * The delimiter upstream Chatwoot put above the signature. Peach Labels no
+ * longer inserts it (the signature follows the body after a blank line), but
+ * removeSignature still strips it so drafts saved with it clean up.
  * @type {string}
  */
 export const SIGNATURE_DELIMITER = '--';
@@ -131,16 +133,6 @@ const stripDelimiterHardbreaks = body =>
 
 // Strip standalone blank-paragraph markers (`\` on their own lines).
 const stripTrailingBlankLine = body => body.replace(/\n(?:\s*\\\n)+$/, '');
-
-/**
- * Adds the signature delimiter to the beginning of the signature.
- *
- * @param {string} signature - The signature to add the delimiter to.
- * @returns {string} - The signature with the delimiter added.
- */
-function appendDelimiter(signature) {
-  return `${SIGNATURE_DELIMITER}\n\n${cleanSignature(signature)}`;
-}
 
 /**
  * Check if there's an unedited signature at the end of the body
@@ -180,7 +172,7 @@ export function getEffectiveChannelType(channelType, medium) {
 }
 
 /**
- * Appends the signature to the body, separated by the signature delimiter.
+ * Appends the signature to the body, separated by a blank line (no `--`).
  * Automatically strips unsupported formatting based on channel capabilities.
  *
  * @param {string} body - The body to append the signature to.
@@ -200,7 +192,7 @@ export function appendSignature(body, signature, channelType) {
     return body;
   }
 
-  return `${body.trimEnd()}\n\n${appendDelimiter(cleanedSignature)}`;
+  return `${body.trimEnd()}\n\n${cleanSignature(cleanedSignature)}`;
 }
 
 /**
