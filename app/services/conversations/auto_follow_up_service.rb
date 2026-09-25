@@ -8,14 +8,6 @@ class Conversations::AutoFollowUpService
     'urgent' => 24.hours
   }.freeze
 
-  # Human-readable form of the windows above, used in the reopen audit note.
-  WINDOW_LABELS = {
-    'low' => '5 days',
-    'medium' => '3 days',
-    'high' => '48 hours',
-    'urgent' => '24 hours'
-  }.freeze
-
   NUDGE_INTERVAL = 24.hours
 
   pattr_initialize [:conversation!]
@@ -115,15 +107,10 @@ class Conversations::AutoFollowUpService
     )
   end
 
+  # Silent handoff: no note or activity is logged. With no Current.user the
+  # status-change handler writes no activity message for Pending -> Open.
   def reopen_for_human
     conversation.open!
-    conversation.messages.create!(
-      account_id: conversation.account_id,
-      inbox_id: conversation.inbox_id,
-      message_type: :outgoing,
-      private: true,
-      content: "Auto follow-up: reopened after no customer response within #{WINDOW_LABELS[priority]}."
-    )
   end
 
   def contact_first_name
