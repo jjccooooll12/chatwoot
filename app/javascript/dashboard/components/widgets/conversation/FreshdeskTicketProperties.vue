@@ -144,6 +144,26 @@ const updateTeam = teamId => {
   });
 };
 
+// The Update button only lights up when the panel differs from what is saved
+// on the conversation. Every other property saves the moment it is picked, so
+// in practice this is Type, or an order number typed but not yet blurred.
+const hasUnsavedChanges = computed(() => {
+  const saved = props.chat?.custom_attributes || {};
+  return (
+    customType.value !== (saved.freshdesk_type || '') ||
+    autoFollowUp.value !==
+      (saved.freshdesk_auto_follow_up === 'yes' ? 'yes' : 'no') ||
+    orderNumber.value !== (saved.freshdesk_order_number || '')
+  );
+});
+
+const updateButtonClass = computed(() => {
+  if (justSaved.value) return 'bg-fd-green text-white';
+  if (isSaving.value) return 'cursor-wait bg-fd-primary text-white opacity-70';
+  if (hasUnsavedChanges.value) return 'cursor-pointer bg-fd-primary text-white';
+  return 'cursor-default bg-fd-border text-fd-muted';
+});
+
 const saveCustomFields = async () => {
   isSaving.value = true;
   await store.dispatch('updateCustomAttributes', {
@@ -295,9 +315,9 @@ onMounted(() => {
     <div class="shrink-0 border-t border-fd-border px-3 py-2.5">
       <button
         type="button"
-        class="flex h-7 w-full items-center justify-center rounded-md px-3 text-xs font-semibold text-white transition-colors duration-700 disabled:cursor-wait disabled:opacity-70"
-        :class="justSaved ? 'bg-fd-green' : 'bg-fd-primary'"
-        :disabled="isSaving"
+        class="flex h-7 w-full items-center justify-center rounded-md px-3 text-xs font-semibold transition-colors duration-700"
+        :class="updateButtonClass"
+        :disabled="isSaving || !hasUnsavedChanges"
         @click="saveCustomFields"
       >
         {{ t('CHAT_LIST.FRESHDESK_DETAIL.UPDATE') }}
