@@ -4,6 +4,7 @@ import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
 import wootConstants from 'dashboard/constants/globals';
 import { shortenAgentName } from 'shared/helpers/agentNameHelper';
+import FreshdeskPropertySelect from './FreshdeskPropertySelect.vue';
 
 const props = defineProps({
   chat: {
@@ -21,7 +22,6 @@ const orderNumber = ref('');
 const lastSavedOrderNumber = ref('');
 const isSaving = ref(false);
 const justSaved = ref(false);
-const priorityOpen = ref(false);
 
 // Priority only applies when auto follow-up is on; each level drives the
 // auto-reopen window handled server-side (low 5d / medium 3d / high 48h /
@@ -40,33 +40,38 @@ const priorityMeta = computed(() => ({
   },
 }));
 const currentPriority = computed(() => props.chat.priority || 'low');
-const priorityDotClass = key => [
-  'size-2.5 shrink-0 rounded-sm',
-  priorityMeta.value[key]?.dot,
+const priorityOptions = computed(() =>
+  priorityKeys.map(key => ({
+    value: key,
+    label: priorityMeta.value[key].label,
+    dotClass: priorityMeta.value[key].dot,
+  }))
+);
+
+const statusOptions = [
+  { value: wootConstants.STATUS_TYPE.OPEN, label: 'Open' },
+  { value: wootConstants.STATUS_TYPE.PENDING, label: 'Pending' },
+  { value: wootConstants.STATUS_TYPE.RESOLVED, label: 'Closed' },
 ];
 
-const statusOptions = computed(() => [
-  { key: wootConstants.STATUS_TYPE.OPEN, label: 'Open' },
-  { key: wootConstants.STATUS_TYPE.PENDING, label: 'Pending' },
-  { key: wootConstants.STATUS_TYPE.RESOLVED, label: 'Closed' },
-]);
-
 const typeOptions = [
-  { key: '', label: '--' },
-  { key: 'question', label: 'Question' },
-  { key: 'lead', label: 'Lead' },
-  { key: 'request', label: 'Request' },
+  { value: '', label: '--' },
+  { value: 'question', label: 'Question' },
+  { value: 'lead', label: 'Lead' },
+  { value: 'request', label: 'Request' },
 ];
 
 const followUpOptions = [
-  { key: 'no', label: 'No' },
-  { key: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+  { value: 'yes', label: 'Yes' },
 ];
 
-const teamOptions = computed(() => [
-  { id: 0, name: t('TEAMS_SETTINGS.LIST.NONE') },
-  ...store.getters['teams/getTeams'],
-]);
+const teamOptions = computed(() =>
+  [
+    { id: 0, name: t('TEAMS_SETTINGS.LIST.NONE') },
+    ...store.getters['teams/getTeams'],
+  ].map(team => ({ value: String(team.id), label: team.name }))
+);
 
 const assignableAgents = computed(() => {
   const inboxId = props.chat?.inbox_id;
@@ -83,6 +88,13 @@ const assignableAgents = computed(() => {
   ];
 });
 
+const agentOptions = computed(() =>
+  assignableAgents.value.map(agent => ({
+    value: String(agent.id || ''),
+    label: agent.id ? shortenAgentName(agent.name) : agent.name,
+  }))
+);
+
 const assignedAgentId = computed(() =>
   String(props.chat?.meta?.assignee?.id || '')
 );
@@ -97,10 +109,10 @@ const syncCustomFields = () => {
   lastSavedOrderNumber.value = orderNumber.value;
 };
 
-const updateStatus = event => {
+const updateStatus = status => {
   store.dispatch('toggleStatus', {
     conversationId: props.chat.id,
-    status: event.target.value,
+    status,
     snoozedUntil: null,
   });
 };
@@ -110,12 +122,11 @@ const selectPriority = key => {
     conversationId: props.chat.id,
     priority: key,
   });
-  priorityOpen.value = false;
 };
 
-const updateAssignee = event => {
+const updateAssignee = agentIdValue => {
   const selected = assignableAgents.value.find(
-    agent => String(agent.id ?? '') === event.target.value
+    agent => String(agent.id ?? '') === agentIdValue
   );
   const agentId = selected?.id || null;
   const assigneeType = selected?.assignee_type || 'User';
@@ -126,10 +137,10 @@ const updateAssignee = event => {
   });
 };
 
-const updateTeam = event => {
+const updateTeam = teamId => {
   store.dispatch('assignTeam', {
     conversationId: props.chat.id,
-    teamId: Number(event.target.value || 0),
+    teamId: Number(teamId || 0),
   });
 };
 
@@ -163,7 +174,8 @@ const onOrderNumberBlur = async () => {
 
 // Turning follow-up on requires a priority (it drives the reopen timer); default
 // to Low if none is set yet. Persist immediately so the server-side job sees it.
-const onFollowUpChange = async () => {
+const onFollowUpChange = async value => {
+  autoFollowUp.value = value;
   if (autoFollowUp.value === 'yes' && !props.chat.priority) {
     store.dispatch('assignPriority', {
       conversationId: props.chat.id,
@@ -197,136 +209,70 @@ onMounted(() => {
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.PROPERTIES') }}
         </h3>
 
-        <label class="grid gap-1.5">
+        <div class="grid gap-1.5">
           <span class="font-medium text-fd-text">
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.TYPE') }}
           </span>
-          <select
+          <FreshdeskPropertySelect
             v-model="customType"
-            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-          >
-            <option
-              v-for="option in typeOptions"
-              :key="option.key"
-              :value="option.key"
-            >
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
+            :options="typeOptions"
+          />
+        </div>
 
-        <label class="grid gap-1.5">
+        <div class="grid gap-1.5">
           <span class="font-medium text-fd-text">
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.AUTO_FOLLOW_UP') }}
           </span>
-          <select
-            v-model="autoFollowUp"
-            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-            @change="onFollowUpChange"
-          >
-            <option
-              v-for="option in followUpOptions"
-              :key="option.key"
-              :value="option.key"
-            >
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
+          <FreshdeskPropertySelect
+            :model-value="autoFollowUp"
+            :options="followUpOptions"
+            @update:model-value="onFollowUpChange"
+          />
+        </div>
 
         <div class="grid gap-1.5">
           <span class="font-medium text-fd-text">
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.PRIORITY') }}
           </span>
-          <div class="relative">
-            <button
-              type="button"
-              class="flex h-8 w-full items-center gap-2 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-              @click="priorityOpen = !priorityOpen"
-            >
-              <span :class="priorityDotClass(currentPriority)" />
-              <span>{{ priorityMeta[currentPriority].label }}</span>
-              <span
-                class="i-lucide-chevron-down size-3.5 text-fd-muted ltr:ml-auto rtl:mr-auto"
-              />
-            </button>
-            <template v-if="priorityOpen">
-              <button
-                type="button"
-                tabindex="-1"
-                class="fixed inset-0 z-40 cursor-default"
-                @click="priorityOpen = false"
-              />
-              <ul
-                class="absolute inset-x-0 top-9 z-50 m-0 list-none rounded-md border border-fd-border bg-fd-surface p-1 shadow-lg"
-              >
-                <li v-for="key in priorityKeys" :key="key">
-                  <button
-                    type="button"
-                    class="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-fd-text hover:bg-n-slate-3"
-                    @click="selectPriority(key)"
-                  >
-                    <span :class="priorityDotClass(key)" />
-                    <span>{{ priorityMeta[key].label }}</span>
-                  </button>
-                </li>
-              </ul>
-            </template>
-          </div>
+          <FreshdeskPropertySelect
+            :model-value="currentPriority"
+            :options="priorityOptions"
+            @update:model-value="selectPriority"
+          />
         </div>
 
-        <label class="grid gap-1.5">
+        <div class="grid gap-1.5">
           <span class="font-medium text-fd-text">
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.STATUS') }}
           </span>
-          <select
-            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-            :value="chat.status"
-            @change="updateStatus"
-          >
-            <option
-              v-for="option in statusOptions"
-              :key="option.key"
-              :value="option.key"
-            >
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
+          <FreshdeskPropertySelect
+            :model-value="chat.status"
+            :options="statusOptions"
+            @update:model-value="updateStatus"
+          />
+        </div>
 
-        <label class="grid gap-1.5">
+        <div class="grid gap-1.5">
           <span class="font-medium text-fd-text">
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.GROUP') }}
           </span>
-          <select
-            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-            :value="assignedTeamId"
-            @change="updateTeam"
-          >
-            <option v-for="team in teamOptions" :key="team.id" :value="team.id">
-              {{ team.name }}
-            </option>
-          </select>
-        </label>
+          <FreshdeskPropertySelect
+            :model-value="assignedTeamId"
+            :options="teamOptions"
+            @update:model-value="updateTeam"
+          />
+        </div>
 
-        <label class="grid gap-1.5">
+        <div class="grid gap-1.5">
           <span class="font-medium text-fd-text">
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.AGENT') }}
           </span>
-          <select
-            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
-            :value="assignedAgentId"
-            @change="updateAssignee"
-          >
-            <option
-              v-for="agent in assignableAgents"
-              :key="agent.id || 'none'"
-              :value="agent.id || ''"
-            >
-              {{ agent.id ? shortenAgentName(agent.name) : agent.name }}
-            </option>
-          </select>
-        </label>
+          <FreshdeskPropertySelect
+            :model-value="assignedAgentId"
+            :options="agentOptions"
+            @update:model-value="updateAssignee"
+          />
+        </div>
 
         <label class="grid gap-1.5">
           <span class="font-medium text-fd-text">
