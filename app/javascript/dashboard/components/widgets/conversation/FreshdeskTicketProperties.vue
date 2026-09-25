@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
 import wootConstants from 'dashboard/constants/globals';
@@ -16,10 +16,6 @@ const props = defineProps({
 const { t } = useI18n();
 const store = useStore();
 
-const customType = ref('');
-const autoFollowUp = ref('no');
-const orderNumber = ref('');
-const lastSavedOrderNumber = ref('');
 const isSaving = ref(false);
 const justSaved = ref(false);
 
@@ -39,7 +35,6 @@ const priorityMeta = computed(() => ({
     dot: 'bg-n-ruby-9',
   },
 }));
-const currentPriority = computed(() => props.chat.priority || 'low');
 const priorityOptions = computed(() =>
   priorityKeys.map(key => ({
     value: key,
@@ -95,67 +90,63 @@ const agentOptions = computed(() =>
   }))
 );
 
-const assignedAgentId = computed(() =>
-  String(props.chat?.meta?.assignee?.id || '')
-);
-const assignedTeamId = computed(() => String(props.chat?.meta?.team?.id || 0));
+// Every property is edited as a draft and only persisted by the Update button
+// (Freshdesk behaviour). Order number is the one exception: it also saves on
+// blur. `saved` is what the conversation currently holds; each draft field
+// follows its saved value whenever that changes (a save landing, another
+// agent editing), without clobbering unsaved edits to the other fields.
+const saved = computed(() => {
+  const attrs = props.chat?.custom_attributes || {};
+  return {
+    type: attrs.freshdesk_type || '',
+    followUp: attrs.freshdesk_auto_follow_up === 'yes' ? 'yes' : 'no',
+    orderNumber: attrs.freshdesk_order_number || '',
+    priority: props.chat?.priority || 'low',
+    status: props.chat?.status || '',
+    teamId: String(props.chat?.meta?.team?.id || 0),
+    agentId: String(props.chat?.meta?.assignee?.id || ''),
+  };
+});
 
-const syncCustomFields = () => {
-  const customAttributes = props.chat?.custom_attributes || {};
-  customType.value = customAttributes.freshdesk_type || '';
-  autoFollowUp.value =
-    customAttributes.freshdesk_auto_follow_up === 'yes' ? 'yes' : 'no';
-  orderNumber.value = customAttributes.freshdesk_order_number || '';
-  lastSavedOrderNumber.value = orderNumber.value;
-};
+const FIELDS = [
+  'type',
+  'followUp',
+  'orderNumber',
+  'priority',
+  'status',
+  'teamId',
+  'agentId',
+];
+const CUSTOM_ATTRIBUTE_FIELDS = ['type', 'followUp', 'orderNumber'];
 
-const updateStatus = status => {
-  store.dispatch('toggleStatus', {
-    conversationId: props.chat.id,
-    status,
-    snoozedUntil: null,
-  });
-};
+const draft = reactive({ ...saved.value });
 
-const selectPriority = key => {
-  store.dispatch('assignPriority', {
-    conversationId: props.chat.id,
-    priority: key,
-  });
-};
+const resetDraft = () => Object.assign(draft, saved.value);
 
-const updateAssignee = agentIdValue => {
-  const selected = assignableAgents.value.find(
-    agent => String(agent.id ?? '') === agentIdValue
-  );
-  const agentId = selected?.id || null;
-  const assigneeType = selected?.assignee_type || 'User';
-  store.dispatch('assignAgent', {
-    conversationId: props.chat.id,
-    agentId,
-    assigneeType,
-  });
-};
-
-const updateTeam = teamId => {
-  store.dispatch('assignTeam', {
-    conversationId: props.chat.id,
-    teamId: Number(teamId || 0),
-  });
-};
-
-// The Update button only lights up when the panel differs from what is saved
-// on the conversation. Every other property saves the moment it is picked, so
-// in practice this is Type, or an order number typed but not yet blurred.
-const hasUnsavedChanges = computed(() => {
-  const saved = props.chat?.custom_attributes || {};
-  return (
-    customType.value !== (saved.freshdesk_type || '') ||
-    autoFollowUp.value !==
-      (saved.freshdesk_auto_follow_up === 'yes' ? 'yes' : 'no') ||
-    orderNumber.value !== (saved.freshdesk_order_number || '')
+FIELDS.forEach(field => {
+  watch(
+    () => saved.value[field],
+    value => {
+      draft[field] = value;
+    }
   );
 });
+watch(() => props.chat.id, resetDraft);
+
+const isDirty = field => draft[field] !== saved.value[field];
+
+// Auto follow-up needs a priority to drive its reopen timer. The panel shows
+// Low when none is set, so persist that Low explicitly when follow-up is
+// being switched on.
+const priorityNeedsSave = computed(
+  () =>
+    isDirty('priority') ||
+    (isDirty('followUp') && draft.followUp === 'yes' && !props.chat.priority)
+);
+
+const hasUnsavedChanges = computed(
+  () => FIELDS.some(isDirty) || priorityNeedsSave.value
+);
 
 const updateButtonClass = computed(() => {
   if (justSaved.value) return 'bg-fd-green text-white';
@@ -164,17 +155,29 @@ const updateButtonClass = computed(() => {
   return 'cursor-default bg-fd-border text-fd-muted';
 });
 
-const saveCustomFields = async () => {
-  isSaving.value = true;
-  await store.dispatch('updateCustomAttributes', {
+const saveCustomAttributes = values =>
+  store.dispatch('updateCustomAttributes', {
     conversationId: props.chat.id,
     customAttributes: {
-      freshdesk_type: customType.value,
-      freshdesk_auto_follow_up: autoFollowUp.value,
-      freshdesk_order_number: orderNumber.value,
+      ...(props.chat.custom_attributes || {}),
+      freshdesk_type: values.type,
+      freshdesk_auto_follow_up: values.followUp,
+      freshdesk_order_number: values.orderNumber,
     },
   });
-  isSaving.value = false;
+
+const assignAgent = agentIdValue => {
+  const selected = assignableAgents.value.find(
+    agent => String(agent.id ?? '') === agentIdValue
+  );
+  return store.dispatch('assignAgent', {
+    conversationId: props.chat.id,
+    agentId: selected?.id || null,
+    assigneeType: selected?.assignee_type || 'User',
+  });
+};
+
+const flashSaved = () => {
   // Brief color flash as a CSS-only "saved" confirmation on the Update
   // button — justSaved flips true then back false, and the button's own
   // transition-colors does the fading.
@@ -184,29 +187,58 @@ const saveCustomFields = async () => {
   }, 700);
 };
 
-// Order number persists as soon as the agent leaves the field — no need to hit
-// the Update button for this one.
-const onOrderNumberBlur = async () => {
-  if (orderNumber.value === lastSavedOrderNumber.value) return;
-  lastSavedOrderNumber.value = orderNumber.value;
-  await saveCustomFields();
-};
+// The store actions swallow API errors and only commit on success, so a
+// failed save simply leaves that field dirty and the button still lit.
+const saveChanges = async () => {
+  if (!hasUnsavedChanges.value) return;
+  const conversationId = props.chat.id;
+  const requests = [];
 
-// Turning follow-up on requires a priority (it drives the reopen timer); default
-// to Low if none is set yet. Persist immediately so the server-side job sees it.
-const onFollowUpChange = async value => {
-  autoFollowUp.value = value;
-  if (autoFollowUp.value === 'yes' && !props.chat.priority) {
-    store.dispatch('assignPriority', {
-      conversationId: props.chat.id,
-      priority: 'low',
-    });
+  if (CUSTOM_ATTRIBUTE_FIELDS.some(isDirty)) {
+    requests.push(saveCustomAttributes(draft));
   }
-  await saveCustomFields();
+  if (priorityNeedsSave.value) {
+    requests.push(
+      store.dispatch('assignPriority', {
+        conversationId,
+        priority: draft.priority,
+      })
+    );
+  }
+  if (isDirty('status')) {
+    requests.push(
+      store.dispatch('toggleStatus', {
+        conversationId,
+        status: draft.status,
+        snoozedUntil: null,
+      })
+    );
+  }
+  if (isDirty('teamId')) {
+    requests.push(
+      store.dispatch('assignTeam', {
+        conversationId,
+        teamId: Number(draft.teamId || 0),
+      })
+    );
+  }
+  if (isDirty('agentId')) requests.push(assignAgent(draft.agentId));
+
+  isSaving.value = true;
+  await Promise.allSettled(requests);
+  isSaving.value = false;
+  flashSaved();
 };
 
-watch(() => props.chat.id, syncCustomFields, { immediate: true });
-watch(() => props.chat.custom_attributes, syncCustomFields, { deep: true });
+// Order number persists as soon as the agent leaves the field. Only that
+// field is written — other pending edits stay pending for the Update button.
+const onOrderNumberBlur = async () => {
+  if (!isDirty('orderNumber')) return;
+  await saveCustomAttributes({
+    ...saved.value,
+    orderNumber: draft.orderNumber,
+  });
+};
 
 onMounted(() => {
   if (props.chat?.inbox_id) {
@@ -234,7 +266,7 @@ onMounted(() => {
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.TYPE') }}
           </span>
           <FreshdeskPropertySelect
-            v-model="customType"
+            v-model="draft.type"
             :options="typeOptions"
           />
         </div>
@@ -244,9 +276,8 @@ onMounted(() => {
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.AUTO_FOLLOW_UP') }}
           </span>
           <FreshdeskPropertySelect
-            :model-value="autoFollowUp"
+            v-model="draft.followUp"
             :options="followUpOptions"
-            @update:model-value="onFollowUpChange"
           />
         </div>
 
@@ -255,9 +286,8 @@ onMounted(() => {
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.PRIORITY') }}
           </span>
           <FreshdeskPropertySelect
-            :model-value="currentPriority"
+            v-model="draft.priority"
             :options="priorityOptions"
-            @update:model-value="selectPriority"
           />
         </div>
 
@@ -266,9 +296,8 @@ onMounted(() => {
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.STATUS') }}
           </span>
           <FreshdeskPropertySelect
-            :model-value="chat.status"
+            v-model="draft.status"
             :options="statusOptions"
-            @update:model-value="updateStatus"
           />
         </div>
 
@@ -277,9 +306,8 @@ onMounted(() => {
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.GROUP') }}
           </span>
           <FreshdeskPropertySelect
-            :model-value="assignedTeamId"
+            v-model="draft.teamId"
             :options="teamOptions"
-            @update:model-value="updateTeam"
           />
         </div>
 
@@ -288,9 +316,8 @@ onMounted(() => {
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.AGENT') }}
           </span>
           <FreshdeskPropertySelect
-            :model-value="assignedAgentId"
+            v-model="draft.agentId"
             :options="agentOptions"
-            @update:model-value="updateAssignee"
           />
         </div>
 
@@ -299,7 +326,7 @@ onMounted(() => {
             {{ t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER') }}
           </span>
           <input
-            v-model="orderNumber"
+            v-model="draft.orderNumber"
             type="text"
             :placeholder="
               t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER_PLACEHOLDER')
@@ -318,7 +345,7 @@ onMounted(() => {
         class="flex h-7 w-full items-center justify-center rounded-md px-3 text-xs font-semibold transition-colors duration-700"
         :class="updateButtonClass"
         :disabled="isSaving || !hasUnsavedChanges"
-        @click="saveCustomFields"
+        @click="saveChanges"
       >
         {{ t('CHAT_LIST.FRESHDESK_DETAIL.UPDATE') }}
       </button>
