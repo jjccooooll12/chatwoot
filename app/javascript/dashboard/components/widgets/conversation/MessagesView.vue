@@ -25,6 +25,10 @@ import inboxMixin, { INBOX_FEATURES } from 'shared/mixins/inboxMixin';
 import { emitter } from 'shared/helpers/mitt';
 import { getTypingUsersText } from '../../../helper/commons';
 import { calculateScrollTop } from './helpers/scrollTopCalculationHelper';
+import {
+  calculateTopAlignedScrollTop,
+  findLatestMessageId,
+} from './helpers/latestMessageHelper';
 import { LocalStorage } from 'shared/helpers/localStorage';
 import {
   filterDuplicateSourceMessages,
@@ -40,6 +44,11 @@ import { CONTENT_TYPES } from 'next/message/constants';
 import wootConstants from 'dashboard/constants/globals';
 import { LOCAL_STORAGE_KEYS } from 'dashboard/constants/localStorage';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
+
+// Breathing room left above the newest message when a ticket is opened, so it
+// reads as the top of the view rather than being flush against the edge.
+// Matches the message list's own `pt-4` / `scroll-pt-4`.
+const LATEST_MESSAGE_TOP_GAP = 16;
 
 export default {
   components: {
@@ -163,6 +172,14 @@ export default {
         return filterDuplicateSourceMessages(messages);
       }
       return messages;
+    },
+    latestMessageId() {
+      return findLatestMessageId(this.getMessages);
+    },
+    // Changes both when a message is appended (new id) and when an older page
+    // loads (higher count, pushing the newest message further down).
+    threadAnchor() {
+      return `${this.getMessages.length}:${this.latestMessageId}`;
     },
     // A voice ticket reads top-down like an email/ticket thread (the call
     // summary is the one thing that matters, not a running back-and-forth),
@@ -304,7 +321,16 @@ export default {
       this.composerOpen = false;
       this.showActivities = false;
       this.resetReplyEditorHeight();
-      this.queueScrollToTop();
+      this.hasUserScrolled = false;
+      this.queueScrollToLatestMessage();
+    },
+    // The thread keeps growing under us after a ticket is opened — older pages
+    // arrive, collapsed blocks expand — which moves the newest message off the
+    // position we just scrolled it to. Re-align until the agent scrolls
+    // themselves, after which their position is theirs to keep.
+    threadAnchor() {
+      if (this.hasUserScrolled) return;
+      this.queueScrollToLatestMessage();
     },
   },
 
@@ -359,7 +385,7 @@ export default {
         const { messageId } = this.$route.query;
 
         if (this.isAnEmailChannel) {
-          this.queueScrollToTop();
+          this.queueScrollToLatestMessage();
           return;
         }
 
@@ -458,11 +484,18 @@ export default {
       });
       this.makeMessagesRead();
     },
+    latestMessageElement() {
+      const { latestMessageId } = this;
+      // `$el` is gone once unmounted, which a queued re-align can outlive.
+      return latestMessageId
+        ? this.$el?.querySelector(`#message${latestMessageId}`)
+        : null;
+    },
     addScrollListener() {
       this.conversationPanel = this.$el.querySelector('.conversation-panel');
       this.setScrollParams();
       this.conversationPanel.addEventListener('scroll', this.handleScroll);
-      this.queueScrollToTop();
+      this.queueScrollToLatestMessage();
       this.isLoadingPrevious = false;
     },
     removeScrollListener() {
@@ -501,12 +534,23 @@ export default {
         relevantMessages
       );
     },
-    scrollToTop() {
-      if (!this.conversationPanel) {
-        return;
-      }
+    // Opening a ticket lands on the newest message with the history above it,
+    // rather than at the start of what can be a very long thread. Returns
+    // false when the message isn't in the DOM yet, so callers can retry.
+    scrollToLatestMessage() {
+      const panel = this.conversationPanel;
+      if (!panel) return false;
+      const element = this.latestMessageElement();
+      if (!element) return false;
+
       this.isProgrammaticScroll = true;
-      this.conversationPanel.scrollTop = 0;
+      panel.scrollTop = calculateTopAlignedScrollTop({
+        currentScrollTop: panel.scrollTop,
+        elementTop: element.getBoundingClientRect().top,
+        panelTop: panel.getBoundingClientRect().top,
+        gap: LATEST_MESSAGE_TOP_GAP,
+      });
+      return true;
     },
     scrollToComposer() {
       if (!this.conversationPanel) {
@@ -519,12 +563,17 @@ export default {
         this.conversationPanel.scrollTo({ top, behavior: 'smooth' });
       });
     },
-    queueScrollToTop() {
+    // A deep link to a specific message (?messageId=) owns the scroll
+    // position — SCROLL_TO_MESSAGE handles that one.
+    queueScrollToLatestMessage() {
+      if (this.$route.query.messageId) return;
       this.$nextTick(() => {
-        this.scrollToTop();
+        this.scrollToLatestMessage();
+        // Images and embedded content resolve their height a frame or two
+        // late, so re-align rather than landing short of the message.
         requestAnimationFrame(() => {
-          this.scrollToTop();
-          setTimeout(() => this.scrollToTop(), 80);
+          this.scrollToLatestMessage();
+          setTimeout(() => this.scrollToLatestMessage(), 80);
         });
       });
     },
