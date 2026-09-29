@@ -172,6 +172,11 @@ const activityMeta = computed(() => {
   };
 });
 
+// Open and Pending are where a ticket sits by default, so a pill for them says
+// nothing at a glance — and the card already carries the status further down as
+// an editable control. Only a status worth flagging still gets one.
+const UNPILLED_STATUSES = ['open', 'pending'];
+
 const statusPills = computed(() => {
   const pills = [];
 
@@ -191,17 +196,14 @@ const statusPills = computed(() => {
     });
   }
 
-  if (!pills.length) {
-    const statusPillClass =
-      {
-        open: 'bg-fd-greenSoft text-fd-green',
-        resolved: 'bg-fd-redSoft text-fd-red',
-      }[props.chat.status] || 'bg-n-slate-3 text-n-slate-11';
-
+  if (!pills.length && !UNPILLED_STATUSES.includes(props.chat.status)) {
     pills.push({
       key: props.chat.status,
       label: currentStatusLabel.value,
-      class: statusPillClass,
+      class:
+        props.chat.status === 'resolved'
+          ? 'bg-fd-redSoft text-fd-red'
+          : 'bg-n-slate-3 text-n-slate-11',
     });
   }
   return pills;
@@ -338,7 +340,10 @@ watch(() => props.inbox.id, fetchAssignableAgents);
       </div>
 
       <div class="flex min-w-0 flex-col gap-1.5">
-        <div class="flex flex-wrap items-center gap-1.5">
+        <div
+          v-if="statusPills.length || hasUnread"
+          class="flex flex-wrap items-center gap-1.5"
+        >
           <span
             v-for="pill in statusPills"
             :key="pill.key"

@@ -1,6 +1,14 @@
 import { shallowMount } from '@vue/test-utils';
 import ConversationCard from '../ConversationCard.vue';
 
+// The card reads the inline agent picker's options straight off the store.
+vi.mock('vuex', () => ({
+  useStore: () => ({
+    dispatch: vi.fn(),
+    getters: { 'inboxAssignableAgents/getAssignableAgents': () => [] },
+  }),
+}));
+
 const defaultChat = {
   id: 1,
   labels: [],
@@ -30,31 +38,38 @@ const mountComponent = (chat, currentContact = {}) =>
     },
   });
 
+const pillLabels = wrapper =>
+  wrapper.findAll('span.rounded').map(pill => pill.text());
+
+// A ticket somebody has already replied to, so the "New" pill is out of the way.
+const repliedTo = { first_reply_created_at: 1700000000 };
+
 describe('ConversationCard', () => {
-  it('does not reserve the labels row when only a persisted SLA policy id is present', () => {
-    const wrapper = mountComponent({ sla_policy_id: 1, applied_sla: null });
-
-    expect(wrapper.findComponent({ name: 'CardLabels' }).exists()).toBe(false);
+  it('shows no pill for a ticket sitting in Open or Pending', () => {
+    expect(
+      pillLabels(mountComponent({ ...repliedTo, status: 'open' }))
+    ).toEqual([]);
+    expect(
+      pillLabels(mountComponent({ ...repliedTo, status: 'pending' }))
+    ).toEqual([]);
   });
 
-  it('shows the labels row when an active applied SLA is present', () => {
-    const wrapper = mountComponent({
-      sla_policy_id: 1,
-      applied_sla: { id: 1 },
-    });
-
-    expect(wrapper.findComponent({ name: 'CardLabels' }).exists()).toBe(true);
+  it('still flags a closed ticket', () => {
+    expect(
+      pillLabels(mountComponent({ ...repliedTo, status: 'resolved' }))
+    ).toEqual(['Closed']);
   });
 
-  it('does not reserve the labels row when the contact is blocked', () => {
-    const wrapper = mountComponent(
-      {
-        sla_policy_id: 1,
-        applied_sla: { id: 1 },
-      },
-      { blocked: true }
-    );
-
-    expect(wrapper.findComponent({ name: 'CardLabels' }).exists()).toBe(false);
+  it('keeps the pills that say something a status cannot', () => {
+    expect(pillLabels(mountComponent({ status: 'open' }))).toEqual(['New']);
+    expect(
+      pillLabels(
+        mountComponent({
+          ...repliedTo,
+          status: 'open',
+          messages: [{ id: 1, message_type: 0, created_at: 1700000000 }],
+        })
+      )
+    ).toEqual(['Customer responded']);
   });
 });
