@@ -1,6 +1,6 @@
 import {
   calculateTopAlignedScrollTop,
-  findLatestMessageId,
+  findLatestMessageIds,
 } from '../latestMessageHelper';
 import { MESSAGE_TYPE } from 'shared/constants/messages';
 
@@ -13,30 +13,30 @@ const privateNote = id => ({
   private: true,
 });
 
-describe('findLatestMessageId', () => {
-  it('returns the last message in the thread', () => {
-    expect(findLatestMessageId([incoming(1), outgoing(2), incoming(3)])).toBe(
-      3
-    );
-  });
-
-  it('skips trailing activity lines', () => {
+describe('findLatestMessageIds', () => {
+  it('lists the thread newest first', () => {
     expect(
-      findLatestMessageId([incoming(1), outgoing(2), activity(3), activity(4)])
-    ).toBe(2);
+      findLatestMessageIds([incoming(1), outgoing(2), incoming(3)])
+    ).toEqual([3, 2, 1]);
   });
 
-  it('counts a private note as the latest message', () => {
-    expect(findLatestMessageId([incoming(1), privateNote(2)])).toBe(2);
+  it('leaves out activity lines', () => {
+    expect(
+      findLatestMessageIds([incoming(1), outgoing(2), activity(3), activity(4)])
+    ).toEqual([2, 1]);
   });
 
-  it('returns null when there is nothing but activities', () => {
-    expect(findLatestMessageId([activity(1), activity(2)])).toBeNull();
+  it('counts a private note as a message', () => {
+    expect(findLatestMessageIds([incoming(1), privateNote(2)])).toEqual([2, 1]);
   });
 
-  it('returns null for an empty or missing list', () => {
-    expect(findLatestMessageId([])).toBeNull();
-    expect(findLatestMessageId()).toBeNull();
+  it('returns nothing when there is nothing but activities', () => {
+    expect(findLatestMessageIds([activity(1), activity(2)])).toEqual([]);
+  });
+
+  it('returns nothing for an empty or missing list', () => {
+    expect(findLatestMessageIds([])).toEqual([]);
+    expect(findLatestMessageIds()).toEqual([]);
   });
 });
 

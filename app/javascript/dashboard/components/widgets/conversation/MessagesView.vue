@@ -27,7 +27,7 @@ import { getTypingUsersText } from '../../../helper/commons';
 import { calculateScrollTop } from './helpers/scrollTopCalculationHelper';
 import {
   calculateTopAlignedScrollTop,
-  findLatestMessageId,
+  findLatestMessageIds,
 } from './helpers/latestMessageHelper';
 import { LocalStorage } from 'shared/helpers/localStorage';
 import {
@@ -49,6 +49,17 @@ import { INBOX_TYPES } from 'dashboard/helper/inbox';
 // reads as the top of the view rather than being flush against the edge.
 // Matches the message list's own `pt-4` / `scroll-pt-4`.
 const LATEST_MESSAGE_TOP_GAP = 16;
+
+// How long after opening a ticket we keep pulling the view back onto the newest
+// message as the thread loads in. It only acts when the thread actually changes,
+// and any real scroll gesture ends it early, so this is just the outer bound for
+// a slow-loading thread.
+const LATEST_MESSAGE_FOLLOW_MS = 5000;
+
+// A scroll event cannot tell us whether the agent scrolled: it also fires for
+// our own scrolling and for the browser's scroll anchoring as older messages
+// load in above the viewport. These gestures are unambiguous.
+const USER_SCROLL_EVENTS = ['wheel', 'touchmove', 'keydown'];
 
 export default {
   components: {
@@ -108,6 +119,8 @@ export default {
       // Activity log lines (status/priority/assignment changes) are hidden from
       // the thread by default and only revealed via the toolbar's Activities button.
       showActivities: false,
+      // Timestamp until which we keep the view pinned to the newest message.
+      followLatestMessageUntil: 0,
     };
   },
 
@@ -173,8 +186,11 @@ export default {
       }
       return messages;
     },
+    latestMessageIds() {
+      return findLatestMessageIds(this.getMessages);
+    },
     latestMessageId() {
-      return findLatestMessageId(this.getMessages);
+      return this.latestMessageIds[0] ?? null;
     },
     // Changes both when a message is appended (new id) and when an older page
     // loads (higher count, pushing the newest message further down).
@@ -322,14 +338,13 @@ export default {
       this.showActivities = false;
       this.resetReplyEditorHeight();
       this.hasUserScrolled = false;
-      this.queueScrollToLatestMessage();
+      this.followLatestMessage();
     },
-    // The thread keeps growing under us after a ticket is opened — older pages
-    // arrive, collapsed blocks expand — which moves the newest message off the
-    // position we just scrolled it to. Re-align until the agent scrolls
-    // themselves, after which their position is theirs to keep.
+    // A ticket opens before its thread does: the list only carries the newest
+    // message, and the rest arrives a moment later and pushes it down the page.
+    // Re-align whenever that happens, until the agent takes over.
     threadAnchor() {
-      if (this.hasUserScrolled) return;
+      if (Date.now() > this.followLatestMessageUntil) return;
       this.queueScrollToLatestMessage();
     },
   },
@@ -484,22 +499,66 @@ export default {
       });
       this.makeMessagesRead();
     },
+    // `$el` is gone once unmounted, which a queued re-align can outlive.
+    // Falls back down the thread so a message that renders nothing (no content,
+    // no attachments) doesn't leave the view stranded at the top.
     latestMessageElement() {
-      const { latestMessageId } = this;
-      // `$el` is gone once unmounted, which a queued re-align can outlive.
-      return latestMessageId
-        ? this.$el?.querySelector(`#message${latestMessageId}`)
-        : null;
+      const root = this.$el;
+      if (!root) return null;
+      const ids = this.latestMessageIds;
+      for (let index = 0; index < ids.length; index += 1) {
+        const element = root.querySelector(`#message${ids[index]}`);
+        if (element) return element;
+      }
+      return null;
     },
     addScrollListener() {
       this.conversationPanel = this.$el.querySelector('.conversation-panel');
       this.setScrollParams();
       this.conversationPanel.addEventListener('scroll', this.handleScroll);
-      this.queueScrollToLatestMessage();
+      USER_SCROLL_EVENTS.forEach(event =>
+        this.conversationPanel.addEventListener(
+          event,
+          this.releaseLatestMessage,
+          { passive: true }
+        )
+      );
+      // `load` does not bubble, so it has to be caught on the way down. Mail
+      // bodies are full of images that settle their height well after the
+      // markup renders, pushing the newest message back down the page.
+      this.conversationPanel.addEventListener(
+        'load',
+        this.onPanelContentLoad,
+        true
+      );
+      this.followLatestMessage();
       this.isLoadingPrevious = false;
     },
     removeScrollListener() {
       this.conversationPanel.removeEventListener('scroll', this.handleScroll);
+      USER_SCROLL_EVENTS.forEach(event =>
+        this.conversationPanel.removeEventListener(
+          event,
+          this.releaseLatestMessage
+        )
+      );
+      this.conversationPanel.removeEventListener(
+        'load',
+        this.onPanelContentLoad,
+        true
+      );
+    },
+    onPanelContentLoad() {
+      if (Date.now() > this.followLatestMessageUntil) return;
+      this.scrollToLatestMessage();
+    },
+    followLatestMessage() {
+      this.followLatestMessageUntil = Date.now() + LATEST_MESSAGE_FOLLOW_MS;
+      this.queueScrollToLatestMessage();
+    },
+    // The agent scrolled for themselves — the position is theirs from here.
+    releaseLatestMessage() {
+      this.followLatestMessageUntil = 0;
     },
     scrollToBottom() {
       this.isProgrammaticScroll = true;

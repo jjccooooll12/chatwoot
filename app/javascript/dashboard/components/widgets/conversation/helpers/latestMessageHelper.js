@@ -1,23 +1,28 @@
 import { MESSAGE_TYPE } from 'shared/constants/messages';
 
 /**
- * The newest thing actually said in a thread — a reply, an incoming mail or a
- * private note. Status/assignment activity lines are skipped: they are not
+ * The things actually said in a thread — replies, incoming mail, private notes
+ * — newest first. Status/assignment activity lines are left out: they are not
  * what an agent opening a ticket is looking for, and they are hidden from the
  * thread by default anyway.
  *
+ * Returns every candidate rather than just the newest because a message with
+ * no content and no attachments renders nothing at all, and the view still has
+ * to land on the last thing the agent can actually see.
+ *
  * @param {Array} messages - Messages in chronological order (oldest first).
- * @returns {Number|null} - Id of the newest non-activity message.
+ * @returns {Array} - Ids of the non-activity messages, newest first.
  */
-export const findLatestMessageId = (messages = []) => {
-  for (let index = messages.length - 1; index >= 0; index -= 1) {
-    const message = messages[index];
-    if (message && message.message_type !== MESSAGE_TYPE.ACTIVITY) {
-      return message.id ?? null;
-    }
-  }
-  return null;
-};
+export const findLatestMessageIds = (messages = []) =>
+  messages
+    .filter(
+      message =>
+        message &&
+        message.id != null &&
+        message.message_type !== MESSAGE_TYPE.ACTIVITY
+    )
+    .map(message => message.id)
+    .reverse();
 
 /**
  * Scroll offset that brings an element to the top of its scroll panel, leaving
