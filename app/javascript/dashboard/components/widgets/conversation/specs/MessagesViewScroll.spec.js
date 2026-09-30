@@ -7,6 +7,7 @@ const buildContext = (overrides = {}) => ({
   ...MessagesView.data(),
   queueScrollToLatestMessage: vi.fn(),
   fetchPreviousMessages: vi.fn(),
+  releaseLatestMessage: MessagesView.methods.releaseLatestMessage,
   ...overrides,
 });
 
@@ -67,6 +68,37 @@ describe('MessagesView — following the newest message', () => {
     });
     MessagesView.methods.onPanelContentLoad.call(released);
     expect(released.scrollToLatestMessage).not.toHaveBeenCalled();
+  });
+
+  it('hands the composer the whole visible panel', () => {
+    const expandEditorToFill = vi.fn();
+    const context = buildContext({
+      composerElement: MessagesView.methods.composerElement,
+      conversationPanel: { clientHeight: 700 },
+      // The composer stands 40px taller than the editor wrapper it holds —
+      // that is the close row, which the wrapper cannot measure itself.
+      $el: { querySelector: () => ({ offsetHeight: 340 }) },
+      resizableEditorWrapperRef: {
+        $el: { offsetHeight: 300 },
+        expandEditorToFill,
+      },
+    });
+
+    MessagesView.methods.expandComposerToFill.call(context);
+
+    expect(expandEditorToFill).toHaveBeenCalledWith(660);
+  });
+
+  it('stops following the newest message when the composer opens', () => {
+    const context = buildContext({
+      followLatestMessageUntil: Date.now() + 5000,
+      $nextTick: vi.fn(),
+    });
+
+    MessagesView.methods.onOpenComposer.call(context, 'REPLY');
+
+    expect(context.followLatestMessageUntil).toBe(0);
+    expect(context.composerOpen).toBe(true);
   });
 
   it('leaves the thread alone once released or timed out', () => {

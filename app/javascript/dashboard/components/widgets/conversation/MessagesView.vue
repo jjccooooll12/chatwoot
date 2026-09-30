@@ -437,6 +437,9 @@ export default {
     },
     onOpenComposer(mode) {
       this.composerOpen = true;
+      // The agent asked for the composer, so it — not the newest message —
+      // decides where the thread sits now.
+      this.releaseLatestMessage();
       this.$nextTick(() => {
         if (
           mode === REPLY_EDITOR_MODES.REPLY ||
@@ -447,7 +450,7 @@ export default {
           // Reply/Note buttons already use via the emitter).
           this.replyBoxRef?.onFreshdeskSetReplyMode?.(mode);
         }
-        this.resizableEditorWrapperRef?.expandEditorFull?.();
+        this.expandComposerToFill();
         this.scrollToComposer();
       });
     },
@@ -611,15 +614,43 @@ export default {
       });
       return true;
     },
+    composerElement() {
+      return this.$el?.querySelector('[data-freshdesk-composer]') ?? null;
+    },
+    // Hand the writing area every pixel of the visible thread panel. The
+    // wrapper knows its own chrome (mail fields, toolbar, send row); what it
+    // cannot see is the close row above it, so that part is measured here.
+    expandComposerToFill() {
+      const panel = this.conversationPanel;
+      const composer = this.composerElement();
+      const wrapper = this.resizableEditorWrapperRef?.$el;
+      if (!panel || !composer || !wrapper) return;
+
+      const aboveWrapper = Math.max(
+        0,
+        composer.offsetHeight - wrapper.offsetHeight
+      );
+      this.resizableEditorWrapperRef.expandEditorToFill(
+        panel.clientHeight - aboveWrapper
+      );
+    },
+    // Puts the composer's own top — the Reply/Note tabs and the To field — at
+    // the top of the panel, leaving the conversation above it to scroll up to.
     scrollToComposer() {
-      if (!this.conversationPanel) {
-        return;
-      }
+      const panel = this.conversationPanel;
+      const composer = this.composerElement();
+      if (!panel || !composer) return;
+
       this.isProgrammaticScroll = true;
       requestAnimationFrame(() => {
-        const composer = this.$el.querySelector('[data-freshdesk-composer]');
-        const top = composer?.offsetTop ?? this.conversationPanel.scrollHeight;
-        this.conversationPanel.scrollTo({ top, behavior: 'smooth' });
+        panel.scrollTo({
+          top: calculateTopAlignedScrollTop({
+            currentScrollTop: panel.scrollTop,
+            elementTop: composer.getBoundingClientRect().top,
+            panelTop: panel.getBoundingClientRect().top,
+          }),
+          behavior: 'smooth',
+        });
       });
     },
     // A deep link to a specific message (?messageId=) owns the scroll
@@ -783,11 +814,9 @@ export default {
         <li
           v-show="composerOpen"
           data-freshdesk-composer
-          class="list-none border-t border-n-weak bg-fd-surface"
+          class="min-h-full list-none border-t border-n-weak bg-fd-surface"
         >
-          <div
-            class="sticky top-0 z-20 flex items-center justify-end bg-fd-surface px-3 pt-3"
-          >
+          <div class="flex items-center justify-end bg-fd-surface px-3 pt-3">
             <button
               type="button"
               class="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"

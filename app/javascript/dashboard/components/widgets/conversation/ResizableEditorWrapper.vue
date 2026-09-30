@@ -10,8 +10,6 @@ const props = defineProps({
 
 const DEFAULT_HEIGHT = 360;
 const MIN_HEIGHT = 80;
-const MIN_MESSAGES_HEIGHT = 200;
-const EXPAND_RATIO = 0.5;
 const RESET_DELAY_MS = 120;
 
 const wrapperRef = useTemplateRef('wrapperRef');
@@ -24,14 +22,18 @@ let resetTimeoutId = null;
 
 const clamp = (val, min, max) => Math.min(Math.max(val, min), max);
 
-// Measure height of elements surrounding the editor (top panel, email fields, bottom panel)
+// Height of everything around the writing area: the mail fields, the toolbar
+// and the send row. Measured against the editor's own box rather than the
+// requested height, so it stays right while the height transition is running
+// and when the request has been clamped.
 const measureSurroundingHeight = () => {
-  if (wrapperRef.value) {
-    surroundingHeight.value = Math.max(
-      0,
-      wrapperRef.value.offsetHeight - editorHeight.value
-    );
-  }
+  const wrapper = wrapperRef.value;
+  if (!wrapper) return;
+  const editor = wrapper.querySelector('.ProseMirror-woot-style');
+  surroundingHeight.value = Math.max(
+    0,
+    wrapper.offsetHeight - (editor?.offsetHeight ?? editorHeight.value)
+  );
 };
 
 const isContainerReady = computed(() => props.containerHeight > 0);
@@ -39,12 +41,12 @@ const isContainerReady = computed(() => props.containerHeight > 0);
 const sizeBounds = computed(() => {
   const h = props.containerHeight;
   const s = surroundingHeight.value;
-  const max = Math.max(MIN_HEIGHT, h - MIN_MESSAGES_HEIGHT - s);
-  const expanded = clamp(Math.floor(h * EXPAND_RATIO - s / 2), MIN_HEIGHT, max);
+  // The composer is allowed the whole thread area — the conversation is read by
+  // scrolling up past it, so no strip of messages is held back here.
+  const max = Math.max(MIN_HEIGHT, h - s);
   return {
     min: MIN_HEIGHT,
     max: isContainerReady.value ? max : DEFAULT_HEIGHT,
-    expanded,
     default: clamp(DEFAULT_HEIGHT, MIN_HEIGHT, max),
   };
 });
@@ -89,24 +91,20 @@ const resetEditorHeight = () => {
   editorHeight.value = sizeBounds.value.default;
 };
 
-// Freshdesk: opening the composer gives the inline editor a large writing area
-// without taking it out of the conversation scroll flow.
-const expandEditorFull = () => {
+// Freshdesk: opening the composer hands the writing area the whole visible
+// thread panel. The caller measures what is actually free (it owns the chrome
+// sitting above this wrapper); we give the rest to the editor.
+const expandEditorToFill = availableHeight => {
   measureSurroundingHeight();
-  editorHeight.value = Math.max(
-    sizeBounds.value.default,
-    sizeBounds.value.expanded
-  );
+  editorHeight.value = clampToBounds(availableHeight - surroundingHeight.value);
 };
 
 const toggleEditorExpand = () => {
   editorHeight.value = clampToBounds(editorHeight.value);
   measureSurroundingHeight();
-  const { expanded, max, default: defaultHeight } = sizeBounds.value;
+  const { max, default: defaultHeight } = sizeBounds.value;
   const isExpanded = editorHeight.value > defaultHeight;
-  // If expanded is too close to default, use max so the toggle is always noticeable
-  const target = expanded - defaultHeight < 100 ? max : expanded;
-  editorHeight.value = isExpanded ? defaultHeight : target;
+  editorHeight.value = isExpanded ? defaultHeight : max;
 };
 
 const handleMessageSent = () => {
@@ -134,7 +132,7 @@ useEventListener(document, 'touchend', onResizeEnd);
 useEventListener(document, 'touchcancel', onResizeEnd);
 useEventListener(window, 'blur', onResizeEnd);
 
-defineExpose({ toggleEditorExpand, resetEditorHeight, expandEditorFull });
+defineExpose({ toggleEditorExpand, resetEditorHeight, expandEditorToFill });
 </script>
 
 <template>
