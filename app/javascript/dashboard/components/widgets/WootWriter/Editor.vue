@@ -400,7 +400,11 @@ function handleEmptyBodyWithSignature() {
   focusEditorInputField('start');
 }
 
-function focusEditor(content) {
+// Where the caret belongs when composing starts: above an auto-appended
+// signature while nothing has been written yet, otherwise after what is
+// already there. Defaults to the live content so callers outside the
+// mount/reload path can just ask for it.
+function focusEditor(content = props.modelValue) {
   if (props.disabled) return;
 
   const unrefContent = unref(content);
@@ -877,7 +881,7 @@ onMounted(() => {
   }
 });
 
-defineExpose({ focusEditorInputField });
+defineExpose({ focusEditorInputField, focusEditor });
 
 // BUS Event to insert text or markdown into the editor at the
 // current cursor position.

@@ -553,7 +553,9 @@ export default {
   methods: {
     onFreshdeskSetReplyMode(mode) {
       this.setReplyMode(mode);
-      this.$nextTick(() => this.messageEditor?.focusEditorInputField());
+      // Start the caret above the signature, not after it — an agent clicking
+      // Reply on an untouched ticket should be able to type straight away.
+      this.$nextTick(() => this.messageEditor?.focusEditor());
     },
     getDraftKey(
       conversationId = this.conversationIdByRoute,
