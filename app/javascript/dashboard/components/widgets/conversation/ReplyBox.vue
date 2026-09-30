@@ -1321,6 +1321,7 @@ export default {
           v-model:cc-emails="ccEmails"
           v-model:bcc-emails="bccEmails"
           v-model:to-emails="toEmails"
+          data-freshdesk-mail-head
         />
         <AudioRecorder
           v-if="showAudioRecorderEditor"

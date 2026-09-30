@@ -16,6 +16,7 @@ const wrapperRef = useTemplateRef('wrapperRef');
 const surroundingHeight = ref(0);
 const editorHeight = ref(DEFAULT_HEIGHT);
 const isResizing = ref(false);
+const isSnapping = ref(false);
 const startY = ref(0);
 const startHeight = ref(0);
 let resetTimeoutId = null;
@@ -91,12 +92,18 @@ const resetEditorHeight = () => {
   editorHeight.value = sizeBounds.value.default;
 };
 
-// Freshdesk: opening the composer hands the writing area the whole visible
-// thread panel. The caller measures what is actually free (it owns the chrome
-// sitting above this wrapper); we give the rest to the editor.
-const expandEditorToFill = availableHeight => {
+// Freshdesk: opening the composer sizes the writing area from a measurement
+// only the conversation view can take — it can see the whole composer and where
+// the panel scrolls to. So the height arrives already worked out; the drag
+// bounds below deliberately do not clamp it. It is applied in one step, because
+// animating it would mean scrolling to a target that is still moving.
+const setEditorHeight = height => {
+  isSnapping.value = true;
   measureSurroundingHeight();
-  editorHeight.value = clampToBounds(availableHeight - surroundingHeight.value);
+  editorHeight.value = Math.max(MIN_HEIGHT, Math.round(height));
+  requestAnimationFrame(() => {
+    isSnapping.value = false;
+  });
 };
 
 const toggleEditorExpand = () => {
@@ -132,7 +139,7 @@ useEventListener(document, 'touchend', onResizeEnd);
 useEventListener(document, 'touchcancel', onResizeEnd);
 useEventListener(window, 'blur', onResizeEnd);
 
-defineExpose({ toggleEditorExpand, resetEditorHeight, expandEditorToFill });
+defineExpose({ toggleEditorExpand, resetEditorHeight, setEditorHeight });
 </script>
 
 <template>
@@ -143,7 +150,8 @@ defineExpose({ toggleEditorExpand, resetEditorHeight, expandEditorToFill });
       '--editor-height': editorHeight + 'px',
       '--editor-min-allowed': sizeBounds.min + 'px',
       '--editor-max-allowed': sizeBounds.max + 'px',
-      '--editor-height-transition': isResizing ? 'none' : '180ms ease',
+      '--editor-height-transition':
+        isResizing || isSnapping ? 'none' : '180ms ease',
     }"
   >
     <div

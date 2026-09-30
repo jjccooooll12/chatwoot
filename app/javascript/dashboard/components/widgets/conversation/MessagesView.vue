@@ -617,36 +617,51 @@ export default {
     composerElement() {
       return this.$el?.querySelector('[data-freshdesk-composer]') ?? null;
     },
-    // Hand the writing area every pixel of the visible thread panel. The
-    // wrapper knows its own chrome (mail fields, toolbar, send row); what it
-    // cannot see is the close row above it, so that part is measured here.
+    // The composer opens at its To field, the way Freshdesk does — the close
+    // row and the Reply/Note tabs sit above it and are scrolled up to. A
+    // private note has no mail fields, so there the composer's own top is it.
+    composerAnchorElement() {
+      const composer = this.composerElement();
+      return (
+        composer?.querySelector('[data-freshdesk-mail-head]') ??
+        composer ??
+        null
+      );
+    },
+    // Size the writing area so that everything from the anchor down — mail
+    // fields, editor, toolbar, send row — is exactly one screenful. That is
+    // also what makes the anchor reachable at the very top of the panel: the
+    // composer ends up a screen tall below it, so the scroll has somewhere to
+    // go.
     expandComposerToFill() {
       const panel = this.conversationPanel;
       const composer = this.composerElement();
-      const wrapper = this.resizableEditorWrapperRef?.$el;
-      if (!panel || !composer || !wrapper) return;
+      const anchor = this.composerAnchorElement();
+      const editor = composer?.querySelector('.ProseMirror-woot-style');
+      if (!panel || !composer || !anchor || !editor) return;
 
-      const aboveWrapper = Math.max(
-        0,
-        composer.offsetHeight - wrapper.offsetHeight
-      );
-      this.resizableEditorWrapperRef.expandEditorToFill(
-        panel.clientHeight - aboveWrapper
+      const chromeBelowAnchor =
+        composer.getBoundingClientRect().bottom -
+        anchor.getBoundingClientRect().top -
+        editor.offsetHeight;
+
+      this.resizableEditorWrapperRef?.setEditorHeight(
+        panel.clientHeight - chromeBelowAnchor
       );
     },
-    // Puts the composer's own top — the Reply/Note tabs and the To field — at
-    // the top of the panel, leaving the conversation above it to scroll up to.
+    // Puts the To field at the top of the panel, leaving the close row, the
+    // Reply/Note tabs and the conversation above it to scroll up to.
     scrollToComposer() {
       const panel = this.conversationPanel;
-      const composer = this.composerElement();
-      if (!panel || !composer) return;
+      const anchor = this.composerAnchorElement();
+      if (!panel || !anchor) return;
 
       this.isProgrammaticScroll = true;
       requestAnimationFrame(() => {
         panel.scrollTo({
           top: calculateTopAlignedScrollTop({
             currentScrollTop: panel.scrollTop,
-            elementTop: composer.getBoundingClientRect().top,
+            elementTop: anchor.getBoundingClientRect().top,
             panelTop: panel.getBoundingClientRect().top,
           }),
           behavior: 'smooth',

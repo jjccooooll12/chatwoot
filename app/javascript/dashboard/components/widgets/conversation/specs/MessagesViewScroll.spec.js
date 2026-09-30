@@ -70,23 +70,37 @@ describe('MessagesView — following the newest message', () => {
     expect(released.scrollToLatestMessage).not.toHaveBeenCalled();
   });
 
-  it('hands the composer the whole visible panel', () => {
-    const expandEditorToFill = vi.fn();
+  it('sizes the composer so the To field can sit at the top of the panel', () => {
+    const setEditorHeight = vi.fn();
+    // Composer runs to y=900; its To field starts at y=400; the writing area is
+    // currently 300 tall. So 200px of it sits below the To field but outside
+    // the writing area — mail fields, toolbar, send row.
+    const editor = { offsetHeight: 300 };
+    const anchor = { getBoundingClientRect: () => ({ top: 400 }) };
+    const composer = {
+      getBoundingClientRect: () => ({ bottom: 900 }),
+      querySelector: selector =>
+        selector === '.ProseMirror-woot-style' ? editor : anchor,
+    };
     const context = buildContext({
-      composerElement: MessagesView.methods.composerElement,
+      composerElement: () => composer,
+      composerAnchorElement: MessagesView.methods.composerAnchorElement,
       conversationPanel: { clientHeight: 700 },
-      // The composer stands 40px taller than the editor wrapper it holds —
-      // that is the close row, which the wrapper cannot measure itself.
-      $el: { querySelector: () => ({ offsetHeight: 340 }) },
-      resizableEditorWrapperRef: {
-        $el: { offsetHeight: 300 },
-        expandEditorToFill,
-      },
+      resizableEditorWrapperRef: { setEditorHeight },
     });
 
     MessagesView.methods.expandComposerToFill.call(context);
 
-    expect(expandEditorToFill).toHaveBeenCalledWith(660);
+    expect(setEditorHeight).toHaveBeenCalledWith(500);
+  });
+
+  it('falls back to the composer itself when there are no mail fields', () => {
+    const composer = { querySelector: () => null };
+    const context = buildContext({ composerElement: () => composer });
+
+    expect(MessagesView.methods.composerAnchorElement.call(context)).toBe(
+      composer
+    );
   });
 
   it('stops following the newest message when the composer opens', () => {

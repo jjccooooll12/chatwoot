@@ -45,7 +45,7 @@ const iconStyle = computed(() => ({
 
 <template>
   <section
-    class="flex min-h-[clamp(4rem,6vw,4.75rem)] items-start justify-between gap-3 bg-fd-surface px-[clamp(0.75rem,1.4vw,1.25rem)] pb-7 pt-5"
+    class="flex min-h-[clamp(4rem,6vw,4.75rem)] items-start gap-3 bg-fd-surface px-[clamp(0.75rem,1.4vw,1.25rem)] pb-7 pt-5"
   >
     <div class="flex min-w-0 items-center gap-3">
       <span
@@ -62,12 +62,5 @@ const iconStyle = computed(() => ({
         {{ title }}
       </h1>
     </div>
-    <button
-      type="button"
-      class="hidden h-7 items-center gap-1.5 rounded-md border border-[#cfe3ff] bg-[#f7fbff] px-2.5 text-xs font-semibold text-fd-primary shadow-sm hover:bg-fd-blueSoft md:inline-flex"
-    >
-      <span class="i-lucide-sparkles size-3.5" />
-      {{ t('CHAT_LIST.FRESHDESK_DETAIL.SUMMARY') }}
-    </button>
   </section>
 </template>
