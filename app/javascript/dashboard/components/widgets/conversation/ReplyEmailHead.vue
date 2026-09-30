@@ -27,6 +27,11 @@ export default {
   },
   data() {
     return {
+      // Password managers offer to fill anything that looks like a login, and
+      // put their icon in the field to say so. These are the mail fields of a
+      // reply, so there is nothing to fill: LastPass's documented opt-out, on
+      // the input itself, which is the only place it reads it.
+      passwordManagerIgnore: { 'data-lpignore': 'true' },
       showCc: false,
       showBcc: false,
       ccEmailsVal: '',
@@ -101,6 +106,7 @@ export default {
           <woot-input
             v-model="v$.toEmailsVal.$model"
             type="text"
+            :input-attributes="passwordManagerIgnore"
             class="[&>input]:!mb-0 [&>input]:border-transparent [&>input]:!outline-none [&>input]:h-8 [&>input]:!text-sm [&>input]:!border-0 [&>input]:border-none [&>input]:!bg-transparent dark:[&>input]:!bg-transparent"
             :class="{ error: v$.toEmailsVal.$error }"
             :placeholder="$t('CONVERSATION.REPLYBOX.EMAIL_HEAD.CC.PLACEHOLDER')"
@@ -135,6 +141,7 @@ export default {
             v-model="v$.ccEmailsVal.$model"
             class="[&>input]:!mb-0 [&>input]:border-transparent [&>input]:!outline-none [&>input]:h-8 [&>input]:!text-sm [&>input]:!border-0 [&>input]:border-none [&>input]:!bg-transparent dark:[&>input]:!bg-transparent"
             type="text"
+            :input-attributes="passwordManagerIgnore"
             :class="{ error: v$.ccEmailsVal.$error }"
             :placeholder="$t('CONVERSATION.REPLYBOX.EMAIL_HEAD.CC.PLACEHOLDER')"
             @blur="onBlur"
@@ -154,6 +161,7 @@ export default {
           <woot-input
             v-model="v$.bccEmailsVal.$model"
             type="text"
+            :input-attributes="passwordManagerIgnore"
             class="[&>input]:!mb-0 [&>input]:border-transparent [&>input]:!outline-none [&>input]:h-8 [&>input]:!text-sm [&>input]:!border-0 [&>input]:border-none [&>input]:!bg-transparent dark:[&>input]:!bg-transparent"
             :class="{ error: v$.bccEmailsVal.$error }"
             :placeholder="

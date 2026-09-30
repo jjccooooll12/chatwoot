@@ -37,6 +37,13 @@ export default {
       type: Object,
       default: () => {},
     },
+    // Attributes for the <input> itself. Fallthrough attributes land on the
+    // wrapping <label> — callers style the control through it with `[&>input]:`
+    // variants — so anything that has to reach the control comes through here.
+    inputAttributes: {
+      type: Object,
+      default: () => ({}),
+    },
   },
   emits: ['update:modelValue', 'input', 'blur'],
   mounted() {
@@ -63,6 +70,7 @@ export default {
   <label class="input-container">
     <span v-if="label" class="text-heading-3">{{ label }}</span>
     <input
+      v-bind="inputAttributes"
       :value="modelValue"
       :type="type"
       :placeholder="placeholder"
