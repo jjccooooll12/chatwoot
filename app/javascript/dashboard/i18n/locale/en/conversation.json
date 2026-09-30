@@ -269,8 +269,7 @@
       "COPILOT_THINKING": "Copilot is thinking",
       "EMAIL_HEAD": {
         "TO": "TO",
-        "ADD_BCC": "Add bcc",
-        "CC": {
+          "CC": {
           "LABEL": "CC",
           "PLACEHOLDER": "Emails separated by commas",
           "ERROR": "Please enter valid email addresses"

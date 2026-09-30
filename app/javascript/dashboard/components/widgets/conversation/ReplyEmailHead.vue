@@ -27,6 +27,7 @@ export default {
   },
   data() {
     return {
+      showCc: false,
       showBcc: false,
       ccEmailsVal: '',
       bccEmailsVal: '',
@@ -38,11 +39,13 @@ export default {
       if (newVal !== this.bccEmailsVal) {
         this.bccEmailsVal = newVal;
       }
+      if (newVal) this.showBcc = true;
     },
     ccEmails(newVal) {
       if (newVal !== this.ccEmailsVal) {
         this.ccEmailsVal = newVal;
       }
+      if (newVal) this.showCc = true;
     },
     toEmails(newVal) {
       if (newVal !== this.toEmailsVal) {
@@ -54,6 +57,10 @@ export default {
     this.ccEmailsVal = this.ccEmails;
     this.bccEmailsVal = this.bccEmails;
     this.toEmailsVal = this.toEmails;
+    // Cc and Bcc are folded away behind the buttons on the To row, unless the
+    // reply already carries addresses in them.
+    this.showCc = Boolean(this.ccEmails);
+    this.showBcc = Boolean(this.bccEmails);
   },
   validations: {
     ccEmailsVal: {
@@ -73,9 +80,6 @@ export default {
     },
   },
   methods: {
-    handleAddBcc() {
-      this.showBcc = true;
-    },
     onBlur() {
       this.v$.$touch();
       this.$emit('update:bccEmails', this.bccEmailsVal);
@@ -103,9 +107,25 @@ export default {
             @blur="onBlur"
           />
         </div>
+        <ButtonV4
+          v-if="!showCc"
+          :label="$t('CONVERSATION.REPLYBOX.EMAIL_HEAD.CC.LABEL')"
+          ghost
+          xs
+          primary
+          @click="showCc = true"
+        />
+        <ButtonV4
+          v-if="!showBcc"
+          :label="$t('CONVERSATION.REPLYBOX.EMAIL_HEAD.BCC.LABEL')"
+          ghost
+          xs
+          primary
+          @click="showBcc = true"
+        />
       </div>
     </div>
-    <div class="input-group-wrap">
+    <div v-if="showCc" class="input-group-wrap">
       <div class="input-group small" :class="{ error: v$.ccEmailsVal.$error }">
         <label class="input-group-label">
           {{ $t('CONVERSATION.REPLYBOX.EMAIL_HEAD.CC.LABEL') }}
@@ -120,14 +140,6 @@ export default {
             @blur="onBlur"
           />
         </div>
-        <ButtonV4
-          v-if="!showBcc"
-          :label="$t('CONVERSATION.REPLYBOX.EMAIL_HEAD.ADD_BCC')"
-          ghost
-          xs
-          primary
-          @click="handleAddBcc"
-        />
       </div>
       <span v-if="v$.ccEmailsVal.$error" class="message">
         {{ $t('CONVERSATION.REPLYBOX.EMAIL_HEAD.CC.ERROR') }}

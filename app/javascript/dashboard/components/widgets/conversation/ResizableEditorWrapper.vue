@@ -17,6 +17,7 @@ const surroundingHeight = ref(0);
 const editorHeight = ref(DEFAULT_HEIGHT);
 const isResizing = ref(false);
 const isSnapping = ref(false);
+const requestedHeight = ref(0);
 const startY = ref(0);
 const startHeight = ref(0);
 let resetTimeoutId = null;
@@ -43,8 +44,12 @@ const sizeBounds = computed(() => {
   const h = props.containerHeight;
   const s = surroundingHeight.value;
   // The composer is allowed the whole thread area — the conversation is read by
-  // scrolling up past it, so no strip of messages is held back here.
-  const max = Math.max(MIN_HEIGHT, h - s);
+  // scrolling up past it, so no strip of messages is held back here. A request
+  // from the view raises the ceiling further: it measures what the panel needs
+  // including the chrome above this wrapper, and the editor's CSS clamps
+  // against this bound, so without that the request would be capped short and
+  // the composer could not scroll up to its To field.
+  const max = Math.max(MIN_HEIGHT, h - s, requestedHeight.value);
   return {
     min: MIN_HEIGHT,
     max: isContainerReady.value ? max : DEFAULT_HEIGHT,
@@ -89,6 +94,7 @@ const onResizeEnd = () => {
 };
 
 const resetEditorHeight = () => {
+  requestedHeight.value = 0;
   editorHeight.value = sizeBounds.value.default;
 };
 
@@ -100,7 +106,8 @@ const resetEditorHeight = () => {
 const setEditorHeight = height => {
   isSnapping.value = true;
   measureSurroundingHeight();
-  editorHeight.value = Math.max(MIN_HEIGHT, Math.round(height));
+  requestedHeight.value = Math.max(MIN_HEIGHT, Math.round(height));
+  editorHeight.value = requestedHeight.value;
   requestAnimationFrame(() => {
     isSnapping.value = false;
   });
