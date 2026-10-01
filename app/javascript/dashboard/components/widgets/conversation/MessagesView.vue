@@ -121,6 +121,7 @@ export default {
       showActivities: false,
       // Timestamp until which we keep the view pinned to the newest message.
       followLatestMessageUntil: 0,
+      composerChromeObserver: null,
     };
   },
 
@@ -347,6 +348,9 @@ export default {
       if (Date.now() > this.followLatestMessageUntil) return;
       this.queueScrollToLatestMessage();
     },
+    composerOpen(isOpen) {
+      if (!isOpen) this.stopObservingComposerChrome();
+    },
   },
 
   created() {
@@ -369,6 +373,7 @@ export default {
   unmounted() {
     this.removeBusListeners();
     this.removeScrollListener();
+    this.stopObservingComposerChrome();
   },
 
   methods: {
@@ -451,6 +456,7 @@ export default {
           this.replyBoxRef?.onFreshdeskSetReplyMode?.(mode);
         }
         this.expandComposerToFill();
+        this.observeComposerChrome();
         this.scrollToComposer();
       });
     },
@@ -648,6 +654,29 @@ export default {
       this.resizableEditorWrapperRef?.setEditorHeight(
         panel.clientHeight - chromeBelowAnchor
       );
+    },
+    // Revealing Cc or Bcc, or a validation error appearing under one, grows the
+    // mail fields and would push the send row off the bottom of the screen.
+    // Watching them keeps the writing area fitted to whatever is left. Only the
+    // fields are watched, never the editor, so resizing it cannot feed back.
+    observeComposerChrome() {
+      // Deliberately the mail fields themselves, not composerAnchorElement's
+      // fallback to the whole composer — that contains the editor, so resizing
+      // it would retrigger the observer.
+      const mailHead = this.composerElement()?.querySelector(
+        '[data-freshdesk-mail-head]'
+      );
+      if (!mailHead) return;
+
+      this.stopObservingComposerChrome();
+      this.composerChromeObserver = new ResizeObserver(() =>
+        this.expandComposerToFill()
+      );
+      this.composerChromeObserver.observe(mailHead);
+    },
+    stopObservingComposerChrome() {
+      this.composerChromeObserver?.disconnect();
+      this.composerChromeObserver = null;
     },
     // Puts the To field at the top of the panel, leaving the close row, the
     // Reply/Note tabs and the conversation above it to scroll up to.

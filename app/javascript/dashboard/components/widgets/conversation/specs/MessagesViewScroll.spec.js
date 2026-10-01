@@ -8,6 +8,7 @@ const buildContext = (overrides = {}) => ({
   queueScrollToLatestMessage: vi.fn(),
   fetchPreviousMessages: vi.fn(),
   releaseLatestMessage: MessagesView.methods.releaseLatestMessage,
+  stopObservingComposerChrome: MessagesView.methods.stopObservingComposerChrome,
   ...overrides,
 });
 
@@ -92,6 +93,16 @@ describe('MessagesView — following the newest message', () => {
     MessagesView.methods.expandComposerToFill.call(context);
 
     expect(setEditorHeight).toHaveBeenCalledWith(500);
+  });
+
+  it('stops watching the mail fields once the composer closes', () => {
+    const disconnect = vi.fn();
+    const context = buildContext({ composerChromeObserver: { disconnect } });
+
+    MessagesView.watch.composerOpen.call(context, false);
+
+    expect(disconnect).toHaveBeenCalled();
+    expect(context.composerChromeObserver).toBeNull();
   });
 
   it('falls back to the composer itself when there are no mail fields', () => {
