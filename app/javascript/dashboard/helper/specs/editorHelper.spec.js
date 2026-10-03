@@ -2,6 +2,7 @@ import {
   EditorState,
   EditorView,
   buildMessageSchema,
+  messageSchema,
   MessageMarkdownTransformer,
 } from '@chatwoot/prosemirror-schema';
 import { FORMATTING } from 'dashboard/constants/editor';
@@ -10,6 +11,7 @@ import {
   appendSignature,
   calculateMenuPosition,
   cleanSignature,
+  findSignatureStartPos,
   collapseSelection,
   createVariableInputRule,
   extractTextFromMarkdown,
@@ -1382,5 +1384,50 @@ describe('createVariableInputRule', () => {
 
     expect(view.state.doc.textContent).toBe('{{contact.name}}');
     view.destroy();
+  });
+});
+
+describe('findSignatureStartPos', () => {
+  // A real document, because the fragile part is whether the signature's plain
+  // text still matches once markdown has been through the editor's schema.
+  const docFor = markdown =>
+    new MessageMarkdownTransformer(messageSchema).parse(markdown);
+  const SIGNATURE = 'Kind regards,\nLibero';
+
+  const bodyBefore = (doc, pos) => doc.textBetween(0, pos, '\n', '\n').trim();
+
+  it('finds the signature a draft already carries', () => {
+    const doc = docFor(appendSignature('Hello there', SIGNATURE));
+    const pos = findSignatureStartPos(doc, extractTextFromMarkdown(SIGNATURE));
+
+    expect(pos).toBeGreaterThan(0);
+    expect(bodyBefore(doc, pos)).toBe('Hello there');
+  });
+
+  it('finds it after a multi-paragraph body', () => {
+    const doc = docFor(appendSignature('First line\n\nSecond line', SIGNATURE));
+    const pos = findSignatureStartPos(doc, extractTextFromMarkdown(SIGNATURE));
+
+    expect(pos).toBeGreaterThan(0);
+    expect(bodyBefore(doc, pos)).toBe('First line\nSecond line');
+  });
+
+  it('reports nothing when the document does not end with the signature', () => {
+    const doc = docFor('Hello there');
+    expect(findSignatureStartPos(doc, extractTextFromMarkdown(SIGNATURE))).toBe(
+      -1
+    );
+  });
+
+  it('reports nothing when the signature is the whole document', () => {
+    const doc = docFor(cleanSignature(SIGNATURE));
+    expect(
+      findSignatureStartPos(doc, extractTextFromMarkdown(SIGNATURE))
+    ).toBeLessThanOrEqual(0);
+  });
+
+  it('reports nothing for an empty signature', () => {
+    const doc = docFor(appendSignature('Hello there', SIGNATURE));
+    expect(findSignatureStartPos(doc, '   ')).toBe(-1);
   });
 });

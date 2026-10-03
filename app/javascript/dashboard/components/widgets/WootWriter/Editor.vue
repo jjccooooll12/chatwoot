@@ -52,6 +52,8 @@ import {
 import {
   appendSignature,
   collapseSelection,
+  extractTextFromMarkdown,
+  findSignatureStartPos,
   findNodeToInsertImage,
   getContentNode,
   insertAtCursor,
@@ -404,6 +406,27 @@ function handleEmptyBodyWithSignature() {
 // signature while nothing has been written yet, otherwise after what is
 // already there. Defaults to the live content so callers outside the
 // mount/reload path can just ask for it.
+// Never leave the caret below the signature: with one already in the draft the
+// agent carries on at the end of what they wrote, above it. Returns false when
+// the signature can't be located, so the caller can fall back rather than place
+// the caret on a guess.
+function focusBeforeSignature() {
+  if (!sendWithSignature.value || !props.signature) return false;
+
+  const { tr } = editorView.state;
+  const signatureStart = findSignatureStartPos(
+    tr.doc,
+    extractTextFromMarkdown(props.signature)
+  );
+  if (signatureStart <= 0) return false;
+
+  editorView.dispatch(
+    tr.setSelection(Selection.near(tr.doc.resolve(signatureStart - 1), -1))
+  );
+  editorView.focus();
+  return true;
+}
+
 function focusEditor(content = props.modelValue) {
   if (props.disabled) return;
 
@@ -413,7 +436,7 @@ function focusEditor(content = props.modelValue) {
     // these drafts can also have a signature, so we need to check if the body is empty
     // and handle things accordingly
     handleEmptyBodyWithSignature();
-  } else if (props.focusOnMount) {
+  } else if (props.focusOnMount && !focusBeforeSignature()) {
     // this is in the else block, handleEmptyBodyWithSignature also has a call to the focus method
     // the position is set to start, because the signature is added at the end of the body
     focusEditorInputField('end');

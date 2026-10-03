@@ -246,6 +246,38 @@ export function removeSignature(body, signature, channelType) {
   return newBody;
 }
 
+const normalizeForMatch = text => text.replace(/\s+/g, ' ').trim();
+
+/**
+ * Where the signature starts in a document: the position just before its first
+ * block, or -1 when the document does not end with it.
+ *
+ * Works back from the end a block at a time and compares text, not positions —
+ * so a signature that serialized differently, or a body that happens to end the
+ * same way, simply does not match and the caller can fall back. That keeps the
+ * caret from ever being placed on a guess.
+ *
+ * @param {Object} doc - A ProseMirror document node.
+ * @param {string} signatureText - The signature as plain text.
+ * @returns {Number} - Position before the signature's first block, or -1.
+ */
+export const findSignatureStartPos = (doc, signatureText) => {
+  const wanted = normalizeForMatch(signatureText);
+  if (!wanted) return -1;
+
+  let pos = doc.content.size;
+  for (let index = doc.childCount - 1; index >= 0; index -= 1) {
+    pos -= doc.child(index).nodeSize;
+    const tail = normalizeForMatch(
+      doc.textBetween(pos, doc.content.size, '\n', '\n')
+    );
+    if (tail === wanted) return pos;
+    // Walked past where the signature could start.
+    if (tail.length >= wanted.length) return -1;
+  }
+  return -1;
+};
+
 /**
  * Replaces the old signature with the new signature.
  * If the old signature is not present, it will append the new signature.
