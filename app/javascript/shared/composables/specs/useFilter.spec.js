@@ -59,12 +59,14 @@ describe('useFilter', () => {
   });
 
   describe('initializeStatusAndAssigneeFilterToModal', () => {
-    it('should return status filter when activeStatus is provided', () => {
+    // The list filters on any number of statuses at once, so this takes the
+    // array behind the status pills — it used to be a single status string.
+    it('should return status filter when active statuses are provided', () => {
       const { initializeStatusAndAssigneeFilterToModal } = useFilter({
         filteri18nKey: 'TEST',
         attributeModel: 'conversation',
       });
-      const result = initializeStatusAndAssigneeFilterToModal('open', {}, '');
+      const result = initializeStatusAndAssigneeFilterToModal(['open'], {}, '');
 
       expect(result).toEqual({
         attribute_key: 'status',
@@ -78,12 +80,26 @@ describe('useFilter', () => {
       });
     });
 
+    it('should return a value for every active status', () => {
+      const { initializeStatusAndAssigneeFilterToModal } = useFilter({
+        filteri18nKey: 'TEST',
+        attributeModel: 'conversation',
+      });
+      const result = initializeStatusAndAssigneeFilterToModal(
+        ['open', 'pending'],
+        {},
+        ''
+      );
+
+      expect(result.values.map(value => value.id)).toEqual(['open', 'pending']);
+    });
+
     it('should return null when no active filters', () => {
       const { initializeStatusAndAssigneeFilterToModal } = useFilter({
         filteri18nKey: 'TEST',
         attributeModel: 'conversation',
       });
-      const result = initializeStatusAndAssigneeFilterToModal('', {}, '');
+      const result = initializeStatusAndAssigneeFilterToModal([], {}, '');
 
       expect(result).toBeNull();
     });

@@ -438,10 +438,12 @@ describe('#actions', () => {
         data: dataReceived,
       });
       await actions.fetchFilteredConversations({ commit }, dataToSend);
-      expect(commit).toHaveBeenCalledTimes(2);
+      // buildConversationList clears the spinner once the list is in, so the
+      // load both starts and ends here.
       expect(commit.mock.calls).toEqual([
         ['SET_LIST_LOADING_STATUS'],
         ['SET_ALL_CONVERSATION', dataReceived.payload],
+        ['CLEAR_LIST_LOADING_STATUS'],
       ]);
     });
   });
