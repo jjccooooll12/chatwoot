@@ -59,9 +59,10 @@ describe('#resolveLabels', () => {
 });
 
 describe('#resolveAgents', () => {
-  it('resolves agents names from ids and returns a joined string', () => {
-    const resolvedAgents = 'John Doe';
-    expect(resolveAgents(agents, [1])).toEqual(resolvedAgents);
+  it('resolves agent names from ids and returns a joined string', () => {
+    // Shortened, like staff are everywhere else they are shown — the fixture
+    // agent is "John Doe". See shortenAgentName.
+    expect(resolveAgents(agents, [1])).toEqual('John D.');
   });
 
   it('resolves nil and self values', () => {
