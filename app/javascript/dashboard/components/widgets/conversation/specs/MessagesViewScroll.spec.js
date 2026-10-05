@@ -73,26 +73,51 @@ describe('MessagesView — following the newest message', () => {
 
   it('sizes the composer so the To field can sit at the top of the panel', () => {
     const setEditorHeight = vi.fn();
-    // Composer runs to y=900; its To field starts at y=400; the writing area is
-    // currently 300 tall. So 200px of it sits below the To field but outside
-    // the writing area — mail fields, toolbar, send row.
+    // The composer runs to y=900 and its To field starts at y=400, so it takes
+    // up 500 of the 700 available — the writing area, now 300, is 200 short.
+    // The list item reaches further down (y=1000) because of the min-height
+    // that keeps the thread from peeking in; measuring to that instead would
+    // undersize the writing area and push send off the bottom.
     const editor = { offsetHeight: 300 };
     const anchor = { getBoundingClientRect: () => ({ top: 400 }) };
-    const composer = {
-      getBoundingClientRect: () => ({ bottom: 900 }),
-      querySelector: selector =>
-        selector === '.ProseMirror-woot-style' ? editor : anchor,
-    };
     const context = buildContext({
-      composerElement: () => composer,
-      composerAnchorElement: MessagesView.methods.composerAnchorElement,
+      composerAnchorElement: () => anchor,
+      composerElement: () => ({
+        getBoundingClientRect: () => ({ bottom: 1000 }),
+      }),
       conversationPanel: { clientHeight: 700 },
-      resizableEditorWrapperRef: { setEditorHeight },
+      resizableEditorWrapperRef: {
+        $el: {
+          getBoundingClientRect: () => ({ bottom: 900 }),
+          querySelector: () => editor,
+        },
+        setEditorHeight,
+      },
     });
 
     MessagesView.methods.expandComposerToFill.call(context);
 
     expect(setEditorHeight).toHaveBeenCalledWith(500);
+  });
+
+  it('leaves the composer alone once it already fills the panel', () => {
+    const setEditorHeight = vi.fn();
+    const anchor = { getBoundingClientRect: () => ({ top: 200 }) };
+    const context = buildContext({
+      composerAnchorElement: () => anchor,
+      conversationPanel: { clientHeight: 700 },
+      resizableEditorWrapperRef: {
+        $el: {
+          getBoundingClientRect: () => ({ bottom: 900 }),
+          querySelector: () => ({ offsetHeight: 420 }),
+        },
+        setEditorHeight,
+      },
+    });
+
+    MessagesView.methods.expandComposerToFill.call(context);
+
+    expect(setEditorHeight).toHaveBeenCalledWith(420);
   });
 
   it('stops watching the mail fields once the composer closes', () => {

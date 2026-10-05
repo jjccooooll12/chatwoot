@@ -641,18 +641,26 @@ export default {
     // go.
     expandComposerToFill() {
       const panel = this.conversationPanel;
-      const composer = this.composerElement();
       const anchor = this.composerAnchorElement();
-      const editor = composer?.querySelector('.ProseMirror-woot-style');
-      if (!panel || !composer || !anchor || !editor) return;
+      const wrapper = this.resizableEditorWrapperRef?.$el;
+      const editor = wrapper?.querySelector('.ProseMirror-woot-style');
+      if (!panel || !anchor || !editor) return;
 
-      const chromeBelowAnchor =
-        composer.getBoundingClientRect().bottom -
-        anchor.getBoundingClientRect().top -
-        editor.offsetHeight;
+      // How much the composer currently takes up from the anchor down, against
+      // the one screenful it should take up. Moving the writing area by the
+      // difference needs no account of what the chrome around it is made of,
+      // and settles by itself when run again.
+      //
+      // Measured to the bottom of the wrapper, never the list item: that
+      // carries a min-height to keep the thread from peeking in underneath, so
+      // it reports space the composer is not really using and would leave the
+      // send row below the fold.
+      const occupied =
+        wrapper.getBoundingClientRect().bottom -
+        anchor.getBoundingClientRect().top;
 
-      this.resizableEditorWrapperRef?.setEditorHeight(
-        panel.clientHeight - chromeBelowAnchor
+      this.resizableEditorWrapperRef.setEditorHeight(
+        editor.offsetHeight + (panel.clientHeight - occupied)
       );
     },
     // Revealing Cc or Bcc, or a validation error appearing under one, grows the
