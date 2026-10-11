@@ -5,6 +5,7 @@ import Icon from 'dashboard/components-next/icon/Icon.vue';
 import ContactSortMenu from './components/ContactSortMenu.vue';
 import ContactMoreActions from './components/ContactMoreActions.vue';
 import ComposeConversation from 'dashboard/components-next/NewConversation/ComposeConversation.vue';
+import MobileSidebarToggle from 'dashboard/components-next/sidebar/MobileSidebarToggle.vue';
 
 defineProps({
   showSearch: { type: Boolean, default: true },
@@ -36,9 +37,12 @@ const emit = defineEmits([
     <div
       class="flex items-start sm:items-center justify-between w-full py-6 gap-2 mx-auto max-w-5xl"
     >
-      <span class="text-xl font-medium truncate text-n-slate-12">
-        {{ headerTitle }}
-      </span>
+      <div class="flex items-center min-w-0 gap-1">
+        <MobileSidebarToggle class="-ml-2" />
+        <span class="text-xl font-medium truncate text-n-slate-12">
+          {{ headerTitle }}
+        </span>
+      </div>
       <div class="flex items-center flex-col sm:flex-row flex-shrink-0 gap-4">
         <div v-if="showSearch" class="flex items-center gap-2 w-full">
           <Input

@@ -4,6 +4,7 @@ import { useElementSize } from '@vueuse/core';
 // composable
 import { useLabelSuggestions } from 'dashboard/composables/useLabelSuggestions';
 import { useSnakeCase } from 'dashboard/composables/useTransformKeys';
+import { useIsMobile } from 'dashboard/composables/useIsMobile';
 
 // components
 import ReplyBox from './ReplyBox.vue';
@@ -81,6 +82,7 @@ export default {
     const topBannerRef = useTemplateRef('topBannerRef');
     const { height: containerHeight } = useElementSize(messagesViewRef);
     const { height: topBannerHeight } = useElementSize(topBannerRef);
+    const isMobile = useIsMobile();
 
     const {
       captainTasksEnabled,
@@ -102,6 +104,7 @@ export default {
       topBannerRef,
       containerHeight,
       topBannerHeight,
+      isMobile,
     };
   },
   data() {
@@ -660,7 +663,22 @@ export default {
         anchor.getBoundingClientRect().top;
 
       this.resizableEditorWrapperRef.setEditorHeight(
-        editor.offsetHeight + (panel.clientHeight - occupied)
+        editor.offsetHeight + (this.composerViewportHeight() - occupied)
+      );
+    },
+    // The screenful the composer should fill. On phones the on-screen keyboard
+    // covers the bottom of the panel without shrinking it, which would leave
+    // the send row hidden under the keys, so there it is only the part of the
+    // panel that is actually visible.
+    composerViewportHeight() {
+      const panel = this.conversationPanel;
+      const viewport = window.visualViewport;
+      if (!this.isMobile || !viewport) return panel.clientHeight;
+
+      const visibleBottom = viewport.offsetTop + viewport.height;
+      return Math.min(
+        panel.clientHeight,
+        visibleBottom - panel.getBoundingClientRect().top
       );
     },
     // Revealing Cc or Bcc, or a validation error appearing under one, grows the
@@ -668,6 +686,14 @@ export default {
     // Watching them keeps the writing area fitted to whatever is left. Only the
     // fields are watched, never the editor, so resizing it cannot feed back.
     observeComposerChrome() {
+      this.stopObservingComposerChrome();
+      // The keyboard opening or closing on a phone changes what is visible.
+      if (this.isMobile) {
+        window.visualViewport?.addEventListener(
+          'resize',
+          this.expandComposerToFill
+        );
+      }
       // Deliberately the mail fields themselves, not composerAnchorElement's
       // fallback to the whole composer — that contains the editor, so resizing
       // it would retrigger the observer.
@@ -676,7 +702,6 @@ export default {
       );
       if (!mailHead) return;
 
-      this.stopObservingComposerChrome();
       this.composerChromeObserver = new ResizeObserver(() =>
         this.expandComposerToFill()
       );
@@ -685,6 +710,10 @@ export default {
     stopObservingComposerChrome() {
       this.composerChromeObserver?.disconnect();
       this.composerChromeObserver = null;
+      window.visualViewport?.removeEventListener(
+        'resize',
+        this.expandComposerToFill
+      );
     },
     // Puts the To field at the top of the panel, leaving the close row, the
     // Reply/Note tabs and the conversation above it to scroll up to.

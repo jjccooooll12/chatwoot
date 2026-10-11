@@ -5,6 +5,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import MoreActions from './MoreActions.vue';
 import FreshdeskTopBarActions from 'dashboard/components/FreshdeskTopBarActions.vue';
+import MobileSidebarToggle from 'dashboard/components-next/sidebar/MobileSidebarToggle.vue';
 import ConversationMergePanel from './ConversationMergePanel.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
 import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
@@ -175,6 +176,7 @@ const onTicketMerged = async (
       <div
         class="flex min-w-0 items-center gap-1.5 text-xs font-medium text-fd-muted"
       >
+        <MobileSidebarToggle class="-ml-1.5" />
         <span class="i-lucide-asterisk size-3 text-fd-primary" />
         <button
           type="button"

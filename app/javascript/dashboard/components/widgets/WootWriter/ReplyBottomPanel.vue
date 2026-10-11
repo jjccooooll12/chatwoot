@@ -283,8 +283,10 @@ export default {
 </script>
 
 <template>
-  <div class="flex justify-between p-3" :class="wrapClass">
-    <div class="left-wrap">
+  <!-- Phones: the toolbar scrolls sideways so the send button keeps its place
+       on the row instead of being pushed off the right edge. -->
+  <div class="flex justify-between p-3 max-md:gap-2" :class="wrapClass">
+    <div class="left-wrap max-md:min-w-0 max-md:overflow-x-auto no-scrollbar">
       <NextButton
         v-if="!isEditorDisabled"
         v-tooltip.top-end="$t('CONVERSATION.REPLYBOX.TIP_EMOJI_ICON')"

@@ -9,6 +9,8 @@ const buildContext = (overrides = {}) => ({
   fetchPreviousMessages: vi.fn(),
   releaseLatestMessage: MessagesView.methods.releaseLatestMessage,
   stopObservingComposerChrome: MessagesView.methods.stopObservingComposerChrome,
+  composerViewportHeight: MessagesView.methods.composerViewportHeight,
+  isMobile: false,
   ...overrides,
 });
 
@@ -118,6 +120,37 @@ describe('MessagesView — following the newest message', () => {
     MessagesView.methods.expandComposerToFill.call(context);
 
     expect(setEditorHeight).toHaveBeenCalledWith(420);
+  });
+
+  it('fits the composer above the keyboard on a phone', () => {
+    const setEditorHeight = vi.fn();
+    // The panel starts at y=100 and is 700 tall, but the keyboard leaves only
+    // the top 400px of the screen visible — 300 of the panel. The composer
+    // takes up 500 from its To field (y=100) down, so the writing area of 300
+    // gives up 200 and the send row lands just above the keys.
+    vi.stubGlobal('visualViewport', { offsetTop: 0, height: 400 });
+    const context = buildContext({
+      isMobile: true,
+      composerAnchorElement: () => ({
+        getBoundingClientRect: () => ({ top: 100 }),
+      }),
+      conversationPanel: {
+        clientHeight: 700,
+        getBoundingClientRect: () => ({ top: 100 }),
+      },
+      resizableEditorWrapperRef: {
+        $el: {
+          getBoundingClientRect: () => ({ bottom: 600 }),
+          querySelector: () => ({ offsetHeight: 300 }),
+        },
+        setEditorHeight,
+      },
+    });
+
+    MessagesView.methods.expandComposerToFill.call(context);
+    vi.unstubAllGlobals();
+
+    expect(setEditorHeight).toHaveBeenCalledWith(100);
   });
 
   it('stops watching the mail fields once the composer closes', () => {

@@ -739,6 +739,7 @@ const menuItems = computed(() => {
       {
         ignore: [
           '#mobile-sidebar-launcher',
+          '[data-mobile-sidebar-toggle]',
           '[data-popover-content]',
           '[data-popover-backdrop]',
         ],

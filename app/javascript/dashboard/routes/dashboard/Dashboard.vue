@@ -8,6 +8,7 @@ import UpgradePage from 'dashboard/routes/dashboard/upgrade/UpgradePage.vue';
 
 import { useUISettings } from 'dashboard/composables/useUISettings';
 import { useAccount } from 'dashboard/composables/useAccount';
+import { useMobileSidebar } from 'dashboard/composables/useMobileSidebar';
 import { useWindowSize } from '@vueuse/core';
 
 import wootConstants from 'dashboard/constants/globals';
@@ -44,6 +45,12 @@ export default {
     const { accountId } = useAccount();
     const { width: windowWidth } = useWindowSize();
     const callsStore = useCallsStore();
+    const {
+      isOpen: isMobileSidebarOpen,
+      hasHeaderToggle,
+      toggle: toggleMobileSidebar,
+      close: closeMobileSidebar,
+    } = useMobileSidebar();
 
     return {
       uiSettings,
@@ -51,6 +58,10 @@ export default {
       accountId,
       upgradePageRef,
       windowWidth,
+      isMobileSidebarOpen,
+      hasHeaderToggle,
+      toggleMobileSidebar,
+      closeMobileSidebar,
       hasActiveCall: computed(() => callsStore.hasActiveCall),
       hasIncomingCall: computed(() => callsStore.hasIncomingCall),
     };
@@ -60,7 +71,6 @@ export default {
       showAccountModal: false,
       showCreateAccountModal: false,
       showShortcutModal: false,
-      isMobileSidebarOpen: false,
     };
   },
   computed: {
@@ -103,12 +113,6 @@ export default {
     },
   },
   methods: {
-    toggleMobileSidebar() {
-      this.isMobileSidebarOpen = !this.isMobileSidebarOpen;
-    },
-    closeMobileSidebar() {
-      this.isMobileSidebarOpen = false;
-    },
     openCreateAccountModal() {
       this.showAccountModal = false;
       this.showCreateAccountModal = true;
@@ -158,6 +162,7 @@ export default {
         <CommandBar />
         <CopilotLauncher />
         <MobileSidebarLauncher
+          v-if="!hasHeaderToggle"
           :is-mobile-sidebar-open="isMobileSidebarOpen"
           @toggle="toggleMobileSidebar"
         />

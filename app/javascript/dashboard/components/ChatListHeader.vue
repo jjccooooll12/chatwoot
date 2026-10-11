@@ -6,6 +6,7 @@ import { formatNumber } from '@chatwoot/utils';
 import ConversationBasicFilter from './widgets/conversation/ConversationBasicFilter.vue';
 import NextButton from 'dashboard/components-next/button/Button.vue';
 import FreshdeskTopBarActions from './FreshdeskTopBarActions.vue';
+import MobileSidebarToggle from 'dashboard/components-next/sidebar/MobileSidebarToggle.vue';
 
 const props = defineProps({
   pageTitle: { type: String, required: true },
@@ -51,6 +52,7 @@ const formattedAllCount = computed(() => formatNumber(allCount.value));
   >
     <!-- FRESHDESK-SKIN: bolder title, always-on purple total-count badge, subtle status chip -->
     <div class="flex items-center min-w-0 gap-1.5">
+      <MobileSidebarToggle class="-ml-1.5" />
       <h1
         class="text-base font-semibold truncate text-fd-text"
         :title="pageTitle"

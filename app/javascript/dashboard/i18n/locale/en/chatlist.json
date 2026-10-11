@@ -146,6 +146,7 @@
     "FRESHDESK_MOBILE": {
       "CLOSE": "Close",
       "FILTERS": "Filters",
+      "MAIN_MENU": "Main menu",
       "TICKET_DETAILS": "Ticket details"
     },
     "FRESHDESK_PANEL": {

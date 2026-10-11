@@ -33,6 +33,7 @@ import { MESSAGE_MAX_LENGTH } from 'shared/helpers/MessageTypeHelper';
 import inboxMixin, { INBOX_FEATURES } from 'shared/mixins/inboxMixin';
 import { trimContent, debounce, getRecipients } from '@chatwoot/utils';
 import wootConstants from 'dashboard/constants/globals';
+import { useIsMobile } from 'dashboard/composables/useIsMobile';
 import {
   extractQuotedEmailText,
   buildQuotedEmailHeader,
@@ -97,6 +98,9 @@ export default {
     const messageEditor = useTemplateRef('messageEditor');
     const copilot = useCopilotReply();
     const shortcutKey = useKbd(['$mod', '+', 'enter']);
+    // Phones have no keyboard shortcut to advertise, and the hint pushed the
+    // send button off the right edge of the toolbar row.
+    const isMobile = useIsMobile();
 
     return {
       uiSettings,
@@ -108,6 +112,7 @@ export default {
       messageEditor,
       copilot,
       shortcutKey,
+      isMobile,
     };
   },
   data() {
@@ -312,6 +317,7 @@ export default {
       if (this.isPrivate) {
         sendMessageText = this.$t('CONVERSATION.REPLYBOX.CREATE');
       }
+      if (this.isMobile) return sendMessageText;
       const keyLabel = this.isEditorHotKeyEnabled('cmd_enter')
         ? `(${this.shortcutKey})`
         : '(↵)';
