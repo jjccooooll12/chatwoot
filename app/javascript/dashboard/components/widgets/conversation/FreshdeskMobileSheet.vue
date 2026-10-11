@@ -2,11 +2,11 @@
 import { useI18n } from 'vue-i18n';
 import { onKeyStroke } from '@vueuse/core';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
+
 // FRESHDESK-SKIN: the small-screen replacement for a desktop side column.
 // Panels that sit beside the content on desktop (list filters, ticket
 // properties, contact info, canned responses) are rendered in this bottom
 // sheet below the width where their column fits.
-// properties, contact info) are rendered in this bottom sheet below `md:`.
 // The parent mounts it with v-if; it hides itself from `hiddenFrom` up (the
 // breakpoint where the desktop column appears), so a sheet left open while
 // the window is widened simply disappears behind that column.
