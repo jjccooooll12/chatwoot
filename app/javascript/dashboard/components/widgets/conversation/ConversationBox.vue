@@ -5,12 +5,14 @@ import DashboardAppFrame from '../DashboardApp/Frame.vue';
 import EmptyState from './EmptyState/EmptyState.vue';
 import CannedResponsesPanel from './CannedResponsesPanel.vue';
 import FreshdeskContactInfo from './FreshdeskContactInfo.vue';
+import FreshdeskMobileSheet from './FreshdeskMobileSheet.vue';
 import FreshdeskTicketProperties from './FreshdeskTicketProperties.vue';
 import FreshdeskTicketTitle from './FreshdeskTicketTitle.vue';
 import MessagesView from './MessagesView.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
+import { useIsMobile } from 'dashboard/composables/useIsMobile';
 
 export default {
   components: {
@@ -19,6 +21,7 @@ export default {
     EmptyState,
     CannedResponsesPanel,
     FreshdeskContactInfo,
+    FreshdeskMobileSheet,
     FreshdeskTicketProperties,
     FreshdeskTicketTitle,
     MessagesView,
@@ -43,10 +46,15 @@ export default {
       default: true,
     },
   },
+  setup() {
+    return { isMobile: useIsMobile() };
+  },
   data() {
     return {
       activeIndex: 0,
       showCannedResponsesPanel: false,
+      // Phones: properties + contact info live in a sheet, not side columns.
+      showMobileDetails: false,
       isTicketBodyMounted: false,
       isTicketBodyReady: false,
       revealFrame: null,
@@ -104,6 +112,7 @@ export default {
       this.fetchLabels();
       this.activeIndex = 0;
       this.showCannedResponsesPanel = false;
+      this.showMobileDetails = false;
       this.resetTicketBodyReveal();
       this.scheduleTicketBodyReveal();
     },
@@ -130,6 +139,9 @@ export default {
     this.cancelTicketBodyReveal();
   },
   methods: {
+    toggleMobileDetails() {
+      this.showMobileDetails = this.isMobile && !this.showMobileDetails;
+    },
     toggleCannedResponsesPanel() {
       this.showCannedResponsesPanel = !this.showCannedResponsesPanel;
     },
@@ -208,6 +220,7 @@ export default {
           :class="{
             'border-b border-b-n-weak': !dashboardApps.length,
           }"
+          @toggle-properties="toggleMobileDetails"
         />
         <woot-tabs
           v-if="dashboardApps.length"
@@ -239,6 +252,14 @@ export default {
           </template>
           <slot />
         </div>
+        <FreshdeskMobileSheet
+          v-if="showMobileDetails"
+          :title="$t('CHAT_LIST.FRESHDESK_MOBILE.TICKET_DETAILS')"
+          @close="showMobileDetails = false"
+        >
+          <FreshdeskTicketProperties in-sheet :chat="currentChat" />
+          <FreshdeskContactInfo in-sheet :chat="currentChat" />
+        </FreshdeskMobileSheet>
         <DashboardAppFrame
           v-for="(dashboardApp, index) in dashboardApps"
           v-show="activeIndex - 1 === index"

@@ -9,6 +9,7 @@ import { BUS_EVENTS } from 'shared/constants/busEvents';
 import CmdBarConversationSnooze from 'dashboard/routes/dashboard/commands/CmdBarConversationSnooze.vue';
 import { emitter } from 'shared/helpers/mitt';
 import ConversationSidebar from 'dashboard/components/widgets/conversation/ConversationSidebar.vue';
+import { useIsMobile } from 'dashboard/composables/useIsMobile';
 
 export default {
   components: {
@@ -59,6 +60,7 @@ export default {
       uiSettings,
       updateUISettings,
       accountId,
+      isMobile: useIsMobile(),
     };
   },
   data() {
@@ -85,10 +87,13 @@ export default {
     },
 
     shouldShowSidebar() {
-      return (
-        Boolean(this.currentChat.id) &&
-        this.currentChat.dataFetched !== undefined
-      );
+      if (!this.currentChat.id || this.currentChat.dataFetched === undefined) {
+        return false;
+      }
+      // The sidebar's closed state is `md:hidden`, which does nothing below
+      // 768px: its fixed, full-width wrapper covered the whole ticket with an
+      // empty sheet on phones. Mount it there only while actually open.
+      return !this.isMobile || Boolean(this.uiSettings.is_contact_sidebar_open);
     },
   },
   watch: {

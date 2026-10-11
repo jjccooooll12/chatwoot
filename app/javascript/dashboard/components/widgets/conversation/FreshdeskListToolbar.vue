@@ -10,7 +10,7 @@ const props = defineProps({
   totalCount: { type: Number, default: 0 },
 });
 
-const emit = defineEmits(['selectAll', 'changeFilter']);
+const emit = defineEmits(['selectAll', 'changeFilter', 'openFilters']);
 
 const { t } = useI18n();
 
@@ -95,7 +95,7 @@ const rangeLabel = computed(() => {
       </label>
 
       <div class="flex items-center gap-1.5">
-        <span class="whitespace-nowrap text-xs text-fd-muted">
+        <span class="hidden whitespace-nowrap text-xs text-fd-muted sm:inline">
           {{ t('CHAT_LIST.FRESHDESK_TOOLBAR.SORT_BY') }}
         </span>
         <div class="relative">
@@ -158,6 +158,16 @@ const rangeLabel = computed(() => {
           </template>
         </div>
       </div>
+
+      <!-- Phones: the status/assignee/language column becomes a sheet. -->
+      <button
+        type="button"
+        class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-fd-border bg-fd-surface px-2.5 text-xs font-medium text-fd-text hover:border-fd-primary md:hidden"
+        @click="emit('openFilters')"
+      >
+        <span class="i-lucide-sliders-horizontal size-3.5 text-fd-muted" />
+        {{ t('CHAT_LIST.FRESHDESK_MOBILE.FILTERS') }}
+      </button>
     </div>
 
     <span class="whitespace-nowrap text-xs font-medium text-fd-text">

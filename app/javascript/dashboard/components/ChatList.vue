@@ -15,6 +15,7 @@ import ConversationFilter from 'next/filter/ConversationFilter.vue';
 import SaveCustomView from 'next/filter/SaveCustomView.vue';
 import FreshdeskListToolbar from './widgets/conversation/FreshdeskListToolbar.vue';
 import FreshdeskStatusPanel from './widgets/conversation/FreshdeskStatusPanel.vue';
+import FreshdeskMobileSheet from './widgets/conversation/FreshdeskMobileSheet.vue';
 import DeleteCustomViews from 'dashboard/routes/dashboard/customviews/DeleteCustomViews.vue';
 import ConversationBulkActions from './widgets/conversation/conversationBulkActions/Index.vue';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
@@ -1006,6 +1007,28 @@ watch(conversationFilters, (newVal, oldVal) => {
     store.dispatch('updateChatListFilters', newVal);
   }
 });
+
+// FRESHDESK-SKIN: the status panel renders twice — as the desktop column and,
+// on phones, inside a bottom sheet. Both share this one binding so they can
+// never drift apart.
+const showMobileFilters = ref(false);
+const statusPanelProps = computed(() => ({
+  activeStatuses: activeStatuses.value,
+  activeAssigneeTypes: activeAssigneeTypes.value,
+  assigneeTabItems: assigneeTabItems.value,
+  activeChatLanguage: activeChatLanguage.value,
+  chatLanguageItems: chatLanguageItems.value,
+  appliedFilterCount: hasAppliedFilters.value ? 1 : 0,
+}));
+const statusPanelListeners = {
+  toggleStatus,
+  toggleAssignee: toggleAssigneeType,
+  changeChatLanguage: updateChatLanguage,
+  openFilters: () => {
+    showMobileFilters.value = false;
+    onToggleAdvanceFiltersModal();
+  },
+};
 </script>
 
 <template>
@@ -1060,6 +1083,7 @@ watch(conversationFilters, (newVal, oldVal) => {
         :total-count="activeAssigneeTabCount"
         @select-all="toggleSelectAll"
         @change-filter="onBasicFilterChange"
+        @open-filters="showMobileFilters = true"
       />
 
       <p
@@ -1124,16 +1148,19 @@ watch(conversationFilters, (newVal, oldVal) => {
       />
     </div>
     <FreshdeskStatusPanel
-      :active-statuses="activeStatuses"
-      :active-assignee-types="activeAssigneeTypes"
-      :assignee-tab-items="assigneeTabItems"
-      :active-chat-language="activeChatLanguage"
-      :chat-language-items="chatLanguageItems"
-      :applied-filter-count="hasAppliedFilters ? 1 : 0"
-      @toggle-status="toggleStatus"
-      @toggle-assignee="toggleAssigneeType"
-      @change-chat-language="updateChatLanguage"
-      @open-filters="onToggleAdvanceFiltersModal"
+      v-bind="statusPanelProps"
+      v-on="statusPanelListeners"
     />
+    <FreshdeskMobileSheet
+      v-if="showMobileFilters"
+      :title="$t('CHAT_LIST.FRESHDESK_MOBILE.FILTERS')"
+      @close="showMobileFilters = false"
+    >
+      <FreshdeskStatusPanel
+        in-sheet
+        v-bind="statusPanelProps"
+        v-on="statusPanelListeners"
+      />
+    </FreshdeskMobileSheet>
   </div>
 </template>

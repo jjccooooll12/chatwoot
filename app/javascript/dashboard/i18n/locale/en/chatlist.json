@@ -76,7 +76,7 @@
     "FRESHDESK_TOPBAR": {
       "APPS": "Apps",
       "HELP": "Help",
-      "NEW": "+ New",
+      "NEW": "New",
       "NOTIFICATIONS": "Notifications",
       "SEARCH": "Search",
       "SEARCH_PLACEHOLDER": "Search tickets, contacts..."
@@ -142,6 +142,11 @@
         "SELECT_TICKET": "Select {ticket} to merge",
         "TITLE": "Merge ticket"
       }
+    },
+    "FRESHDESK_MOBILE": {
+      "CLOSE": "Close",
+      "FILTERS": "Filters",
+      "TICKET_DETAILS": "Ticket details"
     },
     "FRESHDESK_PANEL": {
       "STATUS_HEADING": "Status",

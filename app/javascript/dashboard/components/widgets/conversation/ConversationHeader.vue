@@ -26,6 +26,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['toggleProperties']);
+
 const { t } = useI18n();
 const store = useStore();
 const route = useRoute();
@@ -196,7 +198,7 @@ const onTicketMerged = async (
            constrain this header's width the way FreshdeskStatusPanel does
            on the ticket list. Reserve that same 240px (w-60) explicitly so
            New/Search land at the identical x-position on both pages. -->
-      <FreshdeskTopBarActions class="mr-60" />
+      <FreshdeskTopBarActions class="md:mr-60" />
     </div>
 
     <div
@@ -205,7 +207,7 @@ const onTicketMerged = async (
       <div class="flex min-w-0 items-center gap-1.5">
         <button
           type="button"
-          class="inline-flex h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 md:h-7 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2"
           @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
         >
           <span class="i-lucide-reply size-3.5 text-fd-muted" />
@@ -213,7 +215,7 @@ const onTicketMerged = async (
         </button>
         <button
           type="button"
-          class="inline-flex h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2"
+          class="inline-flex h-9 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 md:h-7 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2"
           @click="setEditorMode(REPLY_EDITOR_MODES.NOTE)"
         >
           <span class="i-lucide-file-text size-3.5 text-fd-muted" />
@@ -255,13 +257,13 @@ const onTicketMerged = async (
         <ConversationCallButton :inbox="inbox" :chat="currentChat" />
         <button
           type="button"
-          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
+          class="hidden size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text md:grid"
         >
           <span class="i-lucide-chevron-left size-3.5" />
         </button>
         <button
           type="button"
-          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:border-n-ruby-9 hover:bg-n-ruby-2 hover:text-n-ruby-11"
+          class="grid size-9 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:border-n-ruby-9 md:size-7 hover:bg-n-ruby-2 hover:text-n-ruby-11"
           :title="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
           @click="onDeleteClick"
         >
@@ -269,13 +271,15 @@ const onTicketMerged = async (
         </button>
         <button
           type="button"
-          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
+          class="hidden size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text md:grid"
         >
           <span class="i-lucide-chevron-right size-3.5" />
         </button>
         <button
           type="button"
-          class="grid size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text"
+          class="grid size-9 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text md:size-7"
+          :aria-label="t('CHAT_LIST.FRESHDESK_MOBILE.TICKET_DETAILS')"
+          @click="emit('toggleProperties')"
         >
           <span class="i-lucide-panel-right-close size-3.5" />
         </button>

@@ -11,6 +11,11 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  // Rendered inside FreshdeskMobileSheet on phones instead of as a column.
+  inSheet: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const { t } = useI18n();
@@ -253,9 +258,14 @@ onMounted(() => {
 
 <template>
   <aside
-    class="hidden w-[220px] shrink-0 flex-col border-l border-fd-border bg-fd-surface lg:flex"
+    class="flex-col bg-fd-surface"
+    :class="
+      inSheet
+        ? 'flex'
+        : 'hidden w-[220px] shrink-0 border-l border-fd-border lg:flex'
+    "
   >
-    <div class="flex-1 overflow-y-auto">
+    <div :class="{ 'flex-1 overflow-y-auto': !inSheet }">
       <div class="grid gap-1.5 px-3 pb-4 pt-4 text-xs">
         <h3 class="m-0 text-xxs font-semibold uppercase text-fd-muted">
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.PROPERTIES') }}
@@ -339,7 +349,10 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="shrink-0 border-t border-fd-border px-3 py-2.5">
+    <div
+      class="shrink-0 border-t border-fd-border px-3 py-2.5"
+      :class="{ 'sticky bottom-0 z-10 bg-fd-surface': inSheet }"
+    >
       <button
         type="button"
         class="flex h-7 w-full items-center justify-center rounded-md px-3 text-xs font-semibold transition-colors duration-700"

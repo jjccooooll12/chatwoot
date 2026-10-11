@@ -383,7 +383,7 @@ watch(() => props.inbox.id, fetchAssignableAgents);
       </div>
 
       <div
-        class="col-start-2 grid min-w-0 shrink-0 gap-1.5 text-xs leading-5 text-fd-text sm:col-start-auto sm:gap-2"
+        class="col-start-2 flex min-w-0 shrink-0 flex-wrap gap-x-4 gap-y-1.5 text-xs leading-5 text-fd-text sm:col-start-auto sm:grid sm:gap-2"
         @click.stop
       >
         <label class="relative inline-flex min-w-0 items-center gap-1.5">

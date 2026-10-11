@@ -12,6 +12,8 @@ import { INBOX_TYPES } from 'dashboard/helper/inbox';
 
 const props = defineProps({
   chat: { type: Object, required: true },
+  // Rendered inside FreshdeskMobileSheet on phones instead of as a column.
+  inSheet: { type: Boolean, default: false },
 });
 
 const { t } = useI18n();
@@ -94,7 +96,12 @@ watch(contactId, fetchConversations);
 
 <template>
   <aside
-    class="hidden w-[276px] shrink-0 overflow-y-auto border-l border-fd-border bg-fd-surface xl:block"
+    class="bg-fd-surface"
+    :class="
+      inSheet
+        ? 'block border-t border-fd-border'
+        : 'hidden w-[276px] shrink-0 overflow-y-auto border-l border-fd-border xl:block'
+    "
   >
     <div class="border-b border-fd-border px-3 py-4">
       <div class="mb-3 flex items-center justify-between">

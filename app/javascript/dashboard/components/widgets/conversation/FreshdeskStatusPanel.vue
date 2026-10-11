@@ -12,6 +12,8 @@ const props = defineProps({
   activeChatLanguage: { type: String, default: '' },
   chatLanguageItems: { type: Array, default: () => [] },
   appliedFilterCount: { type: Number, default: 0 },
+  // Rendered inside FreshdeskMobileSheet on phones instead of as a column.
+  inSheet: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -88,7 +90,12 @@ const toggleLanguageVisibility = key => {
 
 <template>
   <aside
-    class="mt-[102px] flex w-60 shrink-0 flex-col gap-5 overflow-y-auto border-l border-fd-border bg-fd-surface p-3"
+    class="flex-col gap-5 bg-fd-surface p-3"
+    :class="
+      inSheet
+        ? 'flex'
+        : 'mt-[102px] hidden w-60 shrink-0 overflow-y-auto border-l border-fd-border md:flex'
+    "
   >
     <div class="flex flex-col gap-1">
       <h3

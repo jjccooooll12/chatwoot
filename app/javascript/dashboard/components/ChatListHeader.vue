@@ -66,7 +66,7 @@ const formattedAllCount = computed(() => formatNumber(allCount.value));
       </span>
       <span
         v-if="!hasAppliedFiltersOrActiveFolders"
-        class="shrink-0 truncate rounded-md border border-fd-border bg-fd-surface px-2 py-0.5 text-xxs capitalize text-fd-muted"
+        class="hidden shrink-0 truncate rounded-md border border-fd-border bg-fd-surface px-2 py-0.5 text-xxs capitalize text-fd-muted sm:inline"
       >
         {{ activeStatusesLabel }}
       </span>
@@ -124,7 +124,8 @@ const formattedAllCount = computed(() => formatNumber(allCount.value));
           @click="emit('deleteFolders')"
         />
       </template>
-      <div v-else class="relative">
+      <!-- Phones reach filters + sort from the list toolbar's Filters sheet. -->
+      <div v-else class="relative hidden md:block">
         <NextButton
           id="toggleConversationFilterButton"
           v-tooltip.right="$t('FILTER.TOOLTIP_LABEL')"
@@ -142,6 +143,7 @@ const formattedAllCount = computed(() => formatNumber(allCount.value));
       </div>
       <ConversationBasicFilter
         v-if="!hasAppliedFiltersOrActiveFolders"
+        class="hidden md:flex"
         :is-on-expanded-layout="isOnExpandedLayout"
         @change-filter="onBasicFilterChange"
       />
