@@ -13,6 +13,7 @@ import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { useIsMobile } from 'dashboard/composables/useIsMobile';
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core';
 
 export default {
   components: {
@@ -47,7 +48,12 @@ export default {
     },
   },
   setup() {
-    return { isMobile: useIsMobile() };
+    return {
+      isMobile: useIsMobile(),
+      // The canned-responses column only fits from xl up; below that the
+      // panel opens as a sheet instead.
+      isBelowXl: useBreakpoints(breakpointsTailwind).smaller('xl'),
+    };
   },
   data() {
     return {
@@ -243,7 +249,7 @@ export default {
             <MessagesView :inbox-id="inboxId" :is-inbox-view="isInboxView" />
           </div>
           <CannedResponsesPanel
-            v-if="showCannedResponsesPanel"
+            v-if="showCannedResponsesPanel && !isBelowXl"
             @close="showCannedResponsesPanel = false"
           />
           <template v-else>
@@ -259,6 +265,17 @@ export default {
         >
           <FreshdeskTicketProperties in-sheet :chat="currentChat" />
           <FreshdeskContactInfo in-sheet :chat="currentChat" />
+        </FreshdeskMobileSheet>
+        <FreshdeskMobileSheet
+          v-if="showCannedResponsesPanel && isBelowXl"
+          hidden-from="xl"
+          :title="$t('CONVERSATION.REPLYBOX.CANNED_RESPONSES_HEADER')"
+          @close="showCannedResponsesPanel = false"
+        >
+          <CannedResponsesPanel
+            in-sheet
+            @close="showCannedResponsesPanel = false"
+          />
         </FreshdeskMobileSheet>
         <DashboardAppFrame
           v-for="(dashboardApp, index) in dashboardApps"

@@ -15,7 +15,15 @@ import {
   CMD_UNMUTE_CONVERSATION,
 } from 'dashboard/helper/commandbar/events';
 
-// No props needed as we're getting currentChat from the store directly
+// currentChat comes from the store directly.
+const props = defineProps({
+  // FRESHDESK-SKIN: toolbar buttons the ticket toolbar has no room for at the
+  // current width ({ icon, label, action }); picking one emits toolbarAction.
+  toolbarItems: { type: Array, default: () => [] },
+});
+
+const emit = defineEmits(['toolbarAction']);
+
 const store = useStore();
 const { t } = useI18n();
 
@@ -25,7 +33,10 @@ const [showActionsDropdown, toggleDropdown] = useToggle(false);
 const currentChat = computed(() => store.getters.getSelectedChat);
 
 const actionMenuItems = computed(() => {
-  const items = [];
+  const items = props.toolbarItems.map(item => ({
+    ...item,
+    value: item.action,
+  }));
 
   if (!currentChat.value.muted) {
     items.push({
@@ -56,7 +67,9 @@ const actionMenuItems = computed(() => {
 const handleActionClick = ({ action }) => {
   toggleDropdown(false);
 
-  if (action === 'mute') {
+  if (props.toolbarItems.some(item => item.action === action)) {
+    emit('toolbarAction', action);
+  } else if (action === 'mute') {
     store.dispatch('muteConversation', currentChat.value.id);
     useAlert(t('CONTACT_PANEL.MUTED_SUCCESS'));
   } else if (action === 'unmute') {

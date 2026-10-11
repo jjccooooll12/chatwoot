@@ -2,20 +2,30 @@
 import { useI18n } from 'vue-i18n';
 import { onKeyStroke } from '@vueuse/core';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
-
-// FRESHDESK-SKIN: the phone-layout replacement for a desktop side column.
+// FRESHDESK-SKIN: the small-screen replacement for a desktop side column.
 // Panels that sit beside the content on desktop (list filters, ticket
+// properties, contact info, canned responses) are rendered in this bottom
+// sheet below the width where their column fits.
 // properties, contact info) are rendered in this bottom sheet below `md:`.
-// The parent mounts it with v-if; it is `md:hidden`, so a sheet left open
-// while the window is widened simply disappears behind the desktop column.
-defineProps({
+// The parent mounts it with v-if; it hides itself from `hiddenFrom` up (the
+// breakpoint where the desktop column appears), so a sheet left open while
+// the window is widened simply disappears behind that column.
+const props = defineProps({
   title: {
     type: String,
     required: true,
   },
+  hiddenFrom: {
+    type: String,
+    default: 'md',
+    validator: value => ['md', 'lg', 'xl'].includes(value),
+  },
 });
 
 const emit = defineEmits(['close']);
+
+// Spelled out so Tailwind sees every class.
+const HIDDEN_FROM_CLASS = { md: 'md:hidden', lg: 'lg:hidden', xl: 'xl:hidden' };
 const { t } = useI18n();
 
 onKeyStroke('Escape', () => emit('close'));
@@ -23,7 +33,10 @@ onKeyStroke('Escape', () => emit('close'));
 
 <template>
   <TeleportWithDirection to="body">
-    <div class="fixed inset-0 z-50 flex flex-col justify-end md:hidden">
+    <div
+      class="fixed inset-0 z-50 flex flex-col justify-end"
+      :class="HIDDEN_FROM_CLASS[props.hiddenFrom]"
+    >
       <Transition
         appear
         enter-active-class="transition-opacity duration-200"

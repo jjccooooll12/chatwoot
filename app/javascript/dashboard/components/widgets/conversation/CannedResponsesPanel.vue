@@ -10,6 +10,12 @@ import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { frontendURL } from 'dashboard/helper/URLHelper';
 
+defineProps({
+  // Rendered inside FreshdeskMobileSheet below xl instead of as a column; the
+  // sheet supplies the title and the close button.
+  inSheet: { type: Boolean, default: false },
+});
+
 const emit = defineEmits(['close']);
 
 const RECENT_KEY = 'chatwoot_canned_responses_recent';
@@ -188,16 +194,23 @@ const hideCreateModal = () => {
 
 <template>
   <aside
-    class="hidden w-[400px] shrink-0 flex-col overflow-hidden border-l border-fd-border bg-fd-surface xl:flex"
+    class="flex-col overflow-hidden bg-fd-surface"
+    :class="
+      inSheet
+        ? 'flex h-[70dvh]'
+        : 'hidden w-[400px] shrink-0 border-l border-fd-border xl:flex'
+    "
   >
     <div
       class="flex items-center justify-between gap-2 border-b border-fd-border px-3 py-3"
     >
       <div class="flex min-w-0 items-center gap-2">
-        <Icon icon="i-lucide-bookmark" class="size-4 shrink-0 text-fd-text" />
-        <span class="truncate text-sm font-semibold text-fd-text">
-          {{ t('CONVERSATION.REPLYBOX.CANNED_RESPONSES_HEADER') }}
-        </span>
+        <template v-if="!inSheet">
+          <Icon icon="i-lucide-bookmark" class="size-4 shrink-0 text-fd-text" />
+          <span class="truncate text-sm font-semibold text-fd-text">
+            {{ t('CONVERSATION.REPLYBOX.CANNED_RESPONSES_HEADER') }}
+          </span>
+        </template>
         <button
           type="button"
           class="shrink-0 text-xs font-medium text-fd-primary hover:underline"
@@ -207,6 +220,7 @@ const hideCreateModal = () => {
         </button>
       </div>
       <button
+        v-if="!inSheet"
         type="button"
         :aria-label="t('CONVERSATION.REPLYBOX.CANNED_PANEL.CLOSE')"
         class="shrink-0 rounded p-1 text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"

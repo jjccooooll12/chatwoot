@@ -15,6 +15,7 @@ import {
 } from 'dashboard/helper/URLHelper';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
+import { useBreakpoints, breakpointsTailwind } from '@vueuse/core';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
 import { emitter } from 'shared/helpers/mitt';
 import { REPLY_EDITOR_MODES } from 'dashboard/components/widgets/WootWriter/constants';
@@ -122,6 +123,35 @@ const openMergePanel = () => {
 
 const closeMergePanel = () => {
   showMergePanel.value = false;
+};
+
+// Merge (xl) and Activities (lg) only fit in the toolbar from those widths;
+// below them they move into the ⋮ menu so they stay reachable on phones and
+// tablets.
+const breakpoints = useBreakpoints(breakpointsTailwind);
+const isBelowLg = breakpoints.smaller('lg');
+const isBelowXl = breakpoints.smaller('xl');
+const toolbarOverflowItems = computed(() => {
+  const items = [];
+  if (isBelowXl.value) {
+    items.push({
+      icon: 'i-lucide-git-merge',
+      label: t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.BUTTON'),
+      action: 'merge',
+    });
+  }
+  if (isBelowLg.value) {
+    items.push({
+      icon: 'i-lucide-alarm-clock',
+      label: t('CHAT_LIST.FRESHDESK_DETAIL.ACTIVITIES'),
+      action: 'activities',
+    });
+  }
+  return items;
+});
+const onToolbarOverflowAction = action => {
+  if (action === 'merge') openMergePanel();
+  if (action === 'activities') toggleActivities();
 };
 
 const onTicketMerged = async (
@@ -239,7 +269,11 @@ const onTicketMerged = async (
           <span class="i-lucide-git-merge size-3.5 text-fd-muted" />
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.MERGE.BUTTON') }}
         </button>
-        <MoreActions class="freshdesk-toolbar-more" />
+        <MoreActions
+          class="freshdesk-toolbar-more"
+          :toolbar-items="toolbarOverflowItems"
+          @toolbar-action="onToolbarOverflowAction"
+        />
       </div>
 
       <div class="flex shrink-0 items-center gap-1.5">
