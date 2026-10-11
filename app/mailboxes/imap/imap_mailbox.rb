@@ -16,6 +16,7 @@ class Imap::ImapMailbox
     linkedin.com trustpilot.com qwoted.com crunchbase.com
     facebook.com facebookmail.com
     paypal.com wise.com
+    ups.com
   ].freeze
 
   def process(mail, channel)
