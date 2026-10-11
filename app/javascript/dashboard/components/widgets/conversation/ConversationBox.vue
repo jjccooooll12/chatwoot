@@ -12,7 +12,6 @@ import MessagesView from './MessagesView.vue';
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import { emitter } from 'shared/helpers/mitt';
 import { BUS_EVENTS } from 'shared/constants/busEvents';
-import { useIsMobile } from 'dashboard/composables/useIsMobile';
 import { useBreakpoints, breakpointsTailwind } from '@vueuse/core';
 
 export default {
@@ -49,9 +48,9 @@ export default {
   },
   setup() {
     return {
-      isMobile: useIsMobile(),
-      // The canned-responses column only fits from xl up; below that the
-      // panel opens as a sheet instead.
+      // The canned-responses and contact-info columns only fit from xl up,
+      // ticket properties from lg; below that they open in a sheet instead.
+      isBelowLg: useBreakpoints(breakpointsTailwind).smaller('lg'),
       isBelowXl: useBreakpoints(breakpointsTailwind).smaller('xl'),
     };
   },
@@ -59,7 +58,8 @@ export default {
     return {
       activeIndex: 0,
       showCannedResponsesPanel: false,
-      // Phones: properties + contact info live in a sheet, not side columns.
+      // Below xl: whichever of properties / contact info has no column of its
+      // own lives in a sheet.
       showMobileDetails: false,
       isTicketBodyMounted: false,
       isTicketBodyReady: false,
@@ -146,7 +146,7 @@ export default {
   },
   methods: {
     toggleMobileDetails() {
-      this.showMobileDetails = this.isMobile && !this.showMobileDetails;
+      this.showMobileDetails = this.isBelowXl && !this.showMobileDetails;
     },
     toggleCannedResponsesPanel() {
       this.showCannedResponsesPanel = !this.showCannedResponsesPanel;
@@ -260,10 +260,15 @@ export default {
         </div>
         <FreshdeskMobileSheet
           v-if="showMobileDetails"
+          hidden-from="xl"
           :title="$t('CHAT_LIST.FRESHDESK_MOBILE.TICKET_DETAILS')"
           @close="showMobileDetails = false"
         >
-          <FreshdeskTicketProperties in-sheet :chat="currentChat" />
+          <FreshdeskTicketProperties
+            v-if="isBelowLg"
+            in-sheet
+            :chat="currentChat"
+          />
           <FreshdeskContactInfo in-sheet :chat="currentChat" />
         </FreshdeskMobileSheet>
         <FreshdeskMobileSheet

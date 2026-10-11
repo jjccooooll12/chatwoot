@@ -3,7 +3,7 @@ import { useI18n } from 'vue-i18n';
 import { onKeyStroke } from '@vueuse/core';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
 
-// FRESHDESK-SKIN: the small-screen replacement for a desktop side column.
+// FRESHDESK-SKIN: the phone/tablet replacement for a desktop side column.
 // Panels that sit beside the content on desktop (list filters, ticket
 // properties, contact info, canned responses) are rendered in this bottom
 // sheet below the width where their column fits.
@@ -33,8 +33,9 @@ onKeyStroke('Escape', () => emit('close'));
 
 <template>
   <TeleportWithDirection to="body">
+    <!-- A bottom sheet on phones; from md up (tablets) a side drawer. -->
     <div
-      class="fixed inset-0 z-50 flex flex-col justify-end"
+      class="fixed inset-0 z-50 flex flex-col justify-end md:flex-row"
       :class="HIDDEN_FROM_CLASS[props.hiddenFrom]"
     >
       <Transition
@@ -53,13 +54,13 @@ onKeyStroke('Escape', () => emit('close'));
       <Transition
         appear
         enter-active-class="transition-transform duration-200 ease-out"
-        enter-from-class="translate-y-full"
+        enter-from-class="translate-y-full md:translate-y-0 md:ltr:translate-x-full md:rtl:-translate-x-full"
       >
         <section
           role="dialog"
           aria-modal="true"
           :aria-label="title"
-          class="relative flex max-h-[85dvh] flex-col rounded-t-2xl bg-fd-surface pb-[env(safe-area-inset-bottom)] shadow-2xl"
+          class="relative flex max-h-[85dvh] flex-col rounded-t-2xl bg-fd-surface pb-[env(safe-area-inset-bottom)] shadow-2xl md:max-h-none md:w-96 md:rounded-none"
         >
           <header
             class="flex shrink-0 items-center justify-between gap-3 border-b border-fd-border py-1 pl-4 pr-1"

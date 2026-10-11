@@ -229,8 +229,9 @@ const onTicketMerged = async (
            the message-thread flex row), not beside it, so they never
            constrain this header's width the way FreshdeskStatusPanel does
            on the ticket list. Reserve that same 240px (w-60) explicitly so
-           New/Search land at the identical x-position on both pages. -->
-      <FreshdeskTopBarActions class="md:mr-60" />
+           New/Search land at the identical x-position on both pages.
+           Tablets (md–lg) skip it: there the breadcrumb needs the room. -->
+      <FreshdeskTopBarActions class="lg:mr-60" />
     </div>
 
     <div
