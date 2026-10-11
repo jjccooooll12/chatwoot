@@ -45,9 +45,11 @@ defineProps({
         </div>
       </slot>
     </div>
+    <!-- Phones: metrics sit in two columns; four in one row overlapped their
+         labels at 390px. -->
     <div
       v-if="!isLoading"
-      class="card-body max-w-full w-full ml-auto mr-auto justify-between flex"
+      class="card-body max-w-full w-full ml-auto mr-auto justify-between flex max-sm:grid max-sm:grid-cols-2 max-sm:gap-y-4"
     >
       <slot />
     </div>

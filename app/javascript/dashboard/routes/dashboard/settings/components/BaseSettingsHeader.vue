@@ -5,6 +5,7 @@ import { getHelpUrlForFeature } from '../../../../helper/featureHelper';
 import BackButton from '../../../../components/widgets/BackButton.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import Input from 'dashboard/components-next/input/Input.vue';
+import MobileSidebarToggle from 'dashboard/components-next/sidebar/MobileSidebarToggle.vue';
 
 const props = defineProps({
   title: {
@@ -52,11 +53,14 @@ const helpURL = getHelpUrlForFeature(props.featureName);
       v-if="title"
       class="flex items-center justify-between w-full gap-4 min-h-8 mb-2"
     >
-      <slot name="title">
-        <h1 class="text-heading-1 text-n-slate-12">
-          {{ title }}
-        </h1>
-      </slot>
+      <div class="flex min-w-0 flex-1 items-center gap-1">
+        <MobileSidebarToggle class="-ml-2" />
+        <slot name="title">
+          <h1 class="text-heading-1 text-n-slate-12">
+            {{ title }}
+          </h1>
+        </slot>
+      </div>
     </div>
     <div
       v-if="description || $slots.description || linkText || helpURL"
@@ -113,8 +117,10 @@ const helpURL = getHelpUrlForFeature(props.featureName);
         </template>
       </Input>
     </div>
+    <!-- Phones: actions wrap onto a second line instead of overflowing off
+         the start of the row (where row-reverse pushes them). -->
     <div
-      class="flex items-center gap-3 min-w-0"
+      class="flex items-center gap-3 min-w-0 max-sm:flex-wrap"
       :class="{ 'flex-row-reverse sm:flex-row': !slots.tabs }"
     >
       <slot name="count" />

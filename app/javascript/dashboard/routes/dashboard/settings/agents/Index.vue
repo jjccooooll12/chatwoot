@@ -188,7 +188,9 @@ const confirmDeletion = () => {
           :key="agent.email"
           class="flex justify-between flex-row items-start gap-4 py-4"
         >
-          <div class="flex items-center gap-4">
+          <!-- Phones: the email/role/verified line wraps so the row's edit and
+               delete buttons stay on screen. -->
+          <div class="flex items-center gap-4 max-sm:min-w-0">
             <Avatar
               :src="agent.thumbnail"
               :name="shortenAgentName(agent.name)"
@@ -196,12 +198,14 @@ const confirmDeletion = () => {
               :size="40"
               hide-offline-status
             />
-            <div class="flex flex-col gap-1.5 items-start">
+            <div class="flex flex-col gap-1.5 items-start max-sm:min-w-0">
               <span class="block text-heading-3 text-n-slate-12 capitalize">
                 {{ shortenAgentName(agent.name) }}
               </span>
-              <div class="flex items-center gap-2">
-                <span class="text-body-main text-n-slate-11">
+              <div
+                class="flex items-center gap-2 max-sm:flex-wrap max-sm:gap-y-0.5"
+              >
+                <span class="text-body-main text-n-slate-11 max-sm:break-all">
                   {{ agent.email }}
                 </span>
                 <div class="w-px h-3 bg-n-strong rounded-lg" />
@@ -254,7 +258,7 @@ const confirmDeletion = () => {
               </div>
             </div>
           </div>
-          <div class="flex justify-end gap-3">
+          <div class="flex justify-end gap-3 max-sm:shrink-0">
             <Button
               v-if="showEditAction(agent)"
               v-tooltip.top="$t('AGENT_MGMT.EDIT.BUTTON_TEXT')"

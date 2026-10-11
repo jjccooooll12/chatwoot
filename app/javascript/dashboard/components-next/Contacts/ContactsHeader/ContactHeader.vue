@@ -33,9 +33,11 @@ const emit = defineEmits([
 </script>
 
 <template>
-  <header class="sticky top-0 z-20 px-6">
+  <!-- Phones: the title gets its own row (it was squeezed to "C…" beside
+       the search box) and the controls stack full-width beneath it. -->
+  <header class="sticky top-0 z-20 px-6 max-sm:px-4">
     <div
-      class="flex items-start sm:items-center justify-between w-full py-6 gap-2 mx-auto max-w-5xl"
+      class="flex items-start sm:items-center justify-between w-full py-6 gap-2 mx-auto max-w-5xl max-sm:flex-col max-sm:items-stretch max-sm:py-3"
     >
       <div class="flex items-center min-w-0 gap-1">
         <MobileSidebarToggle class="-ml-2" />
@@ -43,7 +45,9 @@ const emit = defineEmits([
           {{ headerTitle }}
         </span>
       </div>
-      <div class="flex items-center flex-col sm:flex-row flex-shrink-0 gap-4">
+      <div
+        class="flex items-center flex-col sm:flex-row flex-shrink-0 gap-4 max-sm:items-stretch max-sm:gap-2"
+      >
         <div v-if="showSearch" class="flex items-center gap-2 w-full">
           <Input
             :model-value="searchValue"
@@ -63,7 +67,9 @@ const emit = defineEmits([
             </template>
           </Input>
         </div>
-        <div class="flex items-center flex-shrink-0 gap-4">
+        <div
+          class="flex items-center flex-shrink-0 gap-4 max-sm:justify-between"
+        >
           <div class="flex items-center gap-2">
             <div v-if="!isLabelView && !isActiveView" class="relative">
               <Button
@@ -116,7 +122,7 @@ const emit = defineEmits([
               @export="emit('export')"
             />
           </div>
-          <div class="w-px h-4 bg-n-strong" />
+          <div class="w-px h-4 bg-n-strong max-sm:hidden" />
           <ComposeConversation>
             <template #trigger>
               <Button :label="buttonLabel" size="sm" />
