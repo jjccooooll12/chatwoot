@@ -13,19 +13,32 @@ const props = defineProps({
   label: { type: String, required: true },
   children: { type: Array, default: () => [] },
   activeChild: { type: Object, default: undefined },
-  triggerRect: { type: Object, default: () => ({ top: 0, left: 0 }) },
+  triggerRect: {
+    type: Object,
+    default: () => ({ top: 0, left: 0, right: 0 }),
+  },
 });
 
 const emit = defineEmits(['close', 'mouseenter', 'mouseleave', 'sortToggle']);
 
 const router = useRouter();
-const { isAllowed, sidebarWidth } = useSidebarContext();
+const { isAllowed } = useSidebarContext();
 
 const expandedSubGroup = ref(null);
 const popoverRef = ref(null);
 const topPosition = ref(0);
 const isRTL = useMapGetter('accounts/isRTL');
 const skipTransition = ref(true);
+
+// FRESHDESK-SKIN: anchor to the hovered icon's own edge. The stored
+// sidebarWidth is the old expanded sidebar's width (~200px), not the 56px
+// rail, so offsetting by it opened the menu far away from the icon.
+const POPOVER_GAP = 8;
+const inlineOffset = computed(() =>
+  isRTL.value
+    ? window.innerWidth - props.triggerRect.left + POPOVER_GAP
+    : props.triggerRect.right + POPOVER_GAP
+);
 
 const toggleSubGroup = name => {
   expandedSubGroup.value = expandedSubGroup.value === name ? null : name;
@@ -114,7 +127,7 @@ onMounted(async () => {
       ref="popoverRef"
       class="fixed z-[100] min-w-[200px] max-w-[280px]"
       :style="{
-        [isRTL ? 'right' : 'left']: `${sidebarWidth + 8}px`,
+        [isRTL ? 'right' : 'left']: `${inlineOffset}px`,
         top: `${topPosition}px`,
       }"
       @mouseenter="emit('mouseenter')"
