@@ -286,8 +286,13 @@ export default {
   <!-- Phones: the toolbar scrolls sideways so the send button keeps its place
        on the row instead of being pushed off the right edge. Emoji (the phone
        keyboard has them), signature and quote toggles are desktop-only; the
-       saved signature/quote preferences still apply. -->
-  <div class="flex justify-between p-3 max-md:gap-2" :class="wrapClass">
+       saved signature/quote preferences still apply. The row is pinned to the
+       bottom of the screen so Send stays in reach after the keyboard closes
+       or the thread scrolls. -->
+  <div
+    class="flex justify-between p-3 max-md:gap-2 max-md:sticky max-md:bottom-0 max-md:z-10 max-md:bg-inherit max-md:pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+    :class="wrapClass"
+  >
     <div class="left-wrap max-md:min-w-0 max-md:overflow-x-auto no-scrollbar">
       <NextButton
         v-if="!isEditorDisabled"
