@@ -6,6 +6,7 @@ import CheckBox from 'v3/components/Form/CheckBox.vue';
 import {
   hasPushPermissions,
   requestPushPermissions,
+  setPushOptedOut,
   verifyServiceWorkerExistence,
 } from 'dashboard/helper/pushHelper.js';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
@@ -97,6 +98,7 @@ export default {
       }
     },
     disablePushPermissions() {
+      setPushOptedOut(true);
       verifyServiceWorkerExistence(registration =>
         registration.pushManager
           .getSubscription()

@@ -16,6 +16,7 @@ import { isOnOnboardingView } from 'v3/helpers/RouteHelper';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useFontSize } from 'dashboard/composables/useFontSize';
 import {
+  isPushOptedOut,
   registerSubscription,
   verifyServiceWorkerExistence,
 } from './helper/pushHelper';
@@ -121,10 +122,17 @@ export default {
       this.reconnectService = new ReconnectService(this.store, this.router);
       window.reconnectService = this.reconnectService;
 
+      // FRESHDESK-SKIN: also subscribe when notifications are allowed but the
+      // subscription is gone. Browsers drop it on their own (installing the
+      // home-screen app, clearing site data), the server then deletes it on
+      // the push service's 410, and nothing ever re-created it - so a device
+      // that had allowed notifications silently stopped getting them.
       verifyServiceWorkerExistence(registration =>
         registration.pushManager.getSubscription().then(subscription => {
-          if (subscription) {
-            // Refresh the server's copy; a failure here is retried next load.
+          const allowedButLost =
+            Notification.permission === 'granted' && !isPushOptedOut();
+          if (subscription || allowedButLost) {
+            // A failure here is retried on the next load.
             registerSubscription().catch(() => {});
           }
         })

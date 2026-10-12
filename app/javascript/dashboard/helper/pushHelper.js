@@ -63,6 +63,28 @@ export const PUSH_FAILURE = {
 
 const SERVICE_WORKER_TIMEOUT_MS = 10000;
 
+// Per-device record that the person switched push off in Profile settings.
+// The browser permission stays "granted" after that, so without it the
+// auto-resubscribe on load (App.vue) would silently turn push back on.
+const PUSH_OPT_OUT_KEY = 'fd_push_opted_out';
+
+export const isPushOptedOut = () => {
+  try {
+    return localStorage.getItem(PUSH_OPT_OUT_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+
+export const setPushOptedOut = optedOut => {
+  try {
+    if (optedOut) localStorage.setItem(PUSH_OPT_OUT_KEY, '1');
+    else localStorage.removeItem(PUSH_OPT_OUT_KEY);
+  } catch {
+    // Storage blocked: the opt-out lasts only until the next load.
+  }
+};
+
 const activeServiceWorker = async () => {
   await navigator.serviceWorker.register('/sw.js');
   return Promise.race([
@@ -118,6 +140,7 @@ export const requestPushPermissions = async ({
 
   try {
     await registerSubscription();
+    setPushOptedOut(false);
     onSuccess();
   } catch (error) {
     // eslint-disable-next-line no-console

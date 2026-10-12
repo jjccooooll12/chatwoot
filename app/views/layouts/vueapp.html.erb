@@ -13,7 +13,7 @@
       <meta name="mobile-web-app-capable" content="yes">
       <meta name="apple-mobile-web-app-capable" content="yes">
       <meta name="apple-mobile-web-app-status-bar-style" content="default">
-      <%# Home-screen name + icon are Peach Labels; keep in step with public/manifest.json's short_name. %>
+      <%# Home-screen name + icon are Peach Labels; keep in step with the manifest's short_name. %>
       <meta name="apple-mobile-web-app-title" content="Peach Support">
       <meta name="description" content="<%= @global_config['INSTALLATION_NAME'] %> is a customer support solution that helps companies engage customers over Messenger, Twitter, Telegram, WeChat, Whatsapp. Simply connect your channels and converse with your customers from a single place. Easily add new agents to your system and have them own and resolve conversations with customers. <%= @global_config['INSTALLATION_NAME'] %> also gives you real-time reports to measure your team's performance, canned responses to easily respond to frequently asked questions and private notes for agents to collaborate among themselves.">
       <% if ENV['IOS_APP_IDENTIFIER'].present? %>
@@ -24,7 +24,10 @@
       <link class="favicon" rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
       <link class="favicon" rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png">
       <link class="favicon" rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-      <link rel="manifest" href="/manifest.json">
+      <%# Not /manifest.json: public files are served with a one-year cache, so browsers that
+          had fetched Chatwoot's original manifest kept installing the app as "Chatwoot". A new
+          path is the only way to reach them; change it again if the manifest ever changes. %>
+      <link rel="manifest" href="/peach-support/manifest.json">
     <% end %>
     <link rel="icon" type="image/png" sizes="512x512" href="<%= @global_config['LOGO_THUMBNAIL'] %>">
     <%= csrf_meta_tags %>
