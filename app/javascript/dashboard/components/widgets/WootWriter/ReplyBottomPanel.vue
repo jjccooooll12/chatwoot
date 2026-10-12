@@ -284,7 +284,9 @@ export default {
 
 <template>
   <!-- Phones: the toolbar scrolls sideways so the send button keeps its place
-       on the row instead of being pushed off the right edge. -->
+       on the row instead of being pushed off the right edge. Emoji (the phone
+       keyboard has them), signature and quote toggles are desktop-only; the
+       saved signature/quote preferences still apply. -->
   <div class="flex justify-between p-3 max-md:gap-2" :class="wrapClass">
     <div class="left-wrap max-md:min-w-0 max-md:overflow-x-auto no-scrollbar">
       <NextButton
@@ -294,6 +296,7 @@ export default {
         slate
         faded
         sm
+        class="max-md:hidden"
         @click="toggleEmojiPicker"
       />
       <FileUpload
@@ -355,6 +358,7 @@ export default {
         slate
         faded
         sm
+        class="max-md:hidden"
         @click="toggleMessageSignature"
       />
       <NextButton
@@ -364,6 +368,7 @@ export default {
         :variant="quotedReplyEnabled ? 'solid' : 'faded'"
         color="slate"
         sm
+        class="max-md:hidden"
         :aria-pressed="quotedReplyEnabled"
         @click="$emit('toggleQuotedReply')"
       />

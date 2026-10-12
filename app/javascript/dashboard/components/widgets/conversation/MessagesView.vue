@@ -897,7 +897,9 @@ export default {
           data-freshdesk-composer
           class="min-h-full list-none border-t border-n-weak bg-fd-surface"
         >
-          <div class="flex items-center justify-end bg-fd-surface px-3 pt-3">
+          <div
+            class="flex items-center justify-end bg-fd-surface px-3 pt-3 max-md:hidden"
+          >
             <button
               type="button"
               class="flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
@@ -915,6 +917,7 @@ export default {
             <ReplyBox
               ref="replyBoxRef"
               @toggle-editor-size="toggleReplyEditorSize"
+              @close="onCloseComposer"
             />
           </ResizableEditorWrapper>
         </li>

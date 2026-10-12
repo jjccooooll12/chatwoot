@@ -58,7 +58,7 @@ export default {
       default: false,
     },
   },
-  emits: ['setReplyMode', 'toggleEditorSize', 'executeCopilotAction'],
+  emits: ['setReplyMode', 'toggleEditorSize', 'executeCopilotAction', 'close'],
   setup(props, { emit }) {
     const setReplyMode = mode => {
       emit('setReplyMode', mode);
@@ -154,7 +154,18 @@ export default {
   <div
     class="flex justify-between gap-2 h-[3.25rem] items-center ltr:pl-3 ltr:pr-2 rtl:pr-3 rtl:pl-2"
   >
+    <!-- Phones: closing lives on this bar instead of a row of its own. -->
+    <NextButton
+      ghost
+      slate
+      sm
+      icon="i-lucide-x"
+      class="md:hidden -ms-1"
+      :aria-label="$t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER')"
+      @click="$emit('close')"
+    />
     <EditorModeToggle
+      class="max-md:me-auto"
       :mode="mode"
       :disabled="disabled"
       :is-reply-restricted="isReplyRestricted"
@@ -196,7 +207,7 @@ export default {
       </div>
       <NextButton
         ghost
-        class="text-n-slate-11"
+        class="text-n-slate-11 max-md:hidden"
         sm
         icon="i-lucide-maximize-2"
         @click="$emit('toggleEditorSize')"

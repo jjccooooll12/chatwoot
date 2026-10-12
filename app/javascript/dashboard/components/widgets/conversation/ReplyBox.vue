@@ -84,7 +84,7 @@ export default {
     CopilotReplyBottomPanel,
   },
   mixins: [inboxMixin, fileUploadMixin, keyboardEventListenerMixins],
-  emits: ['toggleEditorSize'],
+  emits: ['toggleEditorSize', 'close'],
   setup() {
     const {
       uiSettings,
@@ -223,6 +223,12 @@ export default {
           return this.$t('CONVERSATION.FOOTER.MESSAGING_RESTRICTED_API');
         }
         return this.$t('CONVERSATION.FOOTER.MESSAGING_RESTRICTED');
+      }
+      // Phones get a plain prompt: the keyboard hints don't apply there.
+      if (this.isMobile) {
+        return this.isPrivate
+          ? this.$t('CONVERSATION.FOOTER.MOBILE_PRIVATE_MSG_INPUT')
+          : this.$t('CONVERSATION.FOOTER.MOBILE_MSG_INPUT');
       }
       return this.isPrivate
         ? this.$t('CONVERSATION.FOOTER.PRIVATE_MSG_INPUT')
@@ -1287,6 +1293,7 @@ export default {
       :editor-content="message"
       :has-content="hasMeaningfulEditorContent"
       @set-reply-mode="setReplyMode"
+      @close="$emit('close')"
       @toggle-editor-size="toggleEditorSize"
       @toggle-copilot="copilot.toggleEditor"
       @execute-copilot-action="executeCopilotAction"
@@ -1496,6 +1503,9 @@ export default {
 
 .reply-box {
   @apply relative m-5 mt-4 border border-fd-border rounded-md bg-fd-surface;
+
+  /* Phones: the composer is the screen, like a mail app's compose view. */
+  @apply max-md:m-0 max-md:border-0 max-md:rounded-none;
 
   &.is-private {
     @apply bg-n-solid-amber dark:border-n-amber-3/10 border-n-amber-12/5;

@@ -162,7 +162,7 @@ defineExpose({ toggleEditorExpand, resetEditorHeight, setEditorHeight });
     }"
   >
     <div
-      class="group absolute inset-x-0 top-0 z-10 flex h-4 cursor-row-resize select-none items-center justify-center bg-gradient-to-b from-transparent from-10% dark:to-n-surface-1/80 to-n-surface-1/90 backdrop-blur-[0.01875rem]"
+      class="group absolute inset-x-0 top-0 z-10 flex max-md:hidden h-4 cursor-row-resize select-none items-center justify-center bg-gradient-to-b from-transparent from-10% dark:to-n-surface-1/80 to-n-surface-1/90 backdrop-blur-[0.01875rem]"
       @mousedown="onResizeStart"
       @touchstart.prevent="onResizeStart"
       @dblclick="resetEditorHeight"

@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { useStore, useStoreGetters } from 'dashboard/composables/store';
+import wootConstants from 'dashboard/constants/globals';
 
 export const DEFAULT_CONVERSATION_SIDEBAR_ITEMS_ORDER = Object.freeze([
   { name: 'conversation_actions' },
@@ -122,6 +123,12 @@ const fetchQuotedReplyFlagFromUISettings = (channelType, uiSettings) => {
  * @returns {boolean} True if the hotkey is enabled, otherwise false.
  */
 const isEditorHotKeyEnabled = (key, uiSettings) => {
+  // FRESHDESK-SKIN: a phone keyboard has no Shift+Enter, so Enter-to-send
+  // would make a second line impossible. On phones Enter is a new line and
+  // the Send button sends, like any messaging or mail app.
+  if (window.innerWidth < wootConstants.SMALL_SCREEN_BREAKPOINT) {
+    return key === 'cmd_enter';
+  }
   const {
     editor_message_key: editorMessageKey,
     enter_to_send_enabled: enterToSendEnabled,
