@@ -186,7 +186,12 @@ class Rack::Attack
     end
 
     ## Prevent Conversation Bombing through multiple sessions
-    throttle('widget?website_token={website_token}&cw_conversation={x-auth-token}', limit: 5, period: 1.hour) do |req|
+    # FRESHDESK-SKIN: the storefront loads the widget in the background on every
+    # page so Chat opens instantly, which makes every new visitor's first load
+    # count here, not only those who open the chat. At 5/hour a phone carrier's
+    # shared (CGNAT) address or an office network locks the chat out for real
+    # customers. Conversation creation itself stays limited (6 per 12h above).
+    throttle('widget?website_token={website_token}&cw_conversation={x-auth-token}', limit: 60, period: 1.hour) do |req|
       req.ip if req.path_without_extensions == '/widget' && ActionDispatch::Request.new(req.env).params['cw_conversation'].blank?
     end
 
