@@ -75,10 +75,10 @@ const store = useStore();
 
 const resolveAttributesModalRef = ref(null);
 
-// Multi-select pill filters — both always keep at least one entry active
-// (enforced in toggleAssigneeType/toggleStatus below); there's no "All"
-// fallback state once every pill is removed.
-const activeAssigneeTypes = ref([wootConstants.ASSIGNEE_TYPE.ME]);
+// Multi-select pill filters. No assignee pill selected means no assignee
+// filter at all (everyone's tickets) — that is the starting state, so agents
+// see the whole queue and narrow it themselves. Status starts on Open.
+const activeAssigneeTypes = ref([]);
 const activeStatuses = ref([wootConstants.STATUS_TYPE.OPEN]);
 const activeSortBy = ref(wootConstants.SORT_BY_TYPE.LAST_ACTIVITY_AT_DESC);
 const showAdvancedFilters = ref(false);
