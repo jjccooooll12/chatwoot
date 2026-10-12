@@ -100,6 +100,7 @@
       "FORWARD": "Forward",
       "SEND_EMAIL": {
         "BUTTON": "Send Email",
+        "MOBILE_BUTTON": "Email",
         "TITLE": "Send as email",
         "DESCRIPTION": "This ticket will switch to email — the customer's replies will land back in this same ticket.",
         "EMAIL_LABEL": "Email address",

@@ -952,7 +952,7 @@ export default {
             <div class="flex gap-2">
               <button
                 type="button"
-                class="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text"
+                class="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-n-slate-3 px-3 text-sm font-medium text-fd-text active:bg-n-slate-4"
                 @click="startCompose('NOTE')"
               >
                 <span
@@ -964,7 +964,7 @@ export default {
               </button>
               <button
                 type="button"
-                class="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text"
+                class="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-n-slate-3 px-3 text-sm font-medium text-fd-text active:bg-n-slate-4"
                 @click="startCompose('FORWARD')"
               >
                 <span class="i-lucide-forward size-4 shrink-0 text-fd-muted" />
@@ -975,14 +975,16 @@ export default {
               <button
                 v-if="canSendAsEmail"
                 type="button"
-                class="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text"
+                class="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-n-slate-3 px-3 text-sm font-medium text-fd-text active:bg-n-slate-4"
                 @click="openSendAsEmailDialog"
               >
                 <span
                   class="i-lucide-send-horizontal size-4 shrink-0 text-fd-muted"
                 />
                 <span class="truncate">
-                  {{ $t('CHAT_LIST.FRESHDESK_DETAIL.SEND_EMAIL.BUTTON') }}
+                  {{
+                    $t('CHAT_LIST.FRESHDESK_DETAIL.SEND_EMAIL.MOBILE_BUTTON')
+                  }}
                 </span>
               </button>
             </div>
