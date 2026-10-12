@@ -1,7 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import Banner from 'dashboard/components/ui/Banner.vue';
 import { requestPushPermissions } from 'dashboard/helper/pushHelper.js';
 
 // FRESHDESK-SKIN: push is on by default for every agent (NotificationSetting::
@@ -58,22 +57,35 @@ const enable = () => {
 
 <!-- eslint-disable-next-line vue/no-root-v-if -->
 <template>
-  <Banner
-    v-if="mode === 'ask'"
-    color-scheme="primary"
-    :banner-message="t('APP_GLOBAL.PUSH_PERMISSION.MESSAGE')"
-    :action-button-label="t('APP_GLOBAL.PUSH_PERMISSION.ENABLE')"
-    action-button-icon="i-lucide-bell"
-    has-action-button
-    has-close-button
-    @primary-action="enable"
-    @close="dismiss"
-  />
-  <Banner
-    v-else-if="mode === 'install'"
-    color-scheme="primary"
-    :banner-message="t('APP_GLOBAL.PUSH_PERMISSION.INSTALL_HINT')"
-    has-close-button
-    @close="dismiss"
-  />
+  <div
+    v-if="mode"
+    role="status"
+    class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-n-brand px-4 py-2 text-sm text-white"
+  >
+    <span class="flex min-w-0 flex-1 items-start gap-2 md:flex-none">
+      <span class="i-lucide-bell mt-0.5 size-4 shrink-0" />
+      {{
+        mode === 'ask'
+          ? t('APP_GLOBAL.PUSH_PERMISSION.MESSAGE')
+          : t('APP_GLOBAL.PUSH_PERMISSION.INSTALL_HINT')
+      }}
+    </span>
+    <span class="flex shrink-0 items-center gap-2">
+      <button
+        v-if="mode === 'ask'"
+        type="button"
+        class="h-9 rounded-lg bg-white px-3 font-medium text-n-brand hover:bg-white/90 md:h-7"
+        @click="enable"
+      >
+        {{ t('APP_GLOBAL.PUSH_PERMISSION.ENABLE') }}
+      </button>
+      <button
+        type="button"
+        class="h-9 rounded-lg px-3 text-white/90 hover:bg-white/10 md:h-7"
+        @click="dismiss"
+      >
+        {{ t('GENERAL_SETTINGS.DISMISS') }}
+      </button>
+    </span>
+  </div>
 </template>
