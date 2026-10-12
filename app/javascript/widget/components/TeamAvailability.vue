@@ -31,7 +31,10 @@ const startConversation = () => {
   >
     <AvailabilityContainer :agents="availableAgents" show-header show-avatars />
 
+    <!-- FRESHDESK-SKIN: Home puts the message box here for a first-time visitor. -->
+    <slot v-if="$slots.default" />
     <button
+      v-else
       class="inline-flex items-center gap-1 font-medium text-n-slate-12"
       :style="{ color: widgetColor }"
       @click="startConversation"
