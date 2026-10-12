@@ -1,10 +1,13 @@
 <script setup>
+import { watch } from 'vue';
 import { useToggle } from '@vueuse/core';
 import { vOnClickOutside } from '@vueuse/components';
 import { provideDropdownContext } from './provider.js';
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'toggle']);
 const [isOpen, toggle] = useToggle(false);
+
+watch(isOpen, value => emit('toggle', value));
 
 const closeMenu = () => {
   if (isOpen.value) {

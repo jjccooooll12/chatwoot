@@ -137,6 +137,13 @@ const isEffectivelyCollapsed = computed(
   () => isFreshdeskRail.value || (!isMobile.value && isCollapsed.value)
 );
 
+// FRESHDESK-SKIN: on phones the profile menu covers most of the drawer, so
+// hide the navigation behind it while it is open - only its options remain.
+const isProfileMenuOpen = ref(false);
+const hideNavForProfileMenu = computed(
+  () => isMobile.value && isProfileMenuOpen.value
+);
+
 // Resize handle logic
 const isResizing = ref(false);
 const startX = ref(0);
@@ -762,7 +769,10 @@ const menuItems = computed(() => {
   >
     <section
       class="grid"
-      :class="isEffectivelyCollapsed ? 'mt-3 mb-4 gap-4' : 'mt-1 mb-4 gap-2'"
+      :class="[
+        isEffectivelyCollapsed ? 'mt-3 mb-4 gap-4' : 'mt-1 mb-4 gap-2',
+        { invisible: hideNavForProfileMenu },
+      ]"
     >
       <div
         class="flex gap-2 items-center min-w-0"
@@ -835,8 +845,8 @@ const menuItems = computed(() => {
       </div>
     </section>
     <nav
-      class="grid overflow-y-scroll flex-grow gap-2 pb-5 no-scrollbar min-w-0"
-      :class="isEffectivelyCollapsed ? 'px-2' : 'px-2'"
+      class="grid overflow-y-scroll flex-grow gap-2 pb-5 no-scrollbar min-w-0 px-2"
+      :class="{ invisible: hideNavForProfileMenu }"
     >
       <ul
         class="flex flex-col gap-1 m-0 list-none min-w-0"
@@ -869,13 +879,17 @@ const menuItems = computed(() => {
           isEffectivelyCollapsed
         "
       />
-      <SidebarDialer :is-collapsed="isEffectivelyCollapsed" />
+      <SidebarDialer
+        :is-collapsed="isEffectivelyCollapsed"
+        :class="{ invisible: hideNavForProfileMenu }"
+      />
       <div
         class="px-1 py-1.5 flex-shrink-0 flex w-full z-50 gap-2 items-center border-t border-fd-border shadow-[0px_-2px_4px_0px_rgba(27,28,29,0.02)]"
         :class="isEffectivelyCollapsed ? 'justify-center' : 'justify-between'"
       >
         <SidebarProfileMenu
           :is-collapsed="isEffectivelyCollapsed"
+          @toggle="isProfileMenuOpen = $event"
           @open-key-shortcut-modal="emit('openKeyShortcutModal')"
         />
       </div>

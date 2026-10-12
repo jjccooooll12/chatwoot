@@ -19,7 +19,7 @@ defineProps({
   isCollapsed: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['close', 'openKeyShortcutModal']);
+const emit = defineEmits(['close', 'toggle', 'openKeyShortcutModal']);
 
 defineOptions({
   inheritAttrs: false,
@@ -132,6 +132,7 @@ const allowedMenuItems = computed(() => {
     class="relative min-w-0"
     :class="isCollapsed ? 'w-auto' : 'w-full'"
     @close="emit('close')"
+    @toggle="emit('toggle', $event)"
   >
     <template #trigger="{ toggle, isOpen }">
       <button
