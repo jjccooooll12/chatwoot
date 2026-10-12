@@ -19,7 +19,7 @@ defineProps({
   isCollapsed: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['close', 'toggle', 'openKeyShortcutModal']);
+const emit = defineEmits(['close', 'toggle']);
 
 defineOptions({
   inheritAttrs: false,
@@ -62,46 +62,9 @@ const menuItems = computed(() => {
     {
       show: true,
       showOnCustomBrandedInstance: true,
-      label: t('SIDEBAR_ITEMS.KEYBOARD_SHORTCUTS'),
-      icon: 'i-lucide-keyboard',
-      click: () => {
-        emit('openKeyShortcutModal');
-      },
-    },
-    {
-      show: true,
-      showOnCustomBrandedInstance: true,
       label: t('SIDEBAR_ITEMS.PROFILE_SETTINGS'),
       icon: 'i-lucide-user-pen',
       link: { name: 'profile_settings_index' },
-    },
-    {
-      show: true,
-      showOnCustomBrandedInstance: true,
-      label: t('SIDEBAR_ITEMS.APPEARANCE'),
-      icon: 'i-lucide-palette',
-      click: () => {
-        const ninja = document.querySelector('ninja-keys');
-        ninja.open({ parent: 'appearance_settings' });
-      },
-    },
-    {
-      show: true,
-      showOnCustomBrandedInstance: false,
-      label: t('SIDEBAR_ITEMS.DOCS'),
-      icon: 'i-lucide-book',
-      link: 'https://www.chatwoot.com/hc/user-guide/en',
-      nativeLink: true,
-      target: '_blank',
-    },
-    {
-      show: true,
-      showOnCustomBrandedInstance: false,
-      label: t('SIDEBAR_ITEMS.CHANGELOG'),
-      icon: 'i-lucide-scroll-text',
-      link: 'https://www.chatwoot.com/changelog/',
-      nativeLink: true,
-      target: '_blank',
     },
     {
       show: currentUser.value.type === 'SuperAdmin',

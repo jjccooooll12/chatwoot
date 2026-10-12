@@ -890,7 +890,6 @@ const menuItems = computed(() => {
         <SidebarProfileMenu
           :is-collapsed="isEffectivelyCollapsed"
           @toggle="isProfileMenuOpen = $event"
-          @open-key-shortcut-modal="emit('openKeyShortcutModal')"
         />
       </div>
     </section>
