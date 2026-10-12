@@ -25,11 +25,13 @@ export default {
       conversationSize: 'conversation/getConversationSize',
       unreadMessageCount: 'conversation/getUnreadMessageCount',
     }),
-    // FRESHDESK-SKIN: a first-time visitor types straight into the home card
-    // instead of clicking "Start conversation" to reach a message box. With a
-    // pre-chat form the form has to come first, so keep the link there.
+    // FRESHDESK-SKIN: visitors type straight into the home card instead of
+    // clicking "Start conversation" / "Continue conversation" to reach a
+    // message box; sending opens the conversation (with its history). Only a
+    // first-time visitor on an inbox with a pre-chat form gets the link, since
+    // the form has to come first.
     showInlineComposer() {
-      return !this.conversationSize && !this.preChatFormEnabled;
+      return !!this.conversationSize || !this.preChatFormEnabled;
     },
   },
   methods: {
@@ -40,18 +42,20 @@ export default {
       IFrameHelper.sendMessage({
         event: 'onEvent',
         eventIdentifier: CHATWOOT_ON_START_CONVERSATION,
-        data: { hasConversation: false },
+        data: { hasConversation: !!this.conversationSize },
       });
     },
-    async sendFirstMessage(content) {
+    async sendFromHome(content) {
+      const isNewConversation = !this.conversationSize;
       this.openConversation();
       await this.sendMessage({ content });
-      this.getAttributes();
+      if (isNewConversation) this.getAttributes();
     },
-    async sendFirstAttachment(attachment) {
+    async sendAttachmentFromHome(attachment) {
+      const isNewConversation = !this.conversationSize;
       this.openConversation();
       await this.sendAttachment({ attachment });
-      this.getAttributes();
+      if (isNewConversation) this.getAttributes();
     },
     startConversation() {
       if (this.preChatFormEnabled && !this.conversationSize) {
@@ -74,8 +78,8 @@ export default {
       <template v-if="showInlineComposer" #default>
         <ChatInputWrap
           class="shadow-sm"
-          :on-send-message="sendFirstMessage"
-          :on-send-attachment="sendFirstAttachment"
+          :on-send-message="sendFromHome"
+          :on-send-attachment="sendAttachmentFromHome"
         />
       </template>
     </TeamAvailability>
