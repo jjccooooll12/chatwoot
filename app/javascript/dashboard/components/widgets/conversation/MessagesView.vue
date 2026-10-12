@@ -631,6 +631,11 @@ export default {
     // private note has no mail fields, so there the composer's own top is it.
     composerAnchorElement() {
       const composer = this.composerElement();
+      // Phones: the close button and Reply/Note switch sit on the reply box's
+      // own top bar, so that bar - not the To field below it - leads the screen.
+      if (this.isMobile) {
+        return composer?.querySelector('.reply-box') ?? composer ?? null;
+      }
       return (
         composer?.querySelector('[data-freshdesk-mail-head]') ??
         composer ??
