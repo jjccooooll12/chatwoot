@@ -96,6 +96,11 @@ export default {
     },
   },
   watch: {
+    // FRESHDESK-SKIN: on phones the drawer overlays the page, so once an
+    // option is chosen get out of the way and show that page full screen.
+    '$route.fullPath'() {
+      this.closeMobileSidebar();
+    },
     isSmallScreen: {
       handler() {
         const { LAYOUT_TYPES } = wootConstants;
