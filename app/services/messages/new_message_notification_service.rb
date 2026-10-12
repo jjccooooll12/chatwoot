@@ -6,6 +6,7 @@ class Messages::NewMessageNotificationService
 
     notify_conversation_assignee
     notify_participating_users
+    notify_inbox_members_while_unassigned
   end
 
   private
@@ -36,6 +37,25 @@ class Messages::NewMessageNotificationService
       NotificationBuilder.new(
         notification_type: 'participating_conversation_new_message',
         user: participant,
+        account: account,
+        primary_actor: message.conversation,
+        secondary_actor: message
+      ).perform
+    end
+  end
+
+  # Nobody owns the ticket yet, so a customer's follow-up goes to everyone who
+  # could pick it up. The first message is already covered by conversation_creation.
+  def notify_inbox_members_while_unassigned
+    return if conversation.assignee.present? || !message.incoming?
+    return unless conversation.messages.incoming.exists?(id: ...message.id)
+
+    conversation.inbox.members.each do |agent|
+      next if already_notified?(agent)
+
+      NotificationBuilder.new(
+        notification_type: 'unassigned_conversation_new_message',
+        user: agent,
         account: account,
         primary_actor: message.conversation,
         secondary_actor: message

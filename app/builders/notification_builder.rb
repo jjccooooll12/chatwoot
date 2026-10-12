@@ -23,8 +23,8 @@ class NotificationBuilder
   end
 
   def build_notification
-    # Create conversation_creation notification only if user is subscribed to it
-    return if notification_type == 'conversation_creation' && !user_subscribed_to_notification?
+    # These go to every inbox member, so only create them for users subscribed to them
+    return if %w[conversation_creation unassigned_conversation_new_message].include?(notification_type) && !user_subscribed_to_notification?
     # skip notifications for blocked conversations except for user mentions
     return if primary_actor.contact.blocked? && notification_type != 'conversation_mention'
     # respect conversation access (inbox/team membership and custom-role permissions)

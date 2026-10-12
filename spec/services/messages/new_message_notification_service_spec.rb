@@ -111,5 +111,48 @@ describe Messages::NewMessageNotificationService do
                                             secondary_actor: message)).not_to exist
       end
     end
+
+    context 'when the conversation is unassigned' do
+      let(:unassigned) { create(:conversation, account: account, inbox: inbox, assignee: nil) }
+      let(:unassigned_notifications) do
+        Notification.where(notification_type: 'unassigned_conversation_new_message', primary_actor: unassigned)
+      end
+
+      before { create(:message, conversation: unassigned, account: account, message_type: :incoming) }
+
+      it 'notifies every inbox member of a customer follow-up' do
+        follow_up = create(:message, conversation: unassigned, account: account, message_type: :incoming)
+
+        described_class.new(message: follow_up).perform
+
+        expect(unassigned_notifications.where(secondary_actor: follow_up).pluck(:user_id))
+          .to match_array([participating_agent_1, participating_agent_2, assignee].map(&:id))
+      end
+
+      it 'leaves the first message to the conversation_creation notification' do
+        described_class.new(message: unassigned.messages.first).perform
+
+        expect(unassigned_notifications).not_to exist
+      end
+
+      it 'skips agents who switched the notification off' do
+        setting = participating_agent_1.notification_settings.find_by(account: account)
+        setting.selected_push_flags = setting.selected_push_flags - [:push_unassigned_conversation_new_message]
+        setting.save!
+        follow_up = create(:message, conversation: unassigned, account: account, message_type: :incoming)
+
+        described_class.new(message: follow_up).perform
+
+        expect(unassigned_notifications.where(user: participating_agent_1)).not_to exist
+      end
+
+      it 'does not notify on an agent reply' do
+        reply = create(:message, conversation: unassigned, account: account, message_type: :outgoing, sender: assignee)
+
+        described_class.new(message: reply).perform
+
+        expect(unassigned_notifications).not_to exist
+      end
+    end
   end
 end

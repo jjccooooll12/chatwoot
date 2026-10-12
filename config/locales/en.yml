@@ -289,6 +289,7 @@ en:
       sla_missed_first_response: 'SLA target first response missed for conversation (#%{ticket_number})'
       sla_missed_next_response: 'SLA target next response missed for conversation (#%{ticket_number})'
       sla_missed_resolution: 'SLA target resolution missed for conversation (#%{ticket_number})'
+      unassigned_conversation_new_message: 'New message in unassigned conversation (#%{ticket_number})'
     attachment: 'Attachment'
     no_content: 'No content'
   conversations:

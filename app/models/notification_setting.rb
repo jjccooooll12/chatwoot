@@ -27,6 +27,12 @@ class NotificationSetting < ApplicationRecord
     check_for_column: false
   }.freeze
 
+  DEFAULT_PUSH_FLAGS = %i[
+    push_conversation_creation push_conversation_assignment push_conversation_mention
+    push_assigned_conversation_new_message push_participating_conversation_new_message
+    push_unassigned_conversation_new_message
+  ].freeze
+
   EMAIL_NOTIFICATION_FLAGS = ::Notification::NOTIFICATION_TYPES.transform_keys { |key| "email_#{key}".to_sym }.invert.freeze
   PUSH_NOTIFICATION_FLAGS = ::Notification::NOTIFICATION_TYPES.transform_keys { |key| "push_#{key}".to_sym }.invert.freeze
 

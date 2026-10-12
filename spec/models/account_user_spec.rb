@@ -12,8 +12,9 @@ RSpec.describe AccountUser do
     it 'gets created with the right default settings' do
       expect(account_user.user.notification_settings).not_to be_nil
 
-      expect(account_user.user.notification_settings.first.email_conversation_creation?).to be(false)
-      expect(account_user.user.notification_settings.first.email_conversation_assignment?).to be(true)
+      setting = account_user.user.notification_settings.first
+      expect(setting.selected_email_flags).to be_empty
+      expect(setting.selected_push_flags).to match_array(NotificationSetting::DEFAULT_PUSH_FLAGS)
     end
   end
 
