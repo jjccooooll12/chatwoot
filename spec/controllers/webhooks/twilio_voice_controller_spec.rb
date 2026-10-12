@@ -112,6 +112,39 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
       end
     end
 
+    context 'when an agent has a forwarding cell number' do
+      let(:calls_list) { instance_double(Twilio::REST::Api::V2010::AccountContext::CallList) }
+
+      before do
+        create(:inbox_member, inbox: inbox, user: agent)
+        channel.update!(additional_attributes: channel.additional_attributes.merge('forward_numbers' => { agent.id.to_s => '+13855550100' }))
+        client = instance_double(Twilio::REST::Client, calls: calls_list)
+        allow(Twilio::REST::Client).to receive(:new).and_return(client)
+      end
+
+      it 'rings the cell even with nobody online in the dashboard, and holds the caller in the conference' do
+        expect(calls_list).to receive(:create).with(
+          hash_including(to: '+13855550100', from: '+15550009999', timeout: Voice::ForwardLegs::RING_SECONDS,
+                         url: a_string_matching(%r{/webhooks/twilio_voice/15550009999/forward/voice-\h+/#{agent.id}\z}))
+        ).and_return(double(sid: 'CA_leg_1')) # rubocop:disable RSpec/VerifiedDoubles
+
+        expect do
+          signed_post "/webhooks/twilio_voice/#{phone_digits}", params
+        end.to have_enqueued_job(VoiceRingTimeoutJob).with(kind_of(Integer))
+
+        expect(response.body).to include('<Conference')
+      end
+
+      it 'does not ring the cell of an agent who is no longer an inbox member' do
+        inbox.inbox_members.find_by(user: agent).destroy!
+        expect(calls_list).not_to receive(:create)
+
+        signed_post "/webhooks/twilio_voice/#{phone_digits}", params
+
+        expect(response.body).to include('<Record')
+      end
+    end
+
     context 'with a country routing rule' do
       let(:italy_agent) { create(:user, account: account, role: :agent) }
       let(:italy_params) { params.merge('From' => '+390212345678') }
@@ -221,6 +254,55 @@ RSpec.describe 'Webhooks::TwilioVoiceController', type: :request do
       expect(response.body).to include('trim="do-not-trim"')
       expect(response.body).to include('/recording_status')
       expect(response.body).to include('/conference_status')
+    end
+  end
+
+  describe 'forwarded cell leg' do
+    let(:conversation) { create(:conversation, account: account, inbox: inbox) }
+    let!(:voice_call) do
+      create(:voice_call, account: account, inbox: inbox, conversation: conversation, contact: conversation.contact,
+                          provider_call_id: 'CA_customer_1', conference_sid: 'voice-fwd-conf-1', from_number: '+15551112222')
+    end
+    let(:phone_digits) { channel.additional_attributes['phone_number'].delete_prefix('+') }
+    let(:forward_path) { "/webhooks/twilio_voice/#{phone_digits}/forward/voice-fwd-conf-1/#{agent.id}" }
+
+    before { create(:inbox_member, inbox: inbox, user: agent) }
+
+    it 'screens the pickup with a press-1 prompt that reads out the caller' do
+      conversation.contact.update!(name: '+15551112222')
+
+      signed_post forward_path, { 'CallSid' => 'CA_leg_1' }
+
+      expect(response.body).to include('<Gather')
+      expect(response.body).to include('1 5 5 5 1 1 1 2 2 2 2')
+      expect(response.body).to include("#{forward_path}/accept")
+    end
+
+    it 'hangs up without a prompt once the call is no longer ringing' do
+      voice_call.update!(status: 'in_progress')
+
+      signed_post forward_path, { 'CallSid' => 'CA_leg_1' }
+
+      expect(response.body).not_to include('<Gather')
+      expect(response.body).to include('<Hangup')
+    end
+
+    it 'claims the call for the agent and joins the conference on 1' do
+      signed_post "#{forward_path}/accept", { 'CallSid' => 'CA_leg_1', 'Digits' => '1' }
+
+      expect(response.body).to include('<Conference')
+      expect(response.body).to include('startConferenceOnEnter="true"')
+      expect(voice_call.reload.accepted_by_agent_id).to eq(agent.id)
+      expect(conversation.reload.assignee_id).to eq(agent.id)
+    end
+
+    it 'does not join when another agent already answered' do
+      voice_call.update!(accepted_by_agent_id: create(:user, account: account).id)
+
+      signed_post "#{forward_path}/accept", { 'CallSid' => 'CA_leg_1', 'Digits' => '1' }
+
+      expect(response.body).not_to include('<Conference')
+      expect(response.body).to include('<Hangup')
     end
   end
 

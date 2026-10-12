@@ -5,6 +5,8 @@ class VoiceRingTimeoutJob < ApplicationJob
   queue_as :default
 
   RING_TIMEOUT = 25.seconds
+  # A forwarded cell phone needs time to ring, be picked up and hear the press-1 prompt.
+  FORWARD_RING_TIMEOUT = 45.seconds
 
   def perform(voice_call_id)
     voice_call = VoiceCall.find_by(id: voice_call_id)

@@ -8,13 +8,50 @@ class Webhooks::TwilioVoiceController < ApplicationController
   # Phone number's "A call comes in" webhook — the customer leg.
   def call_twiml
     voice_call = create_ringing_call!
+    forward_legs = Voice::ForwardLegs.new(voice_call)
+    forwarding = forward_legs.targets.present?
 
-    if online_agent_ids.present?
-      VoiceRingTimeoutJob.set(wait: VoiceRingTimeoutJob::RING_TIMEOUT).perform_later(voice_call.id)
+    if online_agent_ids.present? || forwarding
+      ring_timeout = forwarding ? VoiceRingTimeoutJob::FORWARD_RING_TIMEOUT : VoiceRingTimeoutJob::RING_TIMEOUT
+      VoiceRingTimeoutJob.set(wait: ring_timeout).perform_later(voice_call.id)
+      forward_legs.ring! if forwarding
       render xml: dial_conference_twiml(voice_call).to_s
     else
       render xml: voicemail_twiml.to_s
     end
+  end
+
+  # An agent's cell phone picked up a forwarded leg (Voice::ForwardLegs).
+  # Screen it with press-1 so a voicemail box can't answer the customer.
+  def forward_twiml
+    voice_call = VoiceCall.find_by!(conference_sid: params[:conference_sid], account_id: @account.id)
+    response = Twilio::TwiML::VoiceResponse.new
+
+    if voice_call.ringing?
+      accept_url = voice_webhook_forward_accept_url(phone_number: params[:phone_number], conference_sid: voice_call.conference_sid,
+                                                    user_id: params[:user_id])
+      response.gather(num_digits: 1, timeout: 8, action: accept_url, method: 'POST') do |gather|
+        gather.say(message: "Support call from #{spoken_caller(voice_call)}. Press 1 to answer.")
+      end
+    end
+    response.say(message: 'Goodbye.')
+    response.hangup
+    render xml: response.to_s
+  end
+
+  def forward_accept
+    voice_call = VoiceCall.find_by!(conference_sid: params[:conference_sid], account_id: @account.id)
+    user = @inbox.members.find(params[:user_id])
+
+    if params[:Digits] == '1' && voice_call.claim!(user) == :claimed
+      Voice::ForwardLegs.new(voice_call).release!(params[:CallSid])
+      return render xml: join_conference_twiml(voice_call).to_s
+    end
+
+    response = Twilio::TwiML::VoiceResponse.new
+    response.say(message: 'This call was answered by someone else. Goodbye.')
+    response.hangup
+    render xml: response.to_s
   end
 
   # Mid-call redirect target for VoiceRingTimeoutJob — if nobody answers
@@ -30,14 +67,7 @@ class Webhooks::TwilioVoiceController < ApplicationController
     voice_call = VoiceCall.find_by(provider_call_id: params[:call_sid], account_id: @account.id)
     return render(xml: Twilio::TwiML::VoiceResponse.new.reject.to_s) unless voice_call
 
-    response = Twilio::TwiML::VoiceResponse.new
-    response.dial do |dial|
-      dial.conference(
-        voice_call.conference_sid,
-        **conference_options(start_conference_on_enter: true, end_conference_on_exit: true)
-      )
-    end
-    render xml: response.to_s
+    render xml: join_conference_twiml(voice_call).to_s
   end
 
   # Outbound customer leg. The authenticated dashboard API creates a VoiceCall
@@ -199,6 +229,25 @@ class Webhooks::TwilioVoiceController < ApplicationController
       )
     end
     response
+  end
+
+  # The answering agent's leg (browser or forwarded cell phone): entering
+  # starts the conference, which is what marks the call answered.
+  def join_conference_twiml(voice_call)
+    response = Twilio::TwiML::VoiceResponse.new
+    response.dial do |dial|
+      dial.conference(
+        voice_call.conference_sid,
+        **conference_options(start_conference_on_enter: true, end_conference_on_exit: true)
+      )
+    end
+    response
+  end
+
+  # Read a bare number digit by digit; a saved contact name as is.
+  def spoken_caller(voice_call)
+    name = voice_call.caller_display_name
+    name == voice_call.from_number ? name.delete('^0-9').chars.join(' ') : name
   end
 
   def conference_options(start_conference_on_enter:, end_conference_on_exit: nil)

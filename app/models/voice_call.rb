@@ -80,6 +80,8 @@ class VoiceCall < ApplicationRecord
   def transition_to!(status:, **attrs)
     previous_status = self.status
     update!(attrs.merge(status: status))
+    # Answered, timed out or abandoned: stop any agent cell phones still ringing.
+    Voice::ForwardLegs.new(self).hang_up_all! if previous_status == 'ringing' && !ringing?
     message&.send_update_event
     broadcast_ended! if terminal_status?(self.status) && previous_status != self.status
   end
@@ -89,6 +91,23 @@ class VoiceCall < ApplicationRecord
   # decision itself treats an unconfigured country.
   def eligible_for?(user_id)
     eligible_agent_ids.blank? || eligible_agent_ids.include?(user_id)
+  end
+
+  # First answer wins, whether it comes from a browser or a forwarded cell
+  # phone. Returns :claimed, :not_eligible, :gone (no longer ringing) or :taken.
+  def claim!(user)
+    return :not_eligible unless eligible_for?(user.id)
+    return :gone unless ringing?
+
+    claimed = self.class.where(id: id, accepted_by_agent_id: nil)
+                  .update_all(accepted_by_agent_id: user.id, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
+    return :taken if claimed.zero? && reload.accepted_by_agent_id != user.id
+
+    # Auto-assignment is off for the Voice inbox (every online agent needs to
+    # see the ringing popup, not just whoever it round-robins to) — assign
+    # the conversation here instead, to whoever actually answered.
+    conversation.update!(assignee_id: user.id) if conversation && conversation.assignee_id.blank?
+    :claimed
   end
 
   def outcome_kind

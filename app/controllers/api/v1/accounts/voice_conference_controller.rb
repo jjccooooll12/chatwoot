@@ -29,34 +29,20 @@ class Api::V1::Accounts::VoiceConferenceController < Api::V1::Accounts::BaseCont
 
   # POST .../conference — agent answers. Atomic first-agent-wins claim.
   def create
-    unless @voice_call.eligible_for?(current_user.id)
-      return render json: { error: 'This call is routed to a different agent' }, status: :forbidden
-    end
-
     # The ring can time out (or the caller can hang up) in the moment between
-    # the popup rendering and the agent clicking Answer - without this, that
-    # race silently "succeeds" into a broken state: accepted_by_agent_id set
-    # on a call that's already no_answer. 409 here is the same response the
-    # frontend already treats as "someone else got it" (tears down the local
-    # Device, dismisses the popup), so this reuses an existing handled path.
-    unless @voice_call.ringing?
-      return render json: { error: 'This call is no longer available' }, status: :conflict
+    # the popup rendering and the agent clicking Answer. 409 is the response
+    # the frontend already treats as "someone else got it" (tears down the
+    # local Device, dismisses the popup).
+    case @voice_call.claim!(current_user)
+    when :not_eligible
+      render json: { error: 'This call is routed to a different agent' }, status: :forbidden
+    when :gone
+      render json: { error: 'This call is no longer available' }, status: :conflict
+    when :taken
+      render json: { error: 'Call already answered' }, status: :conflict
+    else
+      render json: { conference_sid: @voice_call.conference_sid }
     end
-
-    claimed = VoiceCall.where(id: @voice_call.id, accepted_by_agent_id: nil)
-                        .update_all(accepted_by_agent_id: current_user.id, updated_at: Time.current) # rubocop:disable Rails/SkipsModelValidations
-
-    if claimed.zero? && @voice_call.reload.accepted_by_agent_id != current_user.id
-      return render json: { error: 'Call already answered' }, status: :conflict
-    end
-
-    # Auto-assignment is off for the Voice inbox (every online agent needs to
-    # see the ringing popup, not just whoever it round-robins to) — assign
-    # the conversation here instead, to whoever actually answered.
-    conversation = @voice_call.conversation
-    conversation.update!(assignee_id: current_user.id) if conversation && conversation.assignee_id.blank?
-
-    render json: { conference_sid: @voice_call.conference_sid }
   end
 
   # DELETE .../conference — agent leaves/declines. Do not rely only on the

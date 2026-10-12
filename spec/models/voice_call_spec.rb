@@ -69,6 +69,15 @@ RSpec.describe VoiceCall do
       voice_call.update!(message: nil)
       expect { voice_call.transition_to!(status: 'failed', end_reason: 'busy') }.not_to raise_error
     end
+
+    it 'hangs up forwarded cell legs still ringing once the call leaves ringing' do
+      forward_legs = instance_double(Voice::ForwardLegs)
+      allow(Voice::ForwardLegs).to receive(:new).with(voice_call).and_return(forward_legs)
+      expect(forward_legs).to receive(:hang_up_all!).once
+
+      voice_call.transition_to!(status: 'in_progress', started_at: Time.current)
+      voice_call.transition_to!(status: 'completed', ended_at: Time.current)
+    end
   end
 
   describe '#eligible_for?' do
