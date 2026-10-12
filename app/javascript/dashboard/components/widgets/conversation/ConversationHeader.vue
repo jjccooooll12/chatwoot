@@ -129,6 +129,7 @@ const closeMergePanel = () => {
 // below them they move into the ⋮ menu so they stay reachable on phones and
 // tablets.
 const breakpoints = useBreakpoints(breakpointsTailwind);
+const isBelowMd = breakpoints.smaller('md');
 const isBelowLg = breakpoints.smaller('lg');
 const isBelowXl = breakpoints.smaller('xl');
 const toolbarOverflowItems = computed(() => {
@@ -147,11 +148,21 @@ const toolbarOverflowItems = computed(() => {
       action: 'activities',
     });
   }
+  // Phones: Delete lives in this menu, away from the details button it used
+  // to sit next to, so a thumb can't hit it by accident.
+  if (isBelowMd.value) {
+    items.push({
+      icon: 'i-lucide-trash-2',
+      label: t('CONVERSATION.DELETE_CONVERSATION.CONFIRM'),
+      action: 'delete',
+    });
+  }
   return items;
 });
 const onToolbarOverflowAction = action => {
   if (action === 'merge') openMergePanel();
   if (action === 'activities') toggleActivities();
+  if (action === 'delete') onDeleteClick();
 };
 
 const onTicketMerged = async (
@@ -235,7 +246,7 @@ const onTicketMerged = async (
     </div>
 
     <div
-      class="flex h-11 items-center justify-between gap-3 bg-fd-surface px-3"
+      class="flex h-11 items-center justify-between gap-3 bg-fd-surface px-3 max-md:h-14"
     >
       <div class="flex min-w-0 items-center gap-1.5">
         <button
@@ -300,7 +311,7 @@ const onTicketMerged = async (
         </button>
         <button
           type="button"
-          class="grid size-9 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:border-n-ruby-9 md:size-7 hover:bg-n-ruby-2 hover:text-n-ruby-11"
+          class="hidden size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:border-n-ruby-9 hover:bg-n-ruby-2 hover:text-n-ruby-11 md:grid"
           :title="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"
           @click="onDeleteClick"
         >
@@ -312,13 +323,15 @@ const onTicketMerged = async (
         >
           <span class="i-lucide-chevron-right size-3.5" />
         </button>
+        <!-- Phones: the way into every ticket property, so a full-size
+             touch target in the brand colour. -->
         <button
           type="button"
-          class="grid size-9 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:bg-n-slate-2 hover:text-fd-text md:size-7"
+          class="grid size-11 place-content-center rounded-lg border border-fd-primary/40 bg-fd-blueSoft text-fd-primary shadow-sm hover:bg-n-slate-2 hover:text-fd-text md:size-7 md:rounded-md md:border-fd-border md:bg-fd-surface md:text-fd-muted"
           :aria-label="t('CHAT_LIST.FRESHDESK_MOBILE.TICKET_DETAILS')"
           @click="emit('toggleProperties')"
         >
-          <span class="i-lucide-panel-right-close size-3.5" />
+          <span class="i-lucide-panel-right-close size-6 md:size-3.5" />
         </button>
       </div>
     </div>

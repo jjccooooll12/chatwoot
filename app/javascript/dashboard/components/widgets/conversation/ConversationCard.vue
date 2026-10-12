@@ -382,8 +382,11 @@ watch(() => props.inbox.id, fetchAssignableAgents);
         </div>
       </div>
 
+      <!-- Phones: read-only. A tap anywhere on the card opens the ticket;
+           priority, assignee and status are changed from the ticket's own
+           details panel, so a thumb aiming for the ticket can't reassign it. -->
       <div
-        class="col-start-2 flex min-w-0 shrink-0 flex-wrap gap-x-4 gap-y-1.5 text-xs leading-5 text-fd-text sm:col-start-auto sm:grid sm:gap-2"
+        class="col-start-2 flex min-w-0 shrink-0 flex-wrap gap-x-4 gap-y-1.5 text-xs leading-5 text-fd-text sm:col-start-auto sm:grid sm:gap-2 max-md:pointer-events-none"
         @click.stop
       >
         <label class="relative inline-flex min-w-0 items-center gap-1.5">
@@ -392,7 +395,10 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           }}</span>
           <span class="size-1.5 rounded-sm" :class="priorityDotClass" />
           <span class="truncate">{{ priorityLabel }}</span>
-          <Icon icon="i-lucide-chevron-down" class="size-3 shrink-0" />
+          <Icon
+            icon="i-lucide-chevron-down"
+            class="size-3 shrink-0 max-md:hidden"
+          />
           <select
             class="absolute inset-0 cursor-pointer opacity-0"
             :value="chat.priority || ''"
@@ -414,7 +420,10 @@ watch(() => props.inbox.id, fetchAssignableAgents);
             class="size-3 shrink-0 text-fd-muted"
           />
           <span class="truncate">{{ assigneeLabel }}</span>
-          <Icon icon="i-lucide-chevron-down" class="size-3 shrink-0" />
+          <Icon
+            icon="i-lucide-chevron-down"
+            class="size-3 shrink-0 max-md:hidden"
+          />
           <select
             class="absolute inset-0 cursor-pointer opacity-0"
             :value="assigneeId"
@@ -436,7 +445,10 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           </span>
           <span class="size-1.5 rounded-sm" :class="statusDotClass" />
           <span class="truncate">{{ currentStatusLabel }}</span>
-          <Icon icon="i-lucide-chevron-down" class="size-3 shrink-0" />
+          <Icon
+            icon="i-lucide-chevron-down"
+            class="size-3 shrink-0 max-md:hidden"
+          />
           <select
             class="absolute inset-0 cursor-pointer opacity-0"
             :value="chat.status"
