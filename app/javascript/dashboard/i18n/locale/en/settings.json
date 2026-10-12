@@ -175,7 +175,13 @@
           "SLA_MISSED_NEXT_RESPONSE": "A conversation misses next response SLA",
           "SLA_MISSED_RESOLUTION": "A conversation misses resolution SLA"
         },
-        "BROWSER_PERMISSION": "Enable push notifications for your browser so you’re able to receive them"
+        "BROWSER_PERMISSION": "Enable push notifications for your browser so you’re able to receive them",
+        "PUSH_ENABLED": "Notifications are on for this device.",
+        "PUSH_FAILURE": {
+          "UNSUPPORTED": "This browser can't receive notifications. On iPhone, open Peach Support from its home-screen icon, not from Safari.",
+          "DENIED": "Notifications are blocked for this site. Allow them for support.peach-labels.com in your phone or browser settings, then turn this on again.",
+          "FAILED": "Couldn't turn on notifications: {detail}"
+        }
       },
       "API": {
         "UPDATE_SUCCESS": "Your notification preferences are updated successfully",

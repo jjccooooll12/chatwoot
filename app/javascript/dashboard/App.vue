@@ -124,7 +124,8 @@ export default {
       verifyServiceWorkerExistence(registration =>
         registration.pushManager.getSubscription().then(subscription => {
           if (subscription) {
-            registerSubscription();
+            // Refresh the server's copy; a failure here is retried next load.
+            registerSubscription().catch(() => {});
           }
         })
       );

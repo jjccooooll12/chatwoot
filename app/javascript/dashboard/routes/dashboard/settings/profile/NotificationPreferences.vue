@@ -74,12 +74,22 @@ export default {
     },
     onRegistrationSuccess() {
       this.hasEnabledPushPermissions = true;
+      useAlert(this.$t('PROFILE_SETTINGS.FORM.NOTIFICATIONS.PUSH_ENABLED'));
+    },
+    onRegistrationFailure(reason, detail) {
+      this.hasEnabledPushPermissions = false;
+      useAlert(
+        this.$t(`PROFILE_SETTINGS.FORM.NOTIFICATIONS.PUSH_FAILURE.${reason}`, {
+          detail,
+        })
+      );
     },
     onRequestPermissions(value) {
       if (value) {
         // Enable / re-enable push notifications
         requestPushPermissions({
           onSuccess: this.onRegistrationSuccess,
+          onFailure: this.onRegistrationFailure,
         });
       } else {
         // Disable push notifications

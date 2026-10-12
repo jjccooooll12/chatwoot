@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useAlert } from 'dashboard/composables';
 import { requestPushPermissions } from 'dashboard/helper/pushHelper.js';
 
 // FRESHDESK-SKIN: push is on by default for every agent (NotificationSetting::
@@ -48,7 +49,16 @@ const dismiss = () => {
 };
 
 const enable = () => {
-  requestPushPermissions({ onSuccess: () => {} });
+  requestPushPermissions({
+    onSuccess: () =>
+      useAlert(t('PROFILE_SETTINGS.FORM.NOTIFICATIONS.PUSH_ENABLED')),
+    onFailure: (reason, detail) =>
+      useAlert(
+        t(`PROFILE_SETTINGS.FORM.NOTIFICATIONS.PUSH_FAILURE.${reason}`, {
+          detail,
+        })
+      ),
+  });
   // requestPermission resolves after the person answers the OS prompt;
   // either answer means there is nothing left to ask on this device.
   dismiss();

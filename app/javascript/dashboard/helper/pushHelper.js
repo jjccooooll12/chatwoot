@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import NotificationSubscriptions from '../api/notificationSubscription';
 import auth from '../api/auth';
-import { useAlert } from 'dashboard/composables';
 
 export const verifyServiceWorkerExistence = (callback = () => {}) => {
   if (!('serviceWorker' in navigator)) {
@@ -53,40 +52,76 @@ export const sendRegistrationToServer = subscription => {
   return null;
 };
 
-export const registerSubscription = (onSuccess = () => {}) => {
-  if (!window.chatwootConfig.vapidPublicKey) {
-    return;
-  }
-  navigator.serviceWorker.ready
-    .then(serviceWorkerRegistration =>
-      serviceWorkerRegistration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: window.chatwootConfig.vapidPublicKey,
-      })
-    )
-    .then(sendRegistrationToServer)
-    .then(() => {
-      onSuccess();
-    })
-    .catch(error => {
-      // eslint-disable-next-line no-console
-      console.error('Push subscription registration failed:', error);
-      useAlert('This browser does not support desktop notification');
-    });
+// FRESHDESK-SKIN: both steps used to swallow failures (a blocked site did
+// nothing at all, a failed subscribe only logged), so a settings toggle looked
+// on and silently came back off. They now report why, for the caller to show.
+export const PUSH_FAILURE = {
+  UNSUPPORTED: 'UNSUPPORTED',
+  DENIED: 'DENIED',
+  FAILED: 'FAILED',
 };
 
-export const requestPushPermissions = ({ onSuccess }) => {
-  if (!('Notification' in window)) {
+const SERVICE_WORKER_TIMEOUT_MS = 10000;
+
+const activeServiceWorker = async () => {
+  await navigator.serviceWorker.register('/sw.js');
+  return Promise.race([
+    navigator.serviceWorker.ready,
+    new Promise((_, reject) => {
+      setTimeout(
+        () => reject(new Error('Service worker did not start')),
+        SERVICE_WORKER_TIMEOUT_MS
+      );
+    }),
+  ]);
+};
+
+export const registerSubscription = async () => {
+  const registration = await activeServiceWorker();
+  const subscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: window.chatwootConfig.vapidPublicKey,
+  });
+  await sendRegistrationToServer(subscription);
+};
+
+// Older Safari only supports the callback form; newer browsers return a promise.
+// Must be called synchronously from the tap that triggered it.
+const askPermission = () =>
+  new Promise(resolve => {
+    const result = Notification.requestPermission(resolve);
+    if (result) result.then(resolve);
+  });
+
+export const requestPushPermissions = async ({
+  onSuccess = () => {},
+  onFailure = () => {},
+}) => {
+  const supported =
+    'Notification' in window &&
+    'serviceWorker' in navigator &&
+    'PushManager' in window &&
+    window.chatwootConfig.vapidPublicKey;
+  if (!supported) {
+    onFailure(PUSH_FAILURE.UNSUPPORTED);
+    return;
+  }
+
+  const permission =
+    Notification.permission === 'default'
+      ? await askPermission()
+      : Notification.permission;
+  if (permission !== 'granted') {
+    onFailure(PUSH_FAILURE.DENIED);
+    return;
+  }
+
+  try {
+    await registerSubscription();
+    onSuccess();
+  } catch (error) {
     // eslint-disable-next-line no-console
-    console.warn('Notification is not supported');
-    useAlert('This browser does not support desktop notification');
-  } else if (Notification.permission === 'granted') {
-    registerSubscription(onSuccess);
-  } else if (Notification.permission !== 'denied') {
-    Notification.requestPermission(permission => {
-      if (permission === 'granted') {
-        registerSubscription(onSuccess);
-      }
-    });
+    console.error('Push subscription registration failed:', error);
+    onFailure(PUSH_FAILURE.FAILED, error.message || String(error));
   }
 };
