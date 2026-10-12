@@ -926,8 +926,68 @@ export default {
             />
           </ResizableEditorWrapper>
         </li>
-        <li v-show="!composerOpen" class="list-none pl-0 pr-3 pb-2 pt-2">
-          <div class="flex items-start gap-2">
+        <li
+          v-show="!composerOpen"
+          class="list-none pl-0 pr-3 pb-2 pt-2 max-md:pl-3"
+        >
+          <!-- Phones: a messaging-app reply bar - one big field that starts
+               a reply, with the other ways to respond as equal pills. -->
+          <div class="flex flex-col gap-2 md:hidden">
+            <div
+              class="flex h-12 cursor-text items-center gap-2 rounded-full border border-fd-border bg-fd-surface pe-1 ps-4 shadow-sm"
+              @click="startCompose('REPLY')"
+            >
+              <span class="flex-1 truncate text-base text-fd-muted">
+                {{ $t('CONVERSATION.FOOTER.MOBILE_MSG_INPUT') }}
+              </span>
+              <button
+                type="button"
+                class="grid size-10 shrink-0 place-content-center rounded-full bg-fd-primary text-white"
+                :aria-label="$t('CHAT_LIST.FRESHDESK_DETAIL.REPLY')"
+                @click.stop="startCompose('REPLY')"
+              >
+                <span class="i-lucide-send size-5" />
+              </button>
+            </div>
+            <div class="flex gap-2">
+              <button
+                type="button"
+                class="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text"
+                @click="startCompose('NOTE')"
+              >
+                <span
+                  class="i-lucide-file-text size-4 shrink-0 text-fd-muted"
+                />
+                <span class="truncate">
+                  {{ $t('CHAT_LIST.FRESHDESK_DETAIL.NOTE') }}
+                </span>
+              </button>
+              <button
+                type="button"
+                class="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text"
+                @click="startCompose('FORWARD')"
+              >
+                <span class="i-lucide-forward size-4 shrink-0 text-fd-muted" />
+                <span class="truncate">
+                  {{ $t('CHAT_LIST.FRESHDESK_DETAIL.FORWARD') }}
+                </span>
+              </button>
+              <button
+                v-if="canSendAsEmail"
+                type="button"
+                class="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-fd-border bg-fd-surface px-3 text-sm font-medium text-fd-text"
+                @click="openSendAsEmailDialog"
+              >
+                <span
+                  class="i-lucide-send-horizontal size-4 shrink-0 text-fd-muted"
+                />
+                <span class="truncate">
+                  {{ $t('CHAT_LIST.FRESHDESK_DETAIL.SEND_EMAIL.BUTTON') }}
+                </span>
+              </button>
+            </div>
+          </div>
+          <div class="flex items-start gap-2 max-md:hidden">
             <span
               class="mt-0.5 grid size-8 shrink-0 place-content-center rounded-full bg-[#e9ddff] text-xs font-semibold text-[#6e55c9]"
             >

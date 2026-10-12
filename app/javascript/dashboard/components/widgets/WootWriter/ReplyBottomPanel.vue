@@ -327,6 +327,7 @@ export default {
           slate
           faded
           sm
+          class="max-md:!size-11 max-md:!text-xl"
         />
       </FileUpload>
       <NextButton
@@ -336,6 +337,7 @@ export default {
         slate
         faded
         sm
+        class="max-md:!size-11 max-md:!text-xl"
         @click="$emit('toggleCannedResponses')"
       />
       <NextButton
@@ -345,6 +347,7 @@ export default {
         slate
         faded
         sm
+        class="max-md:!size-11 max-md:!text-xl"
         @click="toggleAudioRecorder"
       />
       <NextButton
@@ -431,7 +434,7 @@ export default {
         sm
         :color="isNote ? 'amber' : 'blue'"
         :disabled="isSendDisabled"
-        class="flex-shrink-0"
+        class="flex-shrink-0 max-md:!h-11 max-md:!px-6 max-md:!text-base"
         @click="onSend"
       />
     </div>
@@ -440,7 +443,7 @@ export default {
 
 <style lang="scss" scoped>
 .left-wrap {
-  @apply items-center flex gap-2;
+  @apply items-center flex gap-2 max-md:gap-4;
 }
 
 .right-wrap {
