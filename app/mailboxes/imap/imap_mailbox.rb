@@ -12,6 +12,7 @@ class Imap::ImapMailbox
   # facebook.com also covers business.facebook.com via the subdomain rule below;
   # facebookmail.com is a separate apex Meta sends from, so it needs its own entry.
   # instagram.com covers mail.instagram.com (no-reply@, security@).
+  # link.com is Stripe Link's notifications@ sender.
   DEFAULT_BLOCKED_SENDER_DOMAINS = %w[
     microsoft.com godaddy.com twilio.com
     linkedin.com trustpilot.com qwoted.com crunchbase.com
@@ -19,6 +20,7 @@ class Imap::ImapMailbox
     paypal.com wise.com
     ups.com
     instagram.com metricool.com
+    link.com ranked.ai
   ].freeze
 
   def process(mail, channel)
