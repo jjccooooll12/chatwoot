@@ -11,12 +11,14 @@ class Imap::ImapMailbox
   # can extend this at runtime via account.custom_attributes['blocked_ticket_senders'].
   # facebook.com also covers business.facebook.com via the subdomain rule below;
   # facebookmail.com is a separate apex Meta sends from, so it needs its own entry.
+  # instagram.com covers mail.instagram.com (no-reply@, security@).
   DEFAULT_BLOCKED_SENDER_DOMAINS = %w[
     microsoft.com godaddy.com twilio.com
     linkedin.com trustpilot.com qwoted.com crunchbase.com
     facebook.com facebookmail.com
     paypal.com wise.com
     ups.com
+    instagram.com metricool.com
   ].freeze
 
   def process(mail, channel)
