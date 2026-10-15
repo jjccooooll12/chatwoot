@@ -1169,14 +1169,14 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
         :key="button.key"
         v-tooltip.top="button.title"
         type="button"
-        class="flex size-7 items-center justify-center rounded text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
+        class="flex size-7 shrink-0 items-center justify-center rounded p-0 text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
         :class="{ '!bg-fd-blueSoft !text-fd-action': button.active }"
         :aria-label="button.title"
         :aria-pressed="button.active"
         @mousedown.prevent
         @click="button.run"
       >
-        <span class="size-4" :class="button.icon" />
+        <span class="size-4 shrink-0" :class="button.icon" />
       </button>
     </div>
     <slot name="footer" />
