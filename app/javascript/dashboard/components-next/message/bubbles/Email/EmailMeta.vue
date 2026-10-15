@@ -84,7 +84,7 @@ const showMeta = computed(
             ? 'text-n-ruby-11'
             : isOutgoing
               ? 'text-fd-primary'
-              : 'text-fd-text'
+              : 'text-fd-blue'
         "
       >
         {{ displayName }}
@@ -95,14 +95,14 @@ const showMeta = computed(
         <span class="text-xs italic text-fd-muted">{{ timeText }}</span>
       </template>
     </div>
-    <div v-if="toEmail.length" class="text-xs text-fd-text">
+    <div v-if="toEmail.length" class="text-[11px] leading-4 text-fd-muted">
       <span class="font-semibold">{{ $t('EMAIL_HEADER.TO') }}:</span>
       {{ toEmail.join(', ') }}
     </div>
-    <div v-if="ccEmail.length" class="text-xs text-fd-muted">
+    <div v-if="ccEmail.length" class="text-[11px] leading-4 text-fd-muted">
       {{ $t('EMAIL_HEADER.CC') }}: {{ ccEmail.join(', ') }}
     </div>
-    <div v-if="bccEmail.length" class="text-xs text-fd-muted">
+    <div v-if="bccEmail.length" class="text-[11px] leading-4 text-fd-muted">
       {{ $t('EMAIL_HEADER.BCC') }}: {{ bccEmail.join(', ') }}
     </div>
   </section>
