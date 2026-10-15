@@ -55,7 +55,8 @@ const tailwindConfig = {
           css: {
             color: 'rgb(var(--slate-12))',
             lineHeight: '1.6',
-            fontSize: '14px',
+            // FRESHDESK-SKIN: Freshdesk reads and writes at 13px.
+            fontSize: '13px',
             '*': {
               '&:first-child': {
                 marginTop: '0',

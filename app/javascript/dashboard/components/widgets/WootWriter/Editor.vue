@@ -1067,8 +1067,9 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
 // FRESHDESK-SKIN: type like Gmail. Enter starts a new paragraph, and the global
 // `p` rule (8px bottom margin, 1.65 line-height) dropped every new line ~31px.
 // Tight lines in the reply composer; a blank line still shows as one line.
+// 13px, the same size as the email being read (the `bubble` typography).
 .reply-box .ProseMirror-woot-style p {
-  @apply mb-0 leading-[1.45];
+  @apply mb-0 text-[13px] leading-[1.45];
 }
 
 .ProseMirror-woot-style:not(
