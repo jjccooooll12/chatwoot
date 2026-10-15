@@ -1418,6 +1418,7 @@ export default {
           allow-signature
           :channel-type="channelType"
           :medium="inbox.medium"
+          show-formatting-bar
           @typing-off="onTypingOff"
           @typing-on="onTypingOn"
           @focus="onFocus"

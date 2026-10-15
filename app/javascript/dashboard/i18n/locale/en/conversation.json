@@ -229,6 +229,15 @@
       "MOBILE_PRIVATE_MSG_INPUT": "Write a private note…",
       "GREETING": "Hi {name},",
       "GREETING_FALLBACK_NAME": "there",
+      "FORMAT": {
+        "BOLD": "Bold",
+        "ITALIC": "Italic",
+        "BULLET_LIST": "Bulleted list",
+        "NUMBERED_LIST": "Numbered list",
+        "LINK": "Insert link",
+        "LINK_PROMPT": "Insert link",
+        "CLEAR": "Clear formatting"
+      },
       "MESSAGING_RESTRICTED": "You cannot reply to this conversation",
       "MESSAGING_RESTRICTED_WHATSAPP": "You can only reply using a template message due to 24-hour message window restriction",
       "MESSAGING_RESTRICTED_API": "You can only reply using a template message due to message window restriction",

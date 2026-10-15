@@ -48,6 +48,10 @@ import {
   suggestionsPlugin,
   triggerCharacters,
 } from '@chatwoot/prosemirror-schema/src/mentions/plugin';
+import { openPrompt } from '@chatwoot/prosemirror-schema/src/prompt';
+import { TextField } from '@chatwoot/prosemirror-schema/src/TextField';
+import { toggleMark } from 'prosemirror-commands';
+import { wrapInList, liftListItem } from 'prosemirror-schema-list';
 
 import {
   appendSignature,
@@ -97,6 +101,9 @@ const props = defineProps({
   conversationId: { type: Number, default: null },
   medium: { type: String, default: '' },
   focusOnMount: { type: Boolean, default: true },
+  // FRESHDESK-SKIN: a fixed Bold / Italic / lists / link / clear bar under
+  // the text, instead of formatting only from the floating selection menu.
+  showFormattingBar: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -190,6 +197,162 @@ const typingIndicator = createTypingIndicator(
 // We have to wrap them in closures or use toRaw to get the actual values
 let editorView = null;
 let state = null;
+
+// FRESHDESK-SKIN: the formatting bar. `activeFormats` mirrors the editor state
+// so the buttons light up for the text under the caret.
+const activeFormats = ref({});
+
+function isMarkActive(editorState, markType) {
+  const { from, $from, to, empty } = editorState.selection;
+  if (empty) {
+    return Boolean(markType.isInSet(editorState.storedMarks || $from.marks()));
+  }
+  return editorState.doc.rangeHasMark(from, to, markType);
+}
+
+function parentListType(editorState) {
+  const { $from } = editorState.selection;
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const { type } = $from.node(depth);
+    if (type.name === 'bullet_list' || type.name === 'ordered_list') {
+      return type;
+    }
+  }
+  return null;
+}
+
+function updateActiveFormats(editorState) {
+  if (!props.showFormattingBar || !editorState) return;
+  const { marks } = editorState.schema;
+  activeFormats.value = {
+    strong: Boolean(marks.strong && isMarkActive(editorState, marks.strong)),
+    em: Boolean(marks.em && isMarkActive(editorState, marks.em)),
+    link: Boolean(marks.link && isMarkActive(editorState, marks.link)),
+    list: parentListType(editorState)?.name || null,
+  };
+}
+
+function runCommand(command) {
+  command(editorView.state, editorView.dispatch, editorView);
+  editorView.focus();
+}
+
+function toggleList(nodeName) {
+  const { nodes } = editorView.state.schema;
+  const listType = nodes[nodeName];
+  const current = parentListType(editorView.state);
+  if (current === listType) {
+    runCommand(liftListItem(nodes.list_item));
+  } else if (current) {
+    // Switch bullets <-> numbers in place.
+    const { $from } = editorView.state.selection;
+    let depth = $from.depth;
+    while ($from.node(depth).type !== current) depth -= 1;
+    editorView.dispatch(
+      editorView.state.tr.setNodeMarkup($from.before(depth), listType)
+    );
+    editorView.focus();
+  } else {
+    runCommand(wrapInList(listType));
+  }
+}
+
+function toggleLink() {
+  const markType = editorView.state.schema.marks.link;
+  if (isMarkActive(editorView.state, markType)) {
+    runCommand(toggleMark(markType));
+    return;
+  }
+  openPrompt({
+    title: t('CONVERSATION.FOOTER.FORMAT.LINK_PROMPT'),
+    fields: {
+      href: new TextField({
+        label: 'https://example.com',
+        class: 'small',
+        required: true,
+      }),
+    },
+    callback({ href }) {
+      const { state: current } = editorView;
+      const mark = markType.create({ href });
+      if (current.selection.empty) {
+        // No text selected: insert the address itself as the link.
+        editorView.dispatch(
+          current.tr.replaceSelectionWith(
+            current.schema.text(href, [mark]),
+            false
+          )
+        );
+      } else {
+        toggleMark(markType, { href })(current, editorView.dispatch);
+      }
+      editorView.focus();
+    },
+  });
+}
+
+function clearFormatting() {
+  const { list_item: listItem } = editorView.state.schema.nodes;
+  // Out of any list first, then strip every inline style in the selection.
+  for (let i = 0; i < 5; i += 1) {
+    if (!liftListItem(listItem)(editorView.state, editorView.dispatch)) break;
+  }
+  const { from, to, empty } = editorView.state.selection;
+  const { tr } = editorView.state;
+  if (empty) tr.setStoredMarks([]);
+  else tr.removeMark(from, to);
+  editorView.dispatch(tr);
+  editorView.focus();
+}
+
+const formattingButtons = computed(() => {
+  const { marks, nodes } = editorSchema.value;
+  const has = name => Boolean(marks[name] || nodes[name]);
+  return [
+    has('strong') && {
+      key: 'strong',
+      icon: 'i-lucide-bold',
+      title: t('CONVERSATION.FOOTER.FORMAT.BOLD'),
+      active: activeFormats.value.strong,
+      run: () => runCommand(toggleMark(editorView.state.schema.marks.strong)),
+    },
+    has('em') && {
+      key: 'em',
+      icon: 'i-lucide-italic',
+      title: t('CONVERSATION.FOOTER.FORMAT.ITALIC'),
+      active: activeFormats.value.em,
+      run: () => runCommand(toggleMark(editorView.state.schema.marks.em)),
+    },
+    has('bullet_list') && {
+      key: 'bullet_list',
+      icon: 'i-lucide-list',
+      title: t('CONVERSATION.FOOTER.FORMAT.BULLET_LIST'),
+      active: activeFormats.value.list === 'bullet_list',
+      run: () => toggleList('bullet_list'),
+    },
+    has('ordered_list') && {
+      key: 'ordered_list',
+      icon: 'i-lucide-list-ordered',
+      title: t('CONVERSATION.FOOTER.FORMAT.NUMBERED_LIST'),
+      active: activeFormats.value.list === 'ordered_list',
+      run: () => toggleList('ordered_list'),
+    },
+    has('link') && {
+      key: 'link',
+      icon: 'i-lucide-link',
+      title: t('CONVERSATION.FOOTER.FORMAT.LINK'),
+      active: activeFormats.value.link,
+      run: toggleLink,
+    },
+    {
+      key: 'clear',
+      icon: 'i-lucide-remove-formatting',
+      title: t('CONVERSATION.FOOTER.FORMAT.CLEAR'),
+      active: false,
+      run: clearFormatting,
+    },
+  ].filter(Boolean);
+});
 
 const showUserMentions = ref(false);
 const showCannedMenu = ref(false);
@@ -504,6 +667,7 @@ function reloadState(content = props.modelValue) {
   );
 
   editorView.updateState(state);
+  updateActiveFormats(state);
   focusEditor(unrefContent);
 }
 
@@ -805,6 +969,7 @@ function createEditorView() {
         emitOnChange();
       }
       checkSelection(state);
+      updateActiveFormats(state);
     },
     handleDOMEvents: {
       keyup: () => {
@@ -995,6 +1160,25 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
       @change="onFileChange"
     />
     <div ref="editor" />
+    <div
+      v-if="showFormattingBar"
+      class="flex items-center gap-0.5 pb-1 pt-2 max-md:hidden"
+    >
+      <button
+        v-for="button in formattingButtons"
+        :key="button.key"
+        v-tooltip.top="button.title"
+        type="button"
+        class="flex size-7 items-center justify-center rounded text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
+        :class="{ '!bg-fd-blueSoft !text-fd-action': button.active }"
+        :aria-label="button.title"
+        :aria-pressed="button.active"
+        @mousedown.prevent
+        @click="button.run"
+      >
+        <span class="size-4" :class="button.icon" />
+      </button>
+    </div>
     <slot name="footer" />
   </div>
 </template>
