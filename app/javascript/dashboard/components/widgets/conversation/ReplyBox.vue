@@ -84,7 +84,7 @@ export default {
     CopilotReplyBottomPanel,
   },
   mixins: [inboxMixin, fileUploadMixin, keyboardEventListenerMixins],
-  emits: ['toggleEditorSize', 'close'],
+  emits: ['toggleEditorSize', 'close', 'sent'],
   setup() {
     const {
       uiSettings,
@@ -564,7 +564,6 @@ export default {
     );
     emitter.on(BUS_EVENTS.INSERT_INTO_NORMAL_EDITOR, this.addIntoEditor);
     emitter.on(CMD_AI_ASSIST, this.executeCopilotAction);
-    emitter.on('freshdesk:set-reply-mode', this.onFreshdeskSetReplyMode);
   },
   unmounted() {
     document.removeEventListener('paste', this.onPaste);
@@ -576,7 +575,6 @@ export default {
       this.onNewConversationModalActive
     );
     emitter.off(CMD_AI_ASSIST, this.executeCopilotAction);
-    emitter.off('freshdesk:set-reply-mode', this.onFreshdeskSetReplyMode);
   },
   methods: {
     onFreshdeskSetReplyMode(mode, { greet = true } = {}) {
@@ -859,6 +857,9 @@ export default {
 
         this.clearMessage();
         this.hideEmojiPicker();
+        // Back to the ticket straight away, like Freshdesk — don't leave a
+        // fresh empty reply on screen while the send is still in flight.
+        this.$emit('sent');
 
         // "Send and set as …": only move the ticket once the reply went out.
         if (statusAfterSend && (await sending)) {

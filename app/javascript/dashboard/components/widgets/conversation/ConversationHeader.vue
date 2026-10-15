@@ -268,7 +268,7 @@ const onTicketMerged = async (
         <button
           type="button"
           class="hidden h-7 items-center gap-1.5 rounded-md border border-fd-border bg-fd-surface px-2.5 text-xs font-semibold text-fd-text shadow-sm hover:bg-n-slate-2 md:inline-flex"
-          @click="setEditorMode(REPLY_EDITOR_MODES.REPLY)"
+          @click="setEditorMode('FORWARD')"
         >
           <span class="i-lucide-forward size-3.5 text-fd-muted" />
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.FORWARD') }}

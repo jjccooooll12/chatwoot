@@ -362,7 +362,7 @@ export default {
     // until the chat is changed and the flag is reset in the watch for currentChat
     emitter.on(BUS_EVENTS.MESSAGE_SENT, this.onMessageSent);
     // Freshdesk: the toolbar's Reply / Note / Forward reveals the composer.
-    emitter.on('freshdesk:set-reply-mode', this.onOpenComposer);
+    emitter.on('freshdesk:set-reply-mode', this.startCompose);
     // Freshdesk: the toolbar's Activities button reveals the hidden activity log.
     emitter.on('freshdesk:toggle-activities', this.onToggleActivities);
   },
@@ -432,7 +432,7 @@ export default {
     removeBusListeners() {
       emitter.off(BUS_EVENTS.SCROLL_TO_MESSAGE, this.onScrollToMessage);
       emitter.off(BUS_EVENTS.MESSAGE_SENT, this.onMessageSent);
-      emitter.off('freshdesk:set-reply-mode', this.onOpenComposer);
+      emitter.off('freshdesk:set-reply-mode', this.startCompose);
       emitter.off('freshdesk:toggle-activities', this.onToggleActivities);
     },
     onToggleActivities() {
@@ -440,8 +440,6 @@ export default {
     },
     onMessageSent() {
       this.messageSentSinceOpened = true;
-      // Collapse the composer after sending, like Freshdesk.
-      this.composerOpen = false;
     },
     onOpenComposer(mode, { greet = true } = {}) {
       this.composerOpen = true;
@@ -926,6 +924,7 @@ export default {
               ref="replyBoxRef"
               @toggle-editor-size="toggleReplyEditorSize"
               @close="onCloseComposer"
+              @sent="composerOpen = false"
             />
           </ResizableEditorWrapper>
         </li>
