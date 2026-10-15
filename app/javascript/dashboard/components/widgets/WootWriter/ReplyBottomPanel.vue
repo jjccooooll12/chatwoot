@@ -11,10 +11,22 @@ import VideoCallButton from '../VideoCallButton.vue';
 import { INBOX_TYPES } from 'dashboard/helper/inbox';
 import { mapGetters } from 'vuex';
 import NextButton from 'dashboard/components-next/button/Button.vue';
+import {
+  DropdownContainer,
+  DropdownBody,
+  DropdownItem,
+} from 'dashboard/components-next/dropdown-menu/base';
 
 export default {
   name: 'ReplyBottomPanel',
-  components: { NextButton, FileUpload, VideoCallButton },
+  components: {
+    NextButton,
+    FileUpload,
+    VideoCallButton,
+    DropdownContainer,
+    DropdownBody,
+    DropdownItem,
+  },
   mixins: [inboxMixin],
   props: {
     isNote: {
@@ -26,6 +38,10 @@ export default {
       default: () => {},
     },
     sendButtonText: {
+      type: String,
+      default: '',
+    },
+    sendShortcutHint: {
       type: String,
       default: '',
     },
@@ -429,14 +445,58 @@ export default {
     </div>
     <div class="right-wrap">
       <NextButton
+        v-if="isNote"
         :label="sendButtonText"
         type="submit"
         sm
-        :color="isNote ? 'amber' : 'blue'"
+        color="amber"
         :disabled="isSendDisabled"
         class="flex-shrink-0 max-md:!h-11 max-md:!px-6 max-md:!text-base"
-        @click="onSend"
+        @click="onSend()"
       />
+      <!-- Freshdesk-style split Send: paper plane + "Send", and a caret menu
+           that sends and moves the ticket to Pending or Resolved in one go. -->
+      <DropdownContainer v-else class="flex-shrink-0">
+        <template #trigger="{ toggle, isOpen }">
+          <div
+            class="flex h-8 overflow-hidden rounded-lg bg-fd-action text-white max-md:h-11"
+            :class="{ 'opacity-50': isSendDisabled }"
+          >
+            <button
+              v-tooltip.top="sendShortcutHint"
+              type="submit"
+              class="flex items-center gap-1.5 ps-3 pe-2.5 text-sm font-medium enabled:hover:bg-black/10 disabled:cursor-not-allowed max-md:ps-5 max-md:pe-4 max-md:text-base"
+              :disabled="isSendDisabled"
+              @click="onSend()"
+            >
+              <span class="i-lucide-send size-4 shrink-0" />
+              {{ sendButtonText }}
+            </button>
+            <button
+              type="button"
+              class="grid w-8 place-items-center border-s border-white/30 enabled:hover:bg-black/10 disabled:cursor-not-allowed max-md:w-10"
+              :class="{ 'bg-black/10': isOpen }"
+              :aria-label="$t('CONVERSATION.REPLYBOX.SEND_OPTIONS')"
+              :disabled="isSendDisabled"
+              @click="toggle"
+            >
+              <span class="i-lucide-chevron-down size-4" />
+            </button>
+          </div>
+        </template>
+        <DropdownBody class="bottom-10 z-50 w-60 ltr:right-0 rtl:left-0">
+          <DropdownItem
+            icon="i-lucide-clock"
+            :label="$t('CONVERSATION.REPLYBOX.SEND_AND_SET_PENDING')"
+            :click="() => onSend('pending')"
+          />
+          <DropdownItem
+            icon="i-lucide-check-circle"
+            :label="$t('CONVERSATION.REPLYBOX.SEND_AND_SET_RESOLVED')"
+            :click="() => onSend('resolved')"
+          />
+        </DropdownBody>
+      </DropdownContainer>
     </div>
   </div>
 </template>

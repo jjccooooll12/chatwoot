@@ -332,16 +332,18 @@ export default {
         (this.isATiktokChannel && tiktokAttachmentSupported)
       );
     },
-    replyButtonLabel() {
-      let sendMessageText = this.$t('CONVERSATION.REPLYBOX.SEND');
-      if (this.isPrivate) {
-        sendMessageText = this.$t('CONVERSATION.REPLYBOX.CREATE');
-      }
-      if (this.isMobile) return sendMessageText;
-      const keyLabel = this.isEditorHotKeyEnabled('cmd_enter')
+    // FRESHDESK-SKIN: a reply's button just says "Send" (the shortcut moves
+    // to its tooltip); a note keeps "Add Note (shortcut)".
+    sendShortcutLabel() {
+      return this.isEditorHotKeyEnabled('cmd_enter')
         ? `(${this.shortcutKey})`
         : '(↵)';
-      return `${sendMessageText} ${keyLabel}`;
+    },
+    replyButtonLabel() {
+      if (!this.isPrivate) return this.$t('CONVERSATION.REPLYBOX.SEND');
+      const noteText = this.$t('CONVERSATION.REPLYBOX.CREATE');
+      if (this.isMobile) return noteText;
+      return `${noteText} ${this.sendShortcutLabel}`;
     },
     replyBoxClass() {
       return {
@@ -819,10 +821,11 @@ export default {
     hideContentTemplatesModal() {
       this.showContentTemplatesModal = false;
     },
-    confirmOnSendReply() {
+    async confirmOnSendReply(statusAfterSend = null) {
       if (this.isReplyButtonDisabled) {
         return;
       }
+      const conversationId = this.currentChat.id;
       if (!this.showMentions) {
         const copilotAcceptedMessage = this.getCopilotAcceptedMessage();
         const isOnWhatsApp =
@@ -835,14 +838,15 @@ export default {
         // To handle both cases, text and attachments are always sent as separate messages.
         const isOnInstagram = this.isAnInstagramChannel;
         const isOnTiktok = this.isATiktokChannel;
+        let sending;
         if ((isOnWhatsApp || isOnInstagram || isOnTiktok) && !this.isPrivate) {
-          this.sendMessageAsMultipleMessages(
+          sending = this.sendMessageAsMultipleMessages(
             this.message,
             copilotAcceptedMessage
           );
         } else {
           const messagePayload = this.getMessagePayload(this.message);
-          this.sendMessage(
+          sending = this.sendMessage(
             messagePayload,
             this.message,
             copilotAcceptedMessage
@@ -855,17 +859,28 @@ export default {
 
         this.clearMessage();
         this.hideEmojiPicker();
+
+        // "Send and set as …": only move the ticket once the reply went out.
+        if (statusAfterSend && (await sending)) {
+          this.$store.dispatch('toggleStatus', {
+            conversationId,
+            status: statusAfterSend,
+          });
+        }
       }
     },
-    sendMessageAsMultipleMessages(message, copilotAcceptedMessage = '') {
+    async sendMessageAsMultipleMessages(message, copilotAcceptedMessage = '') {
       const messages = this.getMultipleMessagesPayload(message);
-      messages.forEach(messagePayload => {
-        this.sendMessage(
-          messagePayload,
-          messagePayload.message || '',
-          copilotAcceptedMessage
-        );
-      });
+      const results = await Promise.all(
+        messages.map(messagePayload =>
+          this.sendMessage(
+            messagePayload,
+            messagePayload.message || '',
+            copilotAcceptedMessage
+          )
+        )
+      );
+      return results.every(Boolean);
     },
     sendMessageAnalyticsData(
       isPrivate,
@@ -913,7 +928,7 @@ export default {
             hasReplyTo: !!this.inReplyTo?.id,
           });
     },
-    async onSendReply() {
+    async onSendReply(statusAfterSend = null) {
       const undefinedVariables = getUndefinedVariablesInMessage({
         message: this.message,
         variables: this.messageVariables,
@@ -931,10 +946,10 @@ export default {
 
         const ok = await this.$refs.confirmDialog.showConfirmation();
         if (ok) {
-          this.confirmOnSendReply();
+          this.confirmOnSendReply(statusAfterSend);
         }
       } else {
-        this.confirmOnSendReply();
+        this.confirmOnSendReply(statusAfterSend);
       }
     },
     async sendMessage(
@@ -954,10 +969,12 @@ export default {
           editorMessage,
           copilotAcceptedMessage,
         });
+        return true;
       } catch (error) {
         const errorMessage =
           error?.response?.data?.error || this.$t('CONVERSATION.MESSAGE_ERROR');
         useAlert(errorMessage);
+        return false;
       }
     },
     async onSendWhatsAppReply(messagePayload) {
@@ -1474,6 +1491,7 @@ export default {
         :recording-audio-duration-text="recordingAudioDurationText"
         :recording-audio-state="recordingAudioState"
         :send-button-text="replyButtonLabel"
+        :send-shortcut-hint="isMobile ? '' : sendShortcutLabel"
         :show-audio-recorder="showAudioRecorder"
         :show-emoji-picker="showEmojiPicker"
         :show-file-upload="showFileUpload"
