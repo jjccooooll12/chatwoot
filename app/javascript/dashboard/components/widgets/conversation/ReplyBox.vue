@@ -1373,6 +1373,8 @@ export default {
           v-model:cc-emails="ccEmails"
           v-model:bcc-emails="bccEmails"
           v-model:to-emails="toEmails"
+          :from-name="inbox.name"
+          :from-email="inbox.email"
           data-freshdesk-mail-head
         />
         <AudioRecorder
@@ -1543,7 +1545,7 @@ export default {
 }
 
 .reply-box {
-  @apply relative m-5 mt-4 border border-fd-border rounded-md bg-fd-surface;
+  @apply relative m-5 mt-4 border border-fd-action rounded-lg bg-fd-surface;
 
   /* Phones: the composer is the screen, like a mail app's compose view. */
   @apply max-md:m-0 max-md:border-0 max-md:rounded-none;

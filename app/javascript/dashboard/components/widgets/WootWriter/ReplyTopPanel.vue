@@ -70,13 +70,6 @@ export default {
     const handleNoteClick = () => {
       setReplyMode(REPLY_EDITOR_MODES.NOTE);
     };
-    const handleModeToggle = () => {
-      const newMode =
-        props.mode === REPLY_EDITOR_MODES.REPLY
-          ? REPLY_EDITOR_MODES.NOTE
-          : REPLY_EDITOR_MODES.REPLY;
-      setReplyMode(newMode);
-    };
 
     const { captainTasksEnabled } = useCaptain();
     const showCopilotMenu = ref(false);
@@ -115,7 +108,7 @@ export default {
     useKeyboardEvents(keyboardEvents);
 
     return {
-      handleModeToggle,
+      setReplyMode,
       handleReplyClick,
       handleNoteClick,
       REPLY_EDITOR_MODES,
@@ -169,7 +162,7 @@ export default {
       :mode="mode"
       :disabled="disabled"
       :is-reply-restricted="isReplyRestricted"
-      @toggle-mode="handleModeToggle"
+      @set-mode="setReplyMode"
     />
     <div class="flex items-center mx-4 my-0">
       <div v-if="isMessageLengthReachingThreshold" class="text-xs">
