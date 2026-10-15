@@ -6,6 +6,17 @@ class BaseMarkdownRenderer < CommonMarker::HtmlRenderer
     render_img_tag(src, title, sizing_style)
   end
 
+  # FRESHDESK-SKIN: the reply editor stores underline as a literal <u>…</u>
+  # (markdown has no syntax for it). Raw HTML is otherwise dropped, so let
+  # exactly those two tags through and keep omitting everything else.
+  UNDERLINE_TAGS = %w[<u> </u>].freeze
+
+  def inline_html(node)
+    return out(node.string_content) if UNDERLINE_TAGS.include?(node.string_content)
+
+    super
+  end
+
   private
 
   def extract_img_attributes(node)

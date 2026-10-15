@@ -4,7 +4,8 @@
 export const FORMATTING = {
   // Channel formatting
   'Channel::Email': {
-    marks: ['strong', 'em', 'code', 'link'],
+    // FRESHDESK-SKIN: underline (see dashboard/helper/editorUnderline.js).
+    marks: ['strong', 'em', 'underline', 'code', 'link'],
     nodes: ['bulletList', 'orderedList', 'codeBlock', 'blockquote', 'image'],
     menu: [
       'copilot',
@@ -118,7 +119,7 @@ export const FORMATTING = {
   },
   // Special contexts (not actual channels)
   'Context::PrivateNote': {
-    marks: ['strong', 'em', 'code', 'link', 'strike'],
+    marks: ['strong', 'em', 'underline', 'code', 'link', 'strike'],
     nodes: ['bulletList', 'orderedList', 'codeBlock', 'blockquote'],
     menu: [
       'copilot',

@@ -38,7 +38,6 @@ import {
   buildMessageSchema,
   buildEditor,
   EditorView,
-  MessageMarkdownTransformer,
   MessageMarkdownSerializer,
   EditorState,
   Selection,
@@ -51,6 +50,11 @@ import {
 import { openPrompt } from '@chatwoot/prosemirror-schema/src/prompt';
 import { TextField } from '@chatwoot/prosemirror-schema/src/TextField';
 import { toggleMark } from 'prosemirror-commands';
+import {
+  UNDERLINE,
+  withUnderline,
+  createMessageParser,
+} from 'dashboard/helper/editorUnderline';
 import { wrapInList, liftListItem } from 'prosemirror-schema-list';
 
 import {
@@ -151,7 +155,11 @@ const editorSchema = computed(() => {
     formatType,
     captainTasksEnabled.value
   );
-  return buildMessageSchema(formatting.marks, formatting.nodes);
+  const schema = buildMessageSchema(
+    formatting.marks.filter(mark => mark !== UNDERLINE),
+    formatting.nodes
+  );
+  return formatting.marks.includes(UNDERLINE) ? withUnderline(schema) : schema;
 });
 
 const editorMenuOptions = computed(() => {
@@ -163,7 +171,8 @@ const editorMenuOptions = computed(() => {
     captainTasksEnabled.value
   );
 
-  return formatting.menu;
+  // The fixed formatting bar replaces the menu that floats over a selection.
+  return props.showFormattingBar ? [] : formatting.menu;
 });
 
 const createState = (content, placeholder, plugins = [], methods = {}) => {
@@ -171,7 +180,7 @@ const createState = (content, placeholder, plugins = [], methods = {}) => {
   // Strip unsupported formatting before parsing to prevent "Token type not supported" errors
   const sanitizedContent = stripUnsupportedFormatting(content, schema);
   return EditorState.create({
-    doc: new MessageMarkdownTransformer(schema).parse(sanitizedContent),
+    doc: createMessageParser(schema).parse(sanitizedContent),
     plugins: buildEditor({
       schema,
       placeholder,
@@ -227,6 +236,9 @@ function updateActiveFormats(editorState) {
   activeFormats.value = {
     strong: Boolean(marks.strong && isMarkActive(editorState, marks.strong)),
     em: Boolean(marks.em && isMarkActive(editorState, marks.em)),
+    underline: Boolean(
+      marks.underline && isMarkActive(editorState, marks.underline)
+    ),
     link: Boolean(marks.link && isMarkActive(editorState, marks.link)),
     list: parentListType(editorState)?.name || null,
   };
@@ -322,6 +334,14 @@ const formattingButtons = computed(() => {
       title: t('CONVERSATION.FOOTER.FORMAT.ITALIC'),
       active: activeFormats.value.em,
       run: () => runCommand(toggleMark(editorView.state.schema.marks.em)),
+    },
+    has(UNDERLINE) && {
+      key: UNDERLINE,
+      icon: 'i-lucide-underline',
+      title: t('CONVERSATION.FOOTER.FORMAT.UNDERLINE'),
+      active: activeFormats.value.underline,
+      run: () =>
+        runCommand(toggleMark(editorView.state.schema.marks.underline)),
     },
     has('bullet_list') && {
       key: 'bullet_list',
@@ -891,9 +911,7 @@ function insertContentIntoEditor(content, defaultFrom = 0) {
   // Strip unsupported formatting before parsing to ensure content can be inserted
   // into channels that don't support certain markdown features (e.g., API channels)
   const sanitizedContent = stripUnsupportedFormatting(content, currentSchema);
-  let node = new MessageMarkdownTransformer(currentSchema).parse(
-    sanitizedContent
-  );
+  let node = createMessageParser(currentSchema).parse(sanitizedContent);
 
   insertNodeIntoEditor(node, from, undefined);
 }
@@ -1169,14 +1187,14 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
         :key="button.key"
         v-tooltip.top="button.title"
         type="button"
-        class="flex size-7 shrink-0 items-center justify-center rounded p-0 text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
+        class="flex size-6 shrink-0 items-center justify-center rounded p-0 text-fd-muted hover:bg-n-slate-3 hover:text-fd-text"
         :class="{ '!bg-fd-blueSoft !text-fd-action': button.active }"
         :aria-label="button.title"
         :aria-pressed="button.active"
         @mousedown.prevent
         @click="button.run"
       >
-        <span class="size-4 shrink-0" :class="button.icon" />
+        <span class="size-3.5 shrink-0" :class="button.icon" />
       </button>
     </div>
     <slot name="footer" />
