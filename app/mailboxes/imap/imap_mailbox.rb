@@ -7,13 +7,15 @@ class Imap::ImapMailbox
 
   # Inbound emails from these senders never become (or merge into) a ticket — they
   # are automated notifications, not customer conversations. A domain entry also
-  # matches its subdomains; an entry with "@" matches an exact address. The team
+  # matches its subdomains; an entry with "@" matches an exact address; an entry
+  # with "*" is a wildcard over the whole address ("*fedex*" drops fedex.com,
+  # fedexmail.com, fedex@anything...). The team
   # can extend this at runtime via account.custom_attributes['blocked_ticket_senders'].
   # facebook.com also covers business.facebook.com via the subdomain rule below;
   # facebookmail.com is a separate apex Meta sends from, so it needs its own entry.
   # instagram.com covers mail.instagram.com (no-reply@, security@).
-  # link.com is Stripe Link's notifications@ sender. ranked.ai (SEO agency) is
-  # handled in Outlook only, people included, so the whole domain is dropped.
+  # link.com is Stripe Link's notifications@ sender. ranked.ai (SEO agency) and
+  # FedEx are handled in Outlook only, so anything containing them is dropped.
   DEFAULT_BLOCKED_SENDER_DOMAINS = %w[
     microsoft.com godaddy.com twilio.com
     linkedin.com trustpilot.com qwoted.com crunchbase.com
@@ -21,7 +23,8 @@ class Imap::ImapMailbox
     paypal.com wise.com
     ups.com
     instagram.com metricool.com
-    link.com ranked.ai
+    link.com
+    *ranked.ai* *fedex*
   ].freeze
 
   def process(mail, channel)
@@ -69,7 +72,9 @@ class Imap::ImapMailbox
 
     domain = sender.split('@').last.to_s
     blocked_sender_patterns.any? do |pattern|
-      if pattern.include?('@')
+      if pattern.include?('*')
+        File.fnmatch?(pattern, sender)
+      elsif pattern.include?('@')
         sender == pattern
       else
         domain == pattern || domain.end_with?(".#{pattern}")

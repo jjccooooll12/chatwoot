@@ -382,14 +382,19 @@ watch(() => props.inbox.id, fetchAssignableAgents);
         </div>
       </div>
 
+      <!-- The labels restate size/weight/line-height: the global `label` rule in
+           _base.scss (14px medium, 28px line) otherwise wins and makes these
+           three rows twice Freshdesk's height. -->
       <!-- Phones: read-only. A tap anywhere on the card opens the ticket;
            priority, assignee and status are changed from the ticket's own
            details panel, so a thumb aiming for the ticket can't reassign it. -->
       <div
-        class="col-start-2 flex min-w-0 shrink-0 flex-wrap gap-x-4 gap-y-1.5 text-xs leading-5 text-fd-text sm:col-start-auto sm:grid sm:gap-2 max-md:pointer-events-none"
+        class="col-start-2 flex min-w-0 shrink-0 flex-wrap gap-x-4 gap-y-1.5 text-xs leading-5 text-fd-text sm:col-start-auto sm:grid sm:gap-1 max-md:pointer-events-none"
         @click.stop
       >
-        <label class="relative inline-flex min-w-0 items-center gap-1.5">
+        <label
+          class="relative inline-flex min-w-0 items-center gap-1.5 text-xs font-normal leading-5 text-fd-text"
+        >
           <span class="sr-only">{{
             $t('CHAT_LIST.FRESHDESK_CARD.PRIORITY')
           }}</span>
@@ -414,7 +419,9 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           </select>
         </label>
 
-        <label class="relative inline-flex min-w-0 items-center gap-1.5">
+        <label
+          class="relative inline-flex min-w-0 items-center gap-1.5 text-xs font-normal leading-5 text-fd-text"
+        >
           <Icon
             :icon="isAgentBotAssignee ? 'i-lucide-bot' : 'i-lucide-user-round'"
             class="size-3 shrink-0 text-fd-muted"
@@ -439,7 +446,9 @@ watch(() => props.inbox.id, fetchAssignableAgents);
           </select>
         </label>
 
-        <label class="relative inline-flex min-w-0 items-center gap-1.5">
+        <label
+          class="relative inline-flex min-w-0 items-center gap-1.5 text-xs font-normal leading-5 text-fd-text"
+        >
           <span class="sr-only">
             {{ $t('CHAT_LIST.FRESHDESK_CARD.STATUS_LABEL') }}
           </span>
