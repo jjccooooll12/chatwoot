@@ -1035,6 +1035,13 @@ useEmitter(BUS_EVENTS.INSERT_INTO_RICH_EDITOR, insertContentIntoEditor);
   @apply overflow-auto;
 }
 
+// FRESHDESK-SKIN: type like Gmail. Enter starts a new paragraph, and the global
+// `p` rule (8px bottom margin, 1.65 line-height) dropped every new line ~31px.
+// Tight lines in the reply composer; a blank line still shows as one line.
+.reply-box .ProseMirror-woot-style p {
+  @apply mb-0 leading-[1.45];
+}
+
 .ProseMirror-woot-style:not(
     :where(.resizable-editor-wrapper .ProseMirror-woot-style)
   ) {
