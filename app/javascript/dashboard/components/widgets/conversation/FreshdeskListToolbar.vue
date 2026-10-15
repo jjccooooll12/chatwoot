@@ -79,12 +79,11 @@ const rangeLabel = computed(() => {
 
 <template>
   <div
-    class="flex min-h-12 flex-wrap items-center justify-between gap-3 border-y border-fd-border bg-fd-background px-3 py-2"
+    class="flex min-h-12 flex-wrap items-center justify-between gap-3 border-y border-fd-border bg-fd-surface px-3 py-2"
   >
-    <div class="flex min-w-0 flex-wrap items-center gap-2">
-      <label
-        class="inline-flex h-8 items-center gap-2 rounded-lg border border-fd-border bg-fd-surface px-2 text-xs font-medium text-fd-text"
-      >
+    <div class="flex min-w-0 flex-wrap items-center gap-4">
+      <!-- FRESHDESK-SKIN: a bare checkbox and a plain "Sort by: Field ⌄" -->
+      <label class="inline-flex h-8 items-center ps-2">
         <Checkbox
           :model-value="allConversationsSelected"
           @update:model-value="value => emit('selectAll', value)"
@@ -95,17 +94,19 @@ const rangeLabel = computed(() => {
       </label>
 
       <div class="flex items-center gap-1.5">
-        <span class="hidden whitespace-nowrap text-xs text-fd-muted sm:inline">
+        <span
+          class="hidden whitespace-nowrap text-[13px] text-fd-muted sm:inline"
+        >
           {{ t('CHAT_LIST.FRESHDESK_TOOLBAR.SORT_BY') }}
         </span>
         <div class="relative">
           <button
             type="button"
-            class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-fd-border bg-fd-surface px-2.5 text-xs font-medium text-fd-text hover:border-fd-primary"
+            class="inline-flex h-8 items-center gap-1 rounded px-1 text-[13px] font-semibold text-fd-text hover:bg-n-slate-2"
             @click="sortOpen = !sortOpen"
           >
             <span class="whitespace-nowrap">{{ activeFieldLabel }}</span>
-            <span class="i-lucide-chevron-down size-3.5 text-fd-muted" />
+            <span class="i-lucide-chevron-down size-3.5 text-fd-text" />
           </button>
           <template v-if="sortOpen">
             <button
