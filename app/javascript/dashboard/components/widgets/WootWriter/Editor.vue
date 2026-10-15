@@ -463,7 +463,9 @@ function startWithGreeting(greeting) {
       ? first.nodeSize
       : 0;
   const greetingNode = paragraph.create(null, schema.text(greeting));
-  tr.replaceWith(0, replaceEnd, [greetingNode, paragraph.create()]);
+  // Caret line, then four blank lines of breathing room above the signature.
+  const blankLines = Array.from({ length: 5 }, () => paragraph.create());
+  tr.replaceWith(0, replaceEnd, [greetingNode, ...blankLines]);
   // Inside the empty paragraph that follows the greeting.
   tr.setSelection(Selection.near(tr.doc.resolve(greetingNode.nodeSize + 1)));
   editorView.dispatch(tr);
