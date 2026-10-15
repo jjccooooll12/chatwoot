@@ -148,6 +148,7 @@ export default {
     'selectContentTemplate',
     'toggleQuotedReply',
     'toggleCannedResponses',
+    'close',
   ],
   setup(props) {
     const { setSignatureFlagForInbox, fetchSignatureFlagFromUISettings } =
@@ -444,6 +445,19 @@ export default {
       />
     </div>
     <div class="right-wrap">
+      <!-- Freshdesk's trash next to Send: same as the composer's Close (the
+           draft is kept, the composer folds away). -->
+      <NextButton
+        v-tooltip.top="$t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER')"
+        icon="i-lucide-trash-2"
+        slate
+        outline
+        sm
+        type="button"
+        :aria-label="$t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER')"
+        class="flex-shrink-0 max-md:!size-11 max-md:!text-xl"
+        @click="$emit('close')"
+      />
       <NextButton
         v-if="isNote"
         :label="sendButtonText"
@@ -512,7 +526,7 @@ export default {
 }
 
 .right-wrap {
-  @apply flex;
+  @apply flex items-center gap-2;
 }
 
 :deep(.file-uploads) {
