@@ -146,7 +146,7 @@ const handleSeeOriginal = () => {
         :class="
           isOutgoing
             ? 'rounded-lg bg-n-slate-2 pt-3.5 pb-6 pl-3.5 pr-[calc(0.875rem+var(--conv-gutter))] mr-[calc(var(--conv-gutter)*-1)]'
-            : 'px-3.5 pb-0.5'
+            : 'rounded-lg border border-fd-border bg-fd-surface px-3.5 pt-3.5 pb-1 shadow-sm'
         "
       >
         <EmailMeta class="mb-2" />
