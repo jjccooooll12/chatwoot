@@ -446,7 +446,8 @@ export default {
     </div>
     <div class="right-wrap">
       <!-- Freshdesk's trash next to Send: same as the composer's Close (the
-           draft is kept, the composer folds away). -->
+           draft is kept, the composer folds away). Desktop only: phones
+           already have the ✕ at the top and the row is full. -->
       <NextButton
         v-tooltip.top="$t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER')"
         icon="i-lucide-trash-2"
@@ -455,7 +456,7 @@ export default {
         sm
         type="button"
         :aria-label="$t('CHAT_LIST.FRESHDESK_DETAIL.CLOSE_COMPOSER')"
-        class="flex-shrink-0 max-md:!size-11 max-md:!text-xl"
+        class="flex-shrink-0 max-md:!hidden"
         @click="$emit('close')"
       />
       <NextButton
