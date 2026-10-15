@@ -456,7 +456,12 @@ export default {
       />
       <!-- Freshdesk-style split Send: paper plane + "Send", and a caret menu
            that sends and moves the ticket to Pending or Resolved in one go. -->
-      <DropdownContainer v-else class="flex-shrink-0">
+      <!-- The container's menu slot is an offset-less absolute box; pin it to
+           the button's top-right corner so the menu opens straight above. -->
+      <DropdownContainer
+        v-else
+        class="flex-shrink-0 [&>.absolute]:bottom-full [&>.absolute]:end-0"
+      >
         <template #trigger="{ toggle, isOpen }">
           <div
             class="flex h-8 overflow-hidden rounded-lg bg-fd-action text-white max-md:h-11"
@@ -484,7 +489,7 @@ export default {
             </button>
           </div>
         </template>
-        <DropdownBody class="bottom-10 z-50 w-60 ltr:right-0 rtl:left-0">
+        <DropdownBody class="bottom-0 end-0 z-50 mb-2 w-60">
           <DropdownItem
             icon="i-lucide-clock"
             :label="$t('CONVERSATION.REPLYBOX.SEND_AND_SET_PENDING')"
