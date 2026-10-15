@@ -57,6 +57,11 @@ const tailwindConfig = {
             lineHeight: '1.6',
             // FRESHDESK-SKIN: Freshdesk reads and writes at 13px.
             fontSize: '13px',
+            // The global `p` rule pins text-sm; let paragraphs follow the bubble.
+            p: {
+              fontSize: 'inherit',
+              lineHeight: 'inherit',
+            },
             '*': {
               '&:first-child': {
                 marginTop: '0',
