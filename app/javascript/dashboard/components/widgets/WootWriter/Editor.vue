@@ -443,6 +443,33 @@ function focusEditor(content = props.modelValue) {
   }
 }
 
+// FRESHDESK-SKIN: open an untouched reply as "<greeting>" with the caret on
+// the empty line below it, above any signature. A draft that already has text
+// is left alone and just focused.
+function startWithGreeting(greeting) {
+  if (props.disabled) return;
+  if (!greeting || !isBodyEmpty(props.modelValue)) {
+    focusEditor();
+    return;
+  }
+
+  const { schema, tr, doc } = editorView.state;
+  const { paragraph } = schema.nodes;
+  const first = doc.firstChild;
+  // An empty draft is one empty paragraph (or an empty one above the
+  // signature); replace it rather than stacking a blank line under the caret.
+  const replaceEnd =
+    first && first.type === paragraph && first.content.size === 0
+      ? first.nodeSize
+      : 0;
+  const greetingNode = paragraph.create(null, schema.text(greeting));
+  tr.replaceWith(0, replaceEnd, [greetingNode, paragraph.create()]);
+  // Inside the empty paragraph that follows the greeting.
+  tr.setSelection(Selection.near(tr.doc.resolve(greetingNode.nodeSize + 1)));
+  editorView.dispatch(tr);
+  editorView.focus();
+}
+
 function openFileBrowser() {
   imageUpload.value.click();
 }
@@ -904,7 +931,7 @@ onMounted(() => {
   }
 });
 
-defineExpose({ focusEditorInputField, focusEditor });
+defineExpose({ focusEditorInputField, focusEditor, startWithGreeting });
 
 // BUS Event to insert text or markdown into the editor at the
 // current cursor position.

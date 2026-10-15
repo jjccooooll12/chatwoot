@@ -443,7 +443,7 @@ export default {
       // Collapse the composer after sending, like Freshdesk.
       this.composerOpen = false;
     },
-    onOpenComposer(mode) {
+    onOpenComposer(mode, { greet = true } = {}) {
       this.composerOpen = true;
       // The agent asked for the composer, so it — not the newest message —
       // decides where the thread sits now.
@@ -456,7 +456,7 @@ export default {
           // Sets the mode AND focuses the editor with the caret at the end of
           // any existing draft text (same combined handler the header's
           // Reply/Note buttons already use via the emitter).
-          this.replyBoxRef?.onFreshdeskSetReplyMode?.(mode);
+          this.replyBoxRef?.onFreshdeskSetReplyMode?.(mode, { greet });
         }
         this.expandComposerToFill();
         this.observeComposerChrome();
@@ -480,7 +480,10 @@ export default {
       this.onOpenComposer(
         mode === REPLY_EDITOR_MODES.NOTE
           ? REPLY_EDITOR_MODES.NOTE
-          : REPLY_EDITOR_MODES.REPLY
+          : REPLY_EDITOR_MODES.REPLY,
+        // A forward goes to someone else, so it isn't greeted by the
+        // customer's name.
+        { greet: mode !== 'FORWARD' }
       );
     },
     openSendAsEmailDialog() {

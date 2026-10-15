@@ -152,6 +152,20 @@ export default {
       lastEmail: 'getLastEmailInSelectedChat',
       globalConfig: 'globalConfig/get',
     }),
+    // First name only; widget visitors get generated names like
+    // "patient-feather-318" and some senders only have an address, so those
+    // fall back to "Hi there,".
+    replyGreeting() {
+      const firstName = (this.currentContact?.name || '')
+        .trim()
+        .split(/\s+/)[0];
+      const isRealName =
+        firstName && !firstName.includes('@') && !/\d/.test(firstName);
+      const name = isRealName
+        ? firstName.charAt(0).toUpperCase() + firstName.slice(1)
+        : this.$t('CONVERSATION.FOOTER.GREETING_FALLBACK_NAME');
+      return this.$t('CONVERSATION.FOOTER.GREETING', { name });
+    },
     currentContact() {
       const senderId = this.currentChat?.meta?.sender?.id;
       if (!senderId) return {};
@@ -563,11 +577,18 @@ export default {
     emitter.off('freshdesk:set-reply-mode', this.onFreshdeskSetReplyMode);
   },
   methods: {
-    onFreshdeskSetReplyMode(mode) {
+    onFreshdeskSetReplyMode(mode, { greet = true } = {}) {
       this.setReplyMode(mode);
       // Start the caret above the signature, not after it — an agent clicking
       // Reply on an untouched ticket should be able to type straight away.
-      this.$nextTick(() => this.messageEditor?.focusEditor());
+      // A reply also starts pre-greeted ("Hi Noah,"), caret on the line below.
+      this.$nextTick(() => {
+        if (greet && mode === REPLY_EDITOR_MODES.REPLY) {
+          this.messageEditor?.startWithGreeting(this.replyGreeting);
+        } else {
+          this.messageEditor?.focusEditor();
+        }
+      });
     },
     getDraftKey(
       conversationId = this.conversationIdByRoute,
