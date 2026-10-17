@@ -197,6 +197,19 @@ const tailwindConfig = {
             },
           },
         },
+        // FRESHDESK-SKIN: agent-written content (sent emails, private notes)
+        // renders with the reply editor's line spacing — each Enter is a
+        // margin-less paragraph there (`.reply-box .ProseMirror-woot-style p`
+        // in Editor.vue), so the thread must not add a gap between lines.
+        editor: {
+          css: {
+            lineHeight: '1.45',
+            p: {
+              marginTop: '0',
+              marginBottom: '0',
+            },
+          },
+        },
       },
     },
     screens: {

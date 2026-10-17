@@ -95,7 +95,11 @@ const handleSeeOriginal = () => {
           <span v-if="isEmpty" class="text-n-slate-11">
             {{ $t('CONVERSATION.NO_CONTENT') }}
           </span>
-          <FormattedContent v-if="renderContent" :content="renderContent" />
+          <FormattedContent
+            v-if="renderContent"
+            class="prose-editor"
+            :content="renderContent"
+          />
           <TranslationToggle
             v-if="hasTranslations"
             class="-mt-3"

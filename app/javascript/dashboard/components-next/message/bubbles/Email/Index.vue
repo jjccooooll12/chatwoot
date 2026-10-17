@@ -126,6 +126,13 @@ const translationKeySuffix = computed(() => {
   return 'original';
 });
 
+// Agent replies were typed in our editor, so they keep its line spacing;
+// customer emails keep their own client's formatting.
+const letterClass = computed(
+  () =>
+    `prose prose-bubble !max-w-none letter-render ${isOutgoing.value ? 'prose-editor' : ''}`
+);
+
 const handleSeeOriginal = () => {
   renderOriginal.value = !renderOriginal.value;
 };
@@ -171,14 +178,14 @@ const handleSeeOriginal = () => {
             </div>
             <FormattedContent
               v-if="isOutgoing && content && !hasEmailContent"
-              class="text-n-slate-12"
+              class="text-n-slate-12 prose-editor"
               :content="messageContent"
             />
             <template v-else>
               <Letter
                 v-if="showQuotedMessage"
                 :key="`letter-quoted-${translationKeySuffix}`"
-                class-name="prose prose-bubble !max-w-none letter-render"
+                :class-name="letterClass"
                 :allowed-css-properties="[
                   ...allowedCssProperties,
                   'transform',
@@ -190,7 +197,7 @@ const handleSeeOriginal = () => {
               <Letter
                 v-else
                 :key="`letter-unquoted-${translationKeySuffix}`"
-                class-name="prose prose-bubble !max-w-none letter-render"
+                :class-name="letterClass"
                 :html="unquotedHTML"
                 :allowed-css-properties="[
                   ...allowedCssProperties,
