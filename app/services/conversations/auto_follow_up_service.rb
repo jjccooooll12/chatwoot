@@ -45,12 +45,13 @@ class Conversations::AutoFollowUpService
   end
 
   # The last genuine agent reply (excludes our own automated nudges so they don't
-  # keep resetting the waiting clock).
+  # keep resetting the waiting clock). `reorder`, not `order`: Message's default
+  # scope sorts ascending, and `order` would append to it and pick the OLDEST reply.
   def last_agent_reply
     @last_agent_reply ||= conversation.messages
                                       .where(message_type: :outgoing, private: false)
                                       .where("messages.additional_attributes->>'auto_follow_up_nudge' IS NULL")
-                                      .order(created_at: :desc)
+                                      .reorder(created_at: :desc)
                                       .first
   end
 
