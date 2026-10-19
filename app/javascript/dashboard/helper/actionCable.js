@@ -5,6 +5,7 @@ import { BUS_EVENTS } from 'shared/constants/busEvents';
 import { emitter } from 'shared/helpers/mitt';
 import { useImpersonation } from 'dashboard/composables/useImpersonation';
 import { useCallsStore } from 'dashboard/stores/calls';
+import { useConversationListUpdatesStore } from 'dashboard/stores/conversationListUpdates';
 import {
   applyOutboundAnswer,
   armOutboundRecorder,
@@ -81,6 +82,14 @@ class ActionCableConnector extends BaseActionCableConnector {
     return this.app.$store.getters.getCurrentAccountId === data.account_id;
   };
 
+  // FRESHDESK-SKIN: a change this agent did not make (no performer means a
+  // customer or a background job) is held back from the ticket list until
+  // they click the updates pill. Their own changes still apply straight away.
+  holdForTicketList = (conversationId, performer) => {
+    if (performer?.id === this.app.$store.getters.getCurrentUserID) return;
+    useConversationListUpdatesStore().hold(conversationId);
+  };
+
   onMessageUpdated = data => {
     this.app.$store.dispatch('updateMessage', data);
   };
@@ -106,12 +115,14 @@ class ActionCableConnector extends BaseActionCableConnector {
   onAssigneeChanged = payload => {
     const { id } = payload;
     if (id) {
+      this.holdForTicketList(id, payload.performer);
       this.app.$store.dispatch('updateConversation', payload);
     }
     this.fetchConversationStats();
   };
 
   onConversationCreated = data => {
+    this.holdForTicketList(data.id, data.performer);
     this.app.$store.dispatch('addConversation', data);
     this.fetchConversationStats();
   };
@@ -128,6 +139,7 @@ class ActionCableConnector extends BaseActionCableConnector {
       conversation: { last_activity_at: lastActivityAt },
       conversation_id: conversationId,
     } = data;
+    this.holdForTicketList(conversationId, data.performer);
     DashboardAudioNotificationHelper.onNewMessage(data);
     this.app.$store.dispatch('addMessage', data);
     this.app.$store.dispatch('updateConversationLastActivity', {
@@ -140,11 +152,13 @@ class ActionCableConnector extends BaseActionCableConnector {
   onReload = () => window.location.reload();
 
   onStatusChange = data => {
+    this.holdForTicketList(data.id, data.performer);
     this.app.$store.dispatch('updateConversation', data);
     this.fetchConversationStats();
   };
 
   onConversationUpdated = data => {
+    this.holdForTicketList(data.id, data.performer);
     this.app.$store.dispatch('updateConversation', data);
     this.fetchConversationStats();
   };

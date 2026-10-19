@@ -16,6 +16,7 @@ import SaveCustomView from 'next/filter/SaveCustomView.vue';
 import FreshdeskListToolbar from './widgets/conversation/FreshdeskListToolbar.vue';
 import FreshdeskStatusPanel from './widgets/conversation/FreshdeskStatusPanel.vue';
 import FreshdeskMobileSheet from './widgets/conversation/FreshdeskMobileSheet.vue';
+import FreshdeskUpdatesPill from './widgets/conversation/FreshdeskUpdatesPill.vue';
 import DeleteCustomViews from 'dashboard/routes/dashboard/customviews/DeleteCustomViews.vue';
 import ConversationBulkActions from './widgets/conversation/conversationBulkActions/Index.vue';
 import TeleportWithDirection from 'dashboard/components-next/TeleportWithDirection.vue';
@@ -33,6 +34,7 @@ import {
 } from 'dashboard/composables/useTransformKeys';
 import { useEmitter } from 'dashboard/composables/emitter';
 import { useConversationRequiredAttributes } from 'dashboard/composables/useConversationRequiredAttributes';
+import { useConversationListUpdatesStore } from 'dashboard/stores/conversationListUpdates';
 
 import { emitter } from 'shared/helpers/mitt';
 
@@ -374,7 +376,7 @@ function sortByUnreadStatus(conversations) {
   });
 }
 
-const conversationList = computed(() => {
+const liveConversationList = computed(() => {
   let localConversationList = [];
 
   if (!hasAppliedFiltersOrActiveFolders.value) {
@@ -427,6 +429,66 @@ const conversationList = computed(() => {
 
   return localConversationList;
 });
+
+// FRESHDESK-SKIN: tickets changed by someone else are held where the agent
+// last saw them (or kept out, if they were not on screen) until the updates
+// pill is clicked. Their cards still show the latest data — only membership
+// and order wait. The agent's own changes are never held.
+const listUpdates = useConversationListUpdatesStore();
+const heldPositions = new Map();
+let lastShownIds = [];
+
+watch(
+  () => listUpdates.conversationIds.length,
+  () => {
+    if (!listUpdates.conversationIds.length) heldPositions.clear();
+    listUpdates.conversationIds.forEach(id => {
+      if (!heldPositions.has(id))
+        heldPositions.set(id, lastShownIds.indexOf(id));
+    });
+  },
+  // Must record the position before the list re-renders with the change.
+  { flush: 'sync' }
+);
+
+const conversationList = computed(() => {
+  const heldIds = listUpdates.conversationIds;
+  if (!heldIds.length) return liveConversationList.value;
+
+  const list = liveConversationList.value.filter(c => !heldIds.includes(c.id));
+  heldIds
+    .filter(id => heldPositions.get(id) > -1)
+    .sort((a, b) => heldPositions.get(a) - heldPositions.get(b))
+    .forEach(id => {
+      const conversation = getConversationById.value(id);
+      if (!conversation) return;
+      list.splice(
+        Math.min(heldPositions.get(id), list.length),
+        0,
+        conversation
+      );
+    });
+  return list;
+});
+
+watch(
+  conversationList,
+  list => {
+    lastShownIds = list.map(c => c.id);
+  },
+  { immediate: true }
+);
+
+// Only changes the agent would see count: a ticket already on screen, or one
+// that would appear once the list refreshes.
+const pendingUpdateCount = computed(
+  () =>
+    listUpdates.conversationIds.filter(
+      id =>
+        heldPositions.get(id) > -1 ||
+        liveConversationList.value.some(c => c.id === id)
+    ).length
+);
 
 const showEndOfListMessage = computed(() => {
   return !!(
@@ -652,6 +714,7 @@ function fetchConversations() {
 }
 
 function resetAndFetchData() {
+  listUpdates.release();
   appliedFilter.value = [];
   resetBulkActions();
   store.dispatch('conversationPage/reset');
@@ -665,6 +728,21 @@ function resetAndFetchData() {
     return;
   }
   fetchConversations();
+}
+
+// Everything held is already in the store, so releasing it updates the list
+// instantly. Filtered views and folders never receive new tickets over the
+// websocket, so they also re-read their first page.
+function showPendingUpdates() {
+  listUpdates.release();
+  if (!hasAppliedFiltersOrActiveFolders.value) return;
+
+  store.dispatch('fetchFilteredConversations', {
+    queryData: hasActiveFolders.value
+      ? useSnakeCase(activeFolder.value.query)
+      : store.getters.getAppliedConversationFiltersQuery,
+    page: 1,
+  });
 }
 
 function loadMoreConversations() {
@@ -690,6 +768,7 @@ function toggleAssigneeType(type) {
   const current = activeAssigneeTypes.value;
   const isActive = current.includes(type);
 
+  listUpdates.release();
   resetBulkActions();
   emitter.emit('clearSearchInput');
   activeAssigneeTypes.value = isActive
@@ -703,6 +782,7 @@ function toggleAssigneeType(type) {
 // Toggling the same language again clears the filter and returns to the
 // normal (all-channel) view.
 function updateChatLanguage(selectedLanguage) {
+  listUpdates.release();
   resetBulkActions();
   emitter.emit('clearSearchInput');
   activeChatLanguage.value =
@@ -1085,6 +1165,15 @@ const statusPanelListeners = {
         @change-filter="onBasicFilterChange"
         @open-filters="showMobileFilters = true"
       />
+
+      <div v-if="pendingUpdateCount" class="relative z-20 h-0">
+        <div class="absolute inset-x-0 top-2 flex justify-center">
+          <FreshdeskUpdatesPill
+            :count="pendingUpdateCount"
+            @refresh="showPendingUpdates"
+          />
+        </div>
+      </div>
 
       <p
         v-if="!chatListLoading && !conversationList.length"

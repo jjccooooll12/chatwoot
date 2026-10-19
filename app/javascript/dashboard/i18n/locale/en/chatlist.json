@@ -150,6 +150,9 @@
       "MAIN_MENU": "Main menu",
       "TICKET_DETAILS": "Ticket details"
     },
+    "FRESHDESK_UPDATES": {
+      "LABEL": "update | updates"
+    },
     "FRESHDESK_PANEL": {
       "STATUS_HEADING": "Status",
       "ASSIGNEE_HEADING": "Assignee",
