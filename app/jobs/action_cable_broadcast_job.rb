@@ -27,7 +27,9 @@ class ActionCableBroadcastJob < ApplicationJob
 
     account = Account.find(data[:account_id])
     conversation = account.conversations.find_by!(display_id: data[:id])
-    conversation.push_event_data.merge(account_id: data[:account_id])
+    # FRESHDESK-SKIN: keep the performer — the ticket list uses it to tell the
+    # agent's own changes from everyone else's.
+    conversation.push_event_data.merge(data.slice(:account_id, :performer))
   end
 
   def broadcast_to_members(members, event_name, broadcast_data)
