@@ -441,7 +441,9 @@ let lastShownIds = [];
 watch(
   () => listUpdates.conversationIds.length,
   () => {
-    if (!listUpdates.conversationIds.length) heldPositions.clear();
+    [...heldPositions.keys()].forEach(id => {
+      if (!listUpdates.conversationIds.includes(id)) heldPositions.delete(id);
+    });
     listUpdates.conversationIds.forEach(id => {
       if (!heldPositions.has(id))
         heldPositions.set(id, lastShownIds.indexOf(id));

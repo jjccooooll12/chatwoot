@@ -15,6 +15,7 @@ import {
 import { VOICE_CALL_PROVIDERS } from 'dashboard/helper/inbox';
 import { VOICE_CALL_DIRECTION } from 'dashboard/components-next/message/constants';
 import { FEATURE_FLAGS } from 'dashboard/featureFlags';
+import { MESSAGE_TYPE } from 'shared/constants/messages';
 
 const { isImpersonating } = useImpersonation();
 const UNREAD_COUNTS_REFETCH_THROTTLE_MS = 5000;
@@ -89,10 +90,15 @@ class ActionCableConnector extends BaseActionCableConnector {
 
   // FRESHDESK-SKIN: a change this agent did not make (no performer means a
   // customer or a background job) is held back from the ticket list until
-  // they click the updates pill. Their own changes still apply straight away.
+  // they click the updates pill. Their own changes apply straight away, and
+  // also let go of the ticket if it was held, so it moves or leaves the list.
   holdForTicketList = (conversationId, performer) => {
-    if (performer?.id === this.app.$store.getters.getCurrentUserID) return;
-    useConversationListUpdatesStore().hold(conversationId);
+    const listUpdates = useConversationListUpdatesStore();
+    if (performer?.id === this.app.$store.getters.getCurrentUserID) {
+      listUpdates.unhold(conversationId);
+      return;
+    }
+    listUpdates.hold(conversationId);
   };
 
   onMessageUpdated = data => {
@@ -144,7 +150,12 @@ class ActionCableConnector extends BaseActionCableConnector {
       conversation: { last_activity_at: lastActivityAt },
       conversation_id: conversationId,
     } = data;
-    this.holdForTicketList(conversationId, data.performer);
+    // Activity notes ("marked pending by …") are written later by a background
+    // job, so they never carry a performer. The status or assignee event they
+    // describe does, so they are left out rather than read as someone else's.
+    if (data.message_type !== MESSAGE_TYPE.ACTIVITY) {
+      this.holdForTicketList(conversationId, data.performer);
+    }
     DashboardAudioNotificationHelper.onNewMessage(data);
     this.app.$store.dispatch('addMessage', data);
     this.app.$store.dispatch('updateConversationLastActivity', {

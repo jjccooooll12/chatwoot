@@ -18,6 +18,12 @@ export const useConversationListUpdatesStore = defineStore(
         this.conversationIds.push(conversationId);
       },
 
+      unhold(conversationId) {
+        this.conversationIds = this.conversationIds.filter(
+          id => id !== conversationId
+        );
+      },
+
       release() {
         this.conversationIds = [];
       },
