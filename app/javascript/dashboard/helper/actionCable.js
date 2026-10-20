@@ -74,8 +74,14 @@ class ActionCableConnector extends BaseActionCableConnector {
   };
 
   // eslint-disable-next-line class-methods-use-this
+  // FRESHDESK-SKIN: a sleeping laptop or frozen background tab only notices
+  // the dead socket on wake, hours later. Report the last server ping so the
+  // catch-up fetch covers the whole gap, not just the moment it was noticed.
   onDisconnected = () => {
-    emitter.emit(BUS_EVENTS.WEBSOCKET_DISCONNECT);
+    emitter.emit(
+      BUS_EVENTS.WEBSOCKET_DISCONNECT,
+      this.consumer.connection.monitor.pingedAt
+    );
   };
 
   isAValidEvent = data => {

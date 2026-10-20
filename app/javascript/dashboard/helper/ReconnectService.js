@@ -133,8 +133,9 @@ class ReconnectService {
     }
   };
 
-  onDisconnect = () => {
-    this.disconnectTime = new Date();
+  // lastPingAt is missing only if the socket never connected.
+  onDisconnect = lastPingAt => {
+    this.disconnectTime = new Date(lastPingAt ?? Date.now());
     this.setConversationLastMessageId();
   };
 

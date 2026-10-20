@@ -13,6 +13,7 @@ import {
 import messageReadActions from './actions/messageReadActions';
 import messageTranslateActions from './actions/messageTranslateActions';
 import * as Sentry from '@sentry/vue';
+import { useConversationListUpdatesStore } from 'dashboard/stores/conversationListUpdates';
 import {
   handleVoiceCallCreated,
   handleVoiceCallUpdated,
@@ -65,6 +66,14 @@ const actions = {
       const {
         data: { data },
       } = await ConversationApi.get(params);
+      // FRESHDESK-SKIN: updatedWithin is only set by the reconnect catch-up.
+      // Those are changes the agent missed while offline, so they wait behind
+      // the updates pill like any other change they did not make. Hold before
+      // the list re-renders so on-screen tickets keep their place.
+      if (params.updatedWithin) {
+        const listUpdates = useConversationListUpdatesStore();
+        data.payload.forEach(conversation => listUpdates.hold(conversation.id));
+      }
       buildConversationList(
         { commit, dispatch },
         params,

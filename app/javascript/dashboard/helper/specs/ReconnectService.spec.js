@@ -332,6 +332,13 @@ describe('ReconnectService', () => {
       expect(reconnectService.disconnectTime).toBeInstanceOf(Date);
       expect(reconnectService.setConversationLastMessageId).toHaveBeenCalled();
     });
+
+    it('measures the gap from the last server ping', () => {
+      reconnectService.setConversationLastMessageId = vi.fn();
+      const lastPingAt = Date.now() - 3 * 60 * 60 * 1000;
+      reconnectService.onDisconnect(lastPingAt);
+      expect(reconnectService.disconnectTime.getTime()).toBe(lastPingAt);
+    });
   });
 
   describe('onReconnect', () => {
