@@ -266,8 +266,12 @@ onMounted(() => {
     "
   >
     <div :class="{ 'flex-1 overflow-y-auto': !inSheet }">
-      <div class="grid gap-1.5 px-3 pb-4 pt-4 text-xs">
-        <h3 class="m-0 text-xxs font-semibold uppercase text-fd-muted">
+      <div
+        class="grid gap-1.5 px-3 pb-4 pt-4 text-xs max-md:gap-4 max-md:px-4 max-md:text-sm"
+      >
+        <h3
+          class="m-0 text-xxs font-semibold uppercase text-fd-muted max-md:text-xs"
+        >
           {{ t('CHAT_LIST.FRESHDESK_DETAIL.PROPERTIES') }}
         </h3>
 
@@ -341,7 +345,7 @@ onMounted(() => {
             :placeholder="
               t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER_PLACEHOLDER')
             "
-            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary max-md:h-11 max-md:px-3 max-md:text-base"
+            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary max-md:h-14 max-md:px-4 max-md:text-base"
             @blur="onOrderNumberBlur"
             @keyup.enter="$event.target.blur()"
           />
@@ -355,7 +359,7 @@ onMounted(() => {
     >
       <button
         type="button"
-        class="flex h-7 w-full items-center justify-center rounded-md px-3 text-xs font-semibold transition-colors duration-700 max-md:h-11 max-md:text-sm"
+        class="flex h-7 w-full items-center justify-center rounded-md px-3 text-xs font-semibold transition-colors duration-700 max-md:h-14 max-md:text-base"
         :class="updateButtonClass"
         :disabled="isSaving || !hasUnsavedChanges"
         @click="saveChanges"

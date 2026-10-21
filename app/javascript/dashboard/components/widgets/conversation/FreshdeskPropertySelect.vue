@@ -27,7 +27,10 @@ const selected = computed(
     ) || props.options[0]
 );
 
-const dotClass = option => ['size-2.5 shrink-0 rounded-sm', option.dotClass];
+const dotClass = option => [
+  'size-2.5 shrink-0 rounded-sm max-md:size-3.5',
+  option.dotClass,
+];
 
 const select = option => {
   isOpen.value = false;
@@ -36,13 +39,13 @@ const select = option => {
 };
 </script>
 
-<!-- FRESHDESK-SKIN: phones get 44px rows (max-md:) so Open/Pending/Closed
-     are easy to hit with a thumb; desktop is unchanged. -->
+<!-- FRESHDESK-SKIN: phones get 56px rows with 16px text (max-md:) so
+     Open/Pending/Closed are easy to hit with a thumb; desktop is unchanged. -->
 <template>
   <div class="relative" @keydown.esc="isOpen = false">
     <button
       type="button"
-      class="flex h-8 w-full cursor-pointer items-center gap-2 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary max-md:h-11 max-md:px-3 max-md:text-sm"
+      class="flex h-8 w-full cursor-pointer items-center gap-2 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary max-md:h-14 max-md:px-4 max-md:text-base"
       :aria-expanded="isOpen"
       aria-haspopup="listbox"
       @click="isOpen = !isOpen"
@@ -50,7 +53,7 @@ const select = option => {
       <span v-if="selected?.dotClass" :class="dotClass(selected)" />
       <span class="truncate">{{ selected?.label }}</span>
       <span
-        class="i-lucide-chevron-down size-3.5 shrink-0 text-fd-muted ltr:ml-auto rtl:mr-auto"
+        class="i-lucide-chevron-down size-3.5 max-md:size-5 shrink-0 text-fd-muted ltr:ml-auto rtl:mr-auto"
       />
     </button>
     <template v-if="isOpen">
@@ -62,7 +65,7 @@ const select = option => {
       />
       <ul
         role="listbox"
-        class="absolute inset-x-0 top-9 z-50 m-0 max-h-64 max-md:top-12 max-md:max-h-80 list-none overflow-y-auto rounded-md border border-fd-border bg-fd-surface p-1 shadow-lg"
+        class="absolute inset-x-0 top-9 z-50 m-0 max-h-64 max-md:top-[3.75rem] max-md:max-h-[60vh] max-md:p-1.5 list-none overflow-y-auto rounded-md border border-fd-border bg-fd-surface p-1 shadow-lg"
       >
         <li
           v-for="option in options"
@@ -72,7 +75,7 @@ const select = option => {
         >
           <button
             type="button"
-            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-fd-text hover:bg-n-slate-3 max-md:min-h-11 max-md:px-3 max-md:text-sm"
+            class="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-left text-xs text-fd-text hover:bg-n-slate-3 max-md:min-h-14 max-md:px-4 max-md:text-base max-md:gap-3"
             @click="select(option)"
           >
             <span v-if="option.dotClass" :class="dotClass(option)" />
