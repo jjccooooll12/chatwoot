@@ -341,7 +341,7 @@ onMounted(() => {
             :placeholder="
               t('CHAT_LIST.FRESHDESK_DETAIL.ORDER_NUMBER_PLACEHOLDER')
             "
-            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+            class="h-8 rounded-md border border-fd-primary/40 bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary max-md:h-11 max-md:px-3 max-md:text-base"
             @blur="onOrderNumberBlur"
             @keyup.enter="$event.target.blur()"
           />
@@ -355,7 +355,7 @@ onMounted(() => {
     >
       <button
         type="button"
-        class="flex h-7 w-full items-center justify-center rounded-md px-3 text-xs font-semibold transition-colors duration-700"
+        class="flex h-7 w-full items-center justify-center rounded-md px-3 text-xs font-semibold transition-colors duration-700 max-md:h-11 max-md:text-sm"
         :class="updateButtonClass"
         :disabled="isSaving || !hasUnsavedChanges"
         @click="saveChanges"
