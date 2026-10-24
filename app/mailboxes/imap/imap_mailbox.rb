@@ -66,10 +66,13 @@ class Imap::ImapMailbox
     @processed_mail = MailPresenter.new(@inbound_mail, @account)
   end
 
+  # Checks From as well as Reply-To: notifications such as PayPal's "you received
+  # a payment" put the payer in Reply-To, which used to slip past the list.
   def blocked_sender?
-    sender = original_sender_email.to_s.downcase.strip
-    return false if sender.blank?
+    @processed_mail.sender_addresses.any? { |address| blocked_address?(address.to_s.downcase.strip) }
+  end
 
+  def blocked_address?(sender)
     domain = sender.split('@').last.to_s
     blocked_sender_patterns.any? do |pattern|
       if pattern.include?('*')

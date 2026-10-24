@@ -30,6 +30,20 @@ RSpec.describe Imap::ImapMailbox do
       end
     end
 
+    context 'when a blocked sender puts someone else in Reply-To' do
+      let(:inbound_mail) do
+        create_inbound_email_from_mail(
+          from: 'service@paypal.com', reply_to: 'payer@msn.com', to: 'imap@gmail.com', subject: 'Notification of payment received'
+        )
+      end
+
+      it 'does not create a ticket' do
+        expect do
+          class_instance.process(inbound_mail.mail, channel)
+        end.not_to change(Conversation, :count)
+      end
+    end
+
     context 'when the email with has empty text content' do
       let(:inbound_mail) { create_inbound_email_from_fixture('attachments_without_text.eml') }
 

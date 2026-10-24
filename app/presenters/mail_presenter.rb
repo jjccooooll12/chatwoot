@@ -149,11 +149,17 @@ class MailPresenter < SimpleDelegator
   end
 
   def original_sender
+    sender_addresses.first
+  end
+
+  # FRESHDESK-SKIN: every address the mail claims to come from, Reply-To first.
+  # PayPal sends from service@paypal.com with Reply-To set to the payer.
+  def sender_addresses
     [
       @mail[:reply_to]&.value,
       @mail['X-Original-Sender']&.value,
       @mail[:from]&.value
-    ].filter_map { |email| parse_mail_address(email)&.address }.first
+    ].filter_map { |email| parse_mail_address(email)&.address }
   end
 
   def headers_data
