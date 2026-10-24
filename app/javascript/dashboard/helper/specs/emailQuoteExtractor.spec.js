@@ -43,7 +43,51 @@ const EMAIL_WITH_FOLLOW_UP_CONTENT = `
 <p>Regards,</p>
 `;
 
+// Outlook: header block and old message are siblings after the new text.
+const OUTLOOK_REPLY = `
+<div class="elementToProof">Thinking 250 of each design.</div>
+<div id="ms-outlook-mobile-signature">Get Outlook for iOS</div>
+<hr style="display:inline-block;width:98%">
+<div id="divRplyFwdMsg"><b>From:</b> Peach Labels<br><b>Sent:</b> Friday</div>
+<div><p>Hi Ryan,</p><p>Previous agent reply</p></div>
+`;
+
+// Apple Mail: cite blockquotes nested inside the signature wrapper.
+const APPLE_MAIL_REPLY = `
+Should be purple
+<div><div dir="ltr"><p>Sent from my iPhone</p></div>
+<div dir="ltr"><blockquote type="cite">On Oct 22, 2026, at 4:31 PM, Peach Labels wrote:</blockquote></div>
+<blockquote type="cite"><div dir="ltr"><p>Hi Fam, previous agent reply</p></div></blockquote></div>
+`;
+
 describe('EmailQuoteExtractor', () => {
+  it('cuts Outlook history that follows the reply header as siblings', () => {
+    const cleanedHtml = EmailQuoteExtractor.extractQuotes(OUTLOOK_REPLY);
+
+    expect(cleanedHtml).toContain('Thinking 250 of each design.');
+    expect(cleanedHtml).toContain('Get Outlook for iOS');
+    expect(cleanedHtml).not.toContain('Previous agent reply');
+    expect(cleanedHtml).not.toContain('<hr');
+    expect(EmailQuoteExtractor.hasQuotes(OUTLOOK_REPLY)).toBe(true);
+  });
+
+  it('cuts nested Apple Mail cite blockquotes', () => {
+    const cleanedHtml = EmailQuoteExtractor.extractQuotes(APPLE_MAIL_REPLY);
+
+    expect(cleanedHtml).toContain('Should be purple');
+    expect(cleanedHtml).toContain('Sent from my iPhone');
+    expect(cleanedHtml).not.toContain('previous agent reply');
+    expect(cleanedHtml).not.toContain('wrote:');
+  });
+
+  it('keeps a forward that has no new text before it', () => {
+    const html =
+      '<blockquote type="cite"><p>Forwarded content</p></blockquote><p>tail</p>';
+    expect(EmailQuoteExtractor.extractQuotes(html)).toContain(
+      'Forwarded content'
+    );
+  });
+
   it('removes blockquote-based quotes from the email body', () => {
     const cleanedHtml = EmailQuoteExtractor.extractQuotes(SAMPLE_EMAIL_HTML);
 

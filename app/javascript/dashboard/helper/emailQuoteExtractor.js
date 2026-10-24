@@ -14,6 +14,30 @@ const QUOTE_INDICATORS = [
 
 const BLOCKQUOTE_FALLBACK_SELECTOR = 'blockquote';
 
+// FRESHDESK-SKIN: where a reply's quoted history starts. Outlook puts its
+// "From/Sent/To" header and the old message as *siblings* after the new text,
+// and Apple Mail nests its cite blockquote inside wrappers, so removing just
+// the matched element left the whole history on screen. Everything from the
+// first of these to the end of the email is history.
+const REPLY_START_SELECTORS = [
+  'blockquote[type="cite"]',
+  '#divRplyFwdMsg',
+  '#appendonsend',
+  '#mail-editor-reference-message-container',
+  '.moz-cite-prefix',
+  'div[style*="border-top:solid #E1E1E1"]',
+  'div[style*="border-top: solid rgb(225, 225, 225)"]',
+  'div[style*="border-top:solid #B5C4DF"]',
+];
+
+// A line that opens quoted history: "On <date>, <name> wrote:" (and the
+// languages our customers write in) or Outlook's plain-text separator.
+const REPLY_HEADER_PATTERNS = [
+  /On .+(wrote|écrit):?\s*$/i,
+  /(ha scritto|a écrit|schrieb|escribió|napisał|schreef):\s*$/i,
+  /-----\s*Original Message\s*-----/i,
+];
+
 // Regex patterns for quote identification
 const QUOTE_PATTERNS = [
   /On .* wrote:/i,
@@ -40,6 +64,7 @@ export class EmailQuoteExtractor {
       });
     });
 
+    this.removeFromReplyStart(tempDiv);
     this.removeTrailingBlockquote(tempDiv);
 
     // Remove text-based quotes
@@ -68,13 +93,76 @@ export class EmailQuoteExtractor {
       }
     }
 
-    if (this.findTrailingBlockquote(tempDiv)) {
+    if (this.findReplyStart(tempDiv) || this.findTrailingBlockquote(tempDiv)) {
       return true;
     }
 
     // Check for text-based quotes
     const textNodeQuotes = this.findTextNodeQuotes(tempDiv);
     return textNodeQuotes.length > 0;
+  }
+
+  /**
+   * The node where a reply's quoted history begins, or null. Only counts when
+   * the customer wrote something before it — a bare forward stays whole.
+   * @param {Element} rootElement
+   * @returns {Node|null}
+   */
+  static findReplyStart(rootElement) {
+    const candidates = REPLY_START_SELECTORS.flatMap(selector =>
+      Array.from(rootElement.querySelectorAll(selector))
+    );
+
+    const treeWalker = document.createTreeWalker(
+      rootElement,
+      NodeFilter.SHOW_TEXT
+    );
+    for (
+      let node = treeWalker.nextNode();
+      node !== null;
+      node = treeWalker.nextNode()
+    ) {
+      if (REPLY_HEADER_PATTERNS.some(pattern => pattern.test(node.textContent))) {
+        candidates.push(node);
+        break;
+      }
+    }
+    // Outlook plain-text headers: a "From:" line followed by "Sent:"/"Date:".
+    const fromBlock = Array.from(rootElement.querySelectorAll('div, p')).find(
+      el => /^\s*From:[\s\S]*\b(Sent|Date):/.test(el.textContent)
+    );
+    if (fromBlock) candidates.push(fromBlock);
+
+    const first = candidates.sort((a, b) =>
+      // eslint-disable-next-line no-bitwise
+      a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1
+    )[0];
+    if (!first) return null;
+
+    const before = document.createRange();
+    before.setStart(rootElement, 0);
+    before.setEndBefore(first);
+    const hasNewText = Boolean(before.toString().trim());
+    return hasNewText ? first : null;
+  }
+
+  /**
+   * Remove the quoted history: the reply start, everything after it, and an
+   * Outlook <hr> separator right before it.
+   * @param {Element} rootElement
+   */
+  static removeFromReplyStart(rootElement) {
+    const start = this.findReplyStart(rootElement);
+    if (!start) return;
+
+    if (start.previousElementSibling?.tagName === 'HR') {
+      start.previousElementSibling.remove();
+    }
+    for (let node = start; node && node !== rootElement; ) {
+      while (node.nextSibling) node.nextSibling.remove();
+      node = node.parentNode;
+    }
+    start.remove();
   }
 
   /**

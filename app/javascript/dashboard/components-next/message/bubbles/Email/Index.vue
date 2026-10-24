@@ -207,24 +207,27 @@ const handleSeeOriginal = () => {
                 :text="textToShow"
               />
             </template>
+            <!-- FRESHDESK-SKIN: the quoted history folds into a Gmail-style
+                 "•••" pill; tapping it shows or hides the history. -->
             <button
               v-if="hasQuotedMessage"
-              class="mt-2 flex items-center gap-1 text-xs leading-none text-fd-muted hover:text-fd-text"
+              type="button"
+              class="mt-2 inline-flex h-5 items-center rounded-full border border-fd-border bg-n-slate-2 px-2 text-fd-muted hover:bg-n-slate-3 hover:text-fd-text max-md:h-8 max-md:px-3"
+              :class="{ 'bg-n-slate-3 text-fd-text': showQuotedMessage }"
+              :title="
+                showQuotedMessage
+                  ? $t('CHAT_LIST.HIDE_QUOTED_TEXT')
+                  : $t('CHAT_LIST.SHOW_QUOTED_TEXT')
+              "
+              :aria-label="
+                showQuotedMessage
+                  ? $t('CHAT_LIST.HIDE_QUOTED_TEXT')
+                  : $t('CHAT_LIST.SHOW_QUOTED_TEXT')
+              "
+              :aria-expanded="showQuotedMessage"
               @click="showQuotedMessage = !showQuotedMessage"
             >
-              <template v-if="showQuotedMessage">
-                {{ $t('CHAT_LIST.HIDE_QUOTED_TEXT') }}
-              </template>
-              <template v-else>
-                {{ $t('CHAT_LIST.SHOW_QUOTED_TEXT') }}
-              </template>
-              <Icon
-                :icon="
-                  showQuotedMessage
-                    ? 'i-lucide-chevron-up'
-                    : 'i-lucide-chevron-down'
-                "
-              />
+              <Icon icon="i-lucide-ellipsis" class="size-4" />
             </button>
           </div>
         </section>
