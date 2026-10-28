@@ -1373,6 +1373,7 @@ export default {
           v-model:cc-emails="ccEmails"
           v-model:bcc-emails="bccEmails"
           v-model:to-emails="toEmails"
+          :contact-email="currentChat?.meta?.sender?.email || ''"
           :from-name="inbox.name"
           :from-email="inbox.email"
           data-freshdesk-mail-head

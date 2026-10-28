@@ -24,6 +24,10 @@ export default {
       type: String,
       default: '',
     },
+    contactEmail: {
+      type: String,
+      default: '',
+    },
   },
   emits: ['update:bccEmails', 'update:ccEmails', 'update:toEmails'],
   setup() {
@@ -109,13 +113,22 @@ export default {
         <span class="text-fd-muted"> ({{ fromEmail }})</span>
       </span>
     </div>
+    <!-- The To row carries the Cc/Bcc buttons, so it shows even when no email
+    in the thread names a recipient yet (a ticket we opened ourselves): the
+    reply then goes to the contact, shown as plain text. -->
     <div
-      v-if="toEmails"
+      v-if="toEmails || contactEmail"
       class="mail-row"
       :class="{ error: v$.toEmailsVal.$error }"
     >
       <span class="mail-label">{{ $t('EMAIL_HEADER.TO') }}</span>
-      <div class="m-0 min-w-0 flex-1 whitespace-nowrap rounded-none">
+      <span
+        v-if="!toEmails"
+        class="min-w-0 flex-1 truncate text-[13px] font-semibold leading-8 text-fd-text"
+      >
+        {{ contactEmail }}
+      </span>
+      <div v-else class="m-0 min-w-0 flex-1 whitespace-nowrap rounded-none">
         <woot-input
           v-model="v$.toEmailsVal.$model"
           type="text"
