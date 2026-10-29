@@ -83,15 +83,21 @@ const directUploadsEnabled = computed(
 
 const activeContact = computed(() => contactById.value(props.contactId));
 
+const defaultInbox = computed(() => {
+  const inbox = inboxesList.value.find(
+    item => item.email?.toLowerCase() === DEFAULT_FROM_EMAIL
+  );
+  return inbox
+    ? mergeInboxDetails([{ id: inbox.id }], inboxesList.value)[0]
+    : null;
+});
+
 const setContactInboxes = (contact, contactableInboxes) => {
   const inboxes = mergeInboxDetails(contactableInboxes, inboxesList.value);
   selectedContact.value = { ...contact, contactInboxes: inboxes };
-  if (!targetInbox.value) {
-    targetInbox.value =
-      inboxes.find(
-        inbox => inbox.email?.toLowerCase() === DEFAULT_FROM_EMAIL
-      ) || null;
-  }
+  targetInbox.value =
+    inboxes.find(inbox => inbox.email?.toLowerCase() === DEFAULT_FROM_EMAIL) ||
+    null;
 };
 
 const onContactSearch = debounce(
@@ -155,7 +161,7 @@ const handleTargetInbox = inbox => {
 
 const clearSelectedContact = () => {
   selectedContact.value = null;
-  targetInbox.value = null;
+  targetInbox.value = defaultInbox.value;
   clearFormState();
 };
 
@@ -166,7 +172,7 @@ const closeCompose = () => {
     // Then don't allow to remove the selected contact
     selectedContact.value = null;
   }
-  targetInbox.value = null;
+  targetInbox.value = defaultInbox.value;
   resetContacts();
 };
 
@@ -201,6 +207,7 @@ const createConversation = async ({ payload, isFromWhatsApp }) => {
 };
 
 const onPopoverShow = () => {
+  if (!selectedContact.value) targetInbox.value = defaultInbox.value;
   // Flag to prevent triggering drag n drop,
   // When compose modal is active
   emitter.emit(BUS_EVENTS.NEW_CONVERSATION_MODAL, true);
@@ -210,6 +217,14 @@ const onPopoverHide = () => {
   emitter.emit(BUS_EVENTS.NEW_CONVERSATION_MODAL, false);
   emit('close');
 };
+
+watch(
+  defaultInbox,
+  inbox => {
+    if (!selectedContact.value) targetInbox.value = inbox;
+  },
+  { immediate: true }
+);
 
 watch(
   activeContact,

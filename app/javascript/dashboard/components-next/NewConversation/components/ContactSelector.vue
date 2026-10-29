@@ -43,6 +43,18 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  showEmailActions: {
+    type: Boolean,
+    default: false,
+  },
+  showCcInput: {
+    type: Boolean,
+    default: false,
+  },
+  showBccInput: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -50,6 +62,8 @@ const emit = defineEmits([
   'setSelectedContact',
   'clearSelectedContact',
   'updateDropdown',
+  'showCcInput',
+  'showBccInput',
 ]);
 
 const i18nPrefix = 'COMPOSE_NEW_CONVERSATION.FORM.CONTACT_SELECTOR';
@@ -105,7 +119,7 @@ const handleInput = value => {
 
       <div
         v-if="isCreatingContact"
-        class="flex items-center gap-1.5 rounded-md bg-n-alpha-2 px-3 min-h-7 min-w-0"
+        class="flex min-w-0 flex-1 items-center gap-1.5 rounded-md bg-n-alpha-2 px-3 min-h-7"
       >
         <span class="text-sm truncate text-n-slate-12">
           {{ t(`${i18nPrefix}.CONTACT_CREATING`) }}
@@ -113,7 +127,7 @@ const handleInput = value => {
       </div>
       <div
         v-else-if="selectedContact"
-        class="flex items-center gap-1.5 rounded-md bg-n-alpha-2 min-h-7 min-w-0"
+        class="flex min-w-0 flex-1 items-center gap-1.5 rounded-md bg-n-alpha-2 min-h-7"
         :class="!contactId ? 'ltr:pl-3 rtl:pr-3 ltr:pr-1 rtl:pl-1' : 'px-3'"
       >
         <span class="text-sm truncate text-n-slate-12">
@@ -151,6 +165,24 @@ const handleInput = value => {
         @add="emit('setSelectedContact', $event)"
         @remove="emit('clearSelectedContact')"
       />
+      <div v-if="showEmailActions" class="flex shrink-0 items-center gap-1">
+        <Button
+          v-if="!showCcInput"
+          :label="t('COMPOSE_NEW_CONVERSATION.FORM.EMAIL_OPTIONS.CC_BUTTON')"
+          variant="link"
+          size="sm"
+          class="!px-1 hover:!no-underline"
+          @click="emit('showCcInput')"
+        />
+        <Button
+          v-if="!showBccInput"
+          :label="t('COMPOSE_NEW_CONVERSATION.FORM.EMAIL_OPTIONS.BCC_BUTTON')"
+          variant="link"
+          size="sm"
+          class="!px-1 hover:!no-underline"
+          @click="emit('showBccInput')"
+        />
+      </div>
     </div>
   </div>
 </template>

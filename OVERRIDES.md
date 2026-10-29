@@ -22,7 +22,7 @@ Git commits.
 | `app/javascript/dashboard/components/ConversationList.vue` | Freshdesk light list background behind cards; expanded/table-card plumbing removed. | `chatwoot/chatwoot@v4.16.1` |
 | `app/javascript/dashboard/components/ChatListHeader.vue` | Freshdesk-style list header/top bar: bolder title, always-on purple total-count badge, subtler status chip, `+ New`, search, notifications, help/apps affordances, and agent avatar. | `chatwoot/chatwoot@v4.16.1` |
 | `app/javascript/dashboard/i18n/locale/en/chatlist.json`                             | Adds English strings for derived ticket-card and top-bar labels. Crowdin owns other locales.                                                                                                                                     | `chatwoot/chatwoot@v4.16.1` |
-| `app/javascript/dashboard/components-next/NewConversation/ComposeConversation.vue`, `app/javascript/dashboard/components-next/NewConversation/components/InboxSelector.vue`, `app/javascript/dashboard/i18n/locale/en/contact.json` | Labels the outbound inbox as "From", defaults new tickets to `support@peach-labels.com`, and displays the sender address directly. | `chatwoot/chatwoot@v4.16.1` |
+| `app/javascript/dashboard/components-next/NewConversation/ComposeConversation.vue`, `app/javascript/dashboard/components-next/NewConversation/components/{ComposeNewConversationForm,ContactSelector,EmailOptions,InboxSelector}.vue`, `app/javascript/dashboard/i18n/locale/en/contact.json` | Gives new email tickets the same header order as replies: pre-populated `From: Peach Labels (support@peach-labels.com)`, `To` below it, and folded `Cc`/`Bcc` actions on the right. | `chatwoot/chatwoot@v4.16.1` |
 
 ## Backend
 

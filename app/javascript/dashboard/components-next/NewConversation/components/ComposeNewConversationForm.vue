@@ -54,14 +54,14 @@ const emit = defineEmits([
   'createConversation',
 ]);
 
-const DEFAULT_FORMATTING = 'Context::Default';
-
 const copilot = useCopilotReply();
 
 const showContactsDropdown = ref(false);
 const showInboxesDropdown = ref(false);
 const showCcEmailsDropdown = ref(false);
 const showBccEmailsDropdown = ref(false);
+const showCcInput = ref(false);
+const showBccInput = ref(false);
 
 const isCreating = computed(() => props.contactConversationsUiFlags.isCreating);
 
@@ -234,17 +234,6 @@ const removeSignatureFromMessage = () => {
   }
 };
 
-const removeTargetInbox = value => {
-  v$.value.$reset();
-  copilot.reset(false);
-  removeSignatureFromMessage();
-
-  stripMessageFormatting(DEFAULT_FORMATTING);
-
-  emit('updateTargetInbox', value);
-  state.attachedFiles = [];
-};
-
 const clearSelectedContact = () => {
   copilot.reset(false);
   removeSignatureFromMessage();
@@ -366,6 +355,16 @@ useKeyboardEvents({
     class="w-full md:w-[42rem] divide-y divide-n-strong overflow-visible transition-all duration-300 ease-in-out top-full flex flex-col bg-n-alpha-3 border border-n-strong shadow-sm backdrop-blur-[100px] rounded-xl min-w-0 max-h-[calc(100vh-8rem)]"
   >
     <div class="flex-1 overflow-y-auto divide-y divide-n-strong">
+      <InboxSelector
+        :target-inbox="targetInbox"
+        :selected-contact="selectedContact"
+        :show-inboxes-dropdown="showInboxesDropdown"
+        :contactable-inboxes-list="contactableInboxesList"
+        :has-errors="validationStates.isInboxInvalid"
+        :is-fetching-inboxes="isFetchingInboxes"
+        @toggle-dropdown="showInboxesDropdown = $event"
+        @handle-inbox-action="handleInboxAction"
+      />
       <ContactSelector
         :contacts="contacts"
         :selected-contact="selectedContact"
@@ -376,24 +375,17 @@ useKeyboardEvents({
         :contactable-inboxes-list="contactableInboxesList"
         :show-inboxes-dropdown="showInboxesDropdown"
         :has-errors="validationStates.isContactInvalid"
+        :show-email-actions="inboxTypes.isEmail"
+        :show-cc-input="showCcInput"
+        :show-bcc-input="showBccInput"
         @search-contacts="handleContactSearch"
         @set-selected-contact="setSelectedContact"
         @clear-selected-contact="clearSelectedContact"
         @update-dropdown="handleDropdownUpdate"
+        @show-cc-input="showCcInput = true"
+        @show-bcc-input="showBccInput = true"
       />
       <InboxEmptyState v-if="showNoInboxAlert" />
-      <InboxSelector
-        v-else
-        :target-inbox="targetInbox"
-        :selected-contact="selectedContact"
-        :show-inboxes-dropdown="showInboxesDropdown"
-        :contactable-inboxes-list="contactableInboxesList"
-        :has-errors="validationStates.isInboxInvalid"
-        :is-fetching-inboxes="isFetchingInboxes"
-        @update-inbox="removeTargetInbox"
-        @toggle-dropdown="showInboxesDropdown = $event"
-        @handle-inbox-action="handleInboxAction"
-      />
 
       <EmailOptions
         v-if="inboxTypes.isEmail"
@@ -405,6 +397,8 @@ useKeyboardEvents({
         :show-bcc-emails-dropdown="showBccEmailsDropdown"
         :is-loading="isLoading"
         :has-errors="validationStates.isSubjectInvalid"
+        :show-cc-input="showCcInput"
+        :show-bcc-input="showBccInput"
         @search-cc-emails="searchCcEmails"
         @search-bcc-emails="searchBccEmails"
         @update-dropdown="handleDropdownUpdate"

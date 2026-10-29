@@ -632,6 +632,7 @@
         "SUBJECT_LABEL": "Subject :",
         "SUBJECT_PLACEHOLDER": "Enter your email subject here",
         "CC_LABEL": "Cc:",
+        "CC_BUTTON": "Cc",
         "CC_PLACEHOLDER": "Enter at least 2 characters to search by email",
         "BCC_LABEL": "Bcc:",
         "BCC_PLACEHOLDER": "Enter at least 2 characters to search by email",
