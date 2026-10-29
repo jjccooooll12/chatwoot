@@ -44,7 +44,10 @@ const emit = defineEmits([
 const { t } = useI18n();
 
 const targetInboxLabel = computed(() => {
-  return generateLabelForContactableInboxesList(props.targetInbox);
+  return (
+    props.targetInbox?.email ||
+    generateLabelForContactableInboxesList(props.targetInbox)
+  );
 });
 </script>
 

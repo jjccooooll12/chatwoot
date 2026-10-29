@@ -32,6 +32,8 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
+const DEFAULT_FROM_EMAIL = 'support@peach-labels.com';
+
 const searchContacts = createContactSearcher();
 const store = useStore();
 const { t } = useI18n();
@@ -81,6 +83,17 @@ const directUploadsEnabled = computed(
 
 const activeContact = computed(() => contactById.value(props.contactId));
 
+const setContactInboxes = (contact, contactableInboxes) => {
+  const inboxes = mergeInboxDetails(contactableInboxes, inboxesList.value);
+  selectedContact.value = { ...contact, contactInboxes: inboxes };
+  if (!targetInbox.value) {
+    targetInbox.value =
+      inboxes.find(
+        inbox => inbox.email?.toLowerCase() === DEFAULT_FROM_EMAIL
+      ) || null;
+  }
+};
+
 const onContactSearch = debounce(
   async query => {
     isSearching.value = true;
@@ -119,16 +132,13 @@ const handleSelectedContact = async ({ value, action, ...rest }) => {
     contact = rest;
   }
   selectedContact.value = contact;
+  targetInbox.value = null;
   contacts.value = [];
   if (contact?.id) {
     isFetchingInboxes.value = true;
     try {
       const contactableInboxes = await fetchContactableInboxes(contact.id);
-      // Merge the processed contactableInboxes with the inboxesList
-      selectedContact.value.contactInboxes = mergeInboxDetails(
-        contactableInboxes,
-        inboxesList.value
-      );
+      setContactInboxes(contact, contactableInboxes);
 
       isFetchingInboxes.value = false;
     } catch (error) {
@@ -216,11 +226,7 @@ watch(
       const processedInboxes = processContactableInboxes(
         currentContact.contactInboxes || []
       );
-      // Then Merge processedInboxes with the inboxes list
-      selectedContact.value = {
-        ...currentContact,
-        contactInboxes: mergeInboxDetails(processedInboxes, inboxesList.value),
-      };
+      setContactInboxes(currentContact, processedInboxes);
     }
   },
   { immediate: true, deep: true }

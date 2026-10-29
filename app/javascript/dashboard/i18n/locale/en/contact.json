@@ -625,7 +625,7 @@
         "CONTACT_CREATING": "Creating contact..."
       },
       "INBOX_SELECTOR": {
-        "LABEL": "Via:",
+        "LABEL": "From:",
         "BUTTON": "Show inboxes"
       },
       "EMAIL_OPTIONS": {
