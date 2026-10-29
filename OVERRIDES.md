@@ -35,3 +35,8 @@ Git commits.
 The deploy repo should point Compose at a pinned GHCR image tag, not at mutable
 upstream `latest` tags. Rollback is changing the image tag back to the prior
 known-good value and running the deploy script.
+
+The custom image build keeps Ruby dependency installation ahead of Node tooling
+in `docker/Dockerfile`, pins the Node build stage, and excludes `.git` from the
+Docker context. `.github/workflows/build-custom-image.yml` passes the commit SHA
+as a build argument so code-only pushes reuse the expensive Bundler layer.

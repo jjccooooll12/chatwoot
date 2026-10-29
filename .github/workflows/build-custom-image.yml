@@ -43,10 +43,11 @@ jobs:
           context: .
           file: docker/Dockerfile
           push: true
-          # Durable build cache lives in GHCR (registry), so the expensive
-          # grpc/gem layer survives GitHub's 7-day / 10 GB gha-cache eviction and
-          # cold 22-min builds stop happening. gha is kept as a transitional read
-          # source so this first registry build is still warm.
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          # Durable cache lives in GHCR so the expensive Bundler layer survives
+          # ephemeral runners. The Dockerfile keeps that layer independent from
+          # Node and application source changes; gha remains a secondary source.
           cache-from: |
             type=registry,ref=ghcr.io/jjccooooll12/chatwoot-custom:buildcache
             type=gha

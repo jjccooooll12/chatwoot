@@ -1,5 +1,5 @@
 # pre-build stage
-FROM node:24-alpine as node
+FROM node:24.13.0-alpine AS node
 FROM ruby:3.4.4-alpine3.21 AS pre-builder
 
 ARG NODE_VERSION="24.13.0"
@@ -37,23 +37,6 @@ RUN apk update && apk add --no-cache \
   && mkdir -p /var/app \
   && gem install bundler -v "$BUNDLER_VERSION"
 
-COPY --from=node /usr/local/bin/node /usr/local/bin/
-COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
-RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-  && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-
-RUN npm install -g pnpm@${PNPM_VERSION}
-
-RUN echo 'export PNPM_HOME="/root/.local/share/pnpm"' >> /root/.shrc \
-  && echo 'export PATH="$PNPM_HOME:$PATH"' >> /root/.shrc \
-  && export PNPM_HOME="/root/.local/share/pnpm" \
-  && export PATH="$PNPM_HOME:$PATH" \
-  && pnpm --version
-
-# Persist the environment variables in Docker
-ENV PNPM_HOME="/root/.local/share/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-
 WORKDIR /app
 
 COPY Gemfile Gemfile.lock ./
@@ -71,6 +54,23 @@ RUN if [ "$RAILS_ENV" = "production" ]; then \
   else bundle install -j 4 -r 3; \
   fi
 
+COPY --from=node /usr/local/bin/node /usr/local/bin/
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+  && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+RUN npm install -g pnpm@${PNPM_VERSION}
+
+RUN echo 'export PNPM_HOME="/root/.local/share/pnpm"' >> /root/.shrc \
+  && echo 'export PATH="$PNPM_HOME:$PATH"' >> /root/.shrc \
+  && export PNPM_HOME="/root/.local/share/pnpm" \
+  && export PATH="$PNPM_HOME:$PATH" \
+  && pnpm --version
+
+# Persist the environment variables in Docker
+ENV PNPM_HOME="/root/.local/share/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm i
 
@@ -86,13 +86,13 @@ RUN if [ "$RAILS_ENV" = "production" ]; then \
   && rm -rf spec node_modules tmp/cache; \
   fi
 
-# Generate .git_sha file with current commit hash
-RUN git rev-parse HEAD > /app/.git_sha
+# Generate .git_sha without copying the repository history into the image.
+ARG GIT_SHA=unknown
+RUN printf '%s\n' "$GIT_SHA" > /app/.git_sha
 
 # Remove unnecessary files
 RUN rm -rf /gems/ruby/3.4.0/cache/*.gem \
   && find /gems/ruby/3.4.0/gems/ \( -name "*.c" -o -name "*.o" \) -delete \
-  && rm -rf .git \
   && rm .gitignore
 
 # final build stage
