@@ -371,7 +371,7 @@ en:
     templates:
       greeting_message_body: '%{account_name} typically replies in a few hours.'
       email_request_message_body: "Thanks for reaching out! We'll be with you shortly. Could you share your email so we can get back to you?"
-      email_received_message_body: "Thank you! We'll get back to you at %{email}."
+      email_received_message_body: "Thank you so much! A real agent will be with you shortly, and we'll also reply to %{email}."
       csat_input_message_body: 'Please rate the conversation'
     reply:
       email:
