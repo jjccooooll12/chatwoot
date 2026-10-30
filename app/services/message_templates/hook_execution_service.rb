@@ -5,6 +5,7 @@ class MessageTemplates::HookExecutionService
     return if conversation.last_incoming_message.blank?
     return if message.auto_reply_email?
 
+    capture_email_from_message
     trigger_templates
   end
 
@@ -12,6 +13,42 @@ class MessageTemplates::HookExecutionService
 
   delegate :inbox, :conversation, to: :message
   delegate :contact, to: :conversation
+
+  # Peach Labels: the widget asks for an email in plain text (EmailCollect), so
+  # the visitor types it into a normal message. Save it on the contact the
+  # same way the widget's email input box did (merging into an existing
+  # contact with that email), then confirm.
+  EMAIL_IN_TEXT = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i
+
+  def capture_email_from_message
+    return unless should_capture_email?
+
+    email = message.content.to_s[EMAIL_IN_TEXT]&.downcase
+    return if email.blank?
+
+    ContactIdentifyAction.new(contact: contact, params: { email: email }, retain_original_contact_name: true).perform
+    conversation.reload
+    return unless email_collect_was_sent?
+
+    conversation.messages.create!(email_received_message_params(email))
+  rescue ActiveRecord::RecordInvalid => e
+    # Text that looks like an email but fails Contact's email validation must
+    # not fail the visitor's message; the request stays open for a real one.
+    ChatwootExceptionTracker.new(e, account: conversation.account).capture_exception
+  end
+
+  def should_capture_email?
+    message.incoming? && inbox.web_widget? && !contact_has_email?
+  end
+
+  def email_received_message_params(email)
+    {
+      account_id: conversation.account_id,
+      inbox_id: conversation.inbox_id,
+      message_type: :template,
+      content: I18n.t('conversations.templates.email_received_message_body', email: email)
+    }
+  end
 
   def trigger_templates
     ::MessageTemplates::Template::OutOfOffice.new(conversation: conversation).perform if should_send_out_of_office_message?
@@ -45,7 +82,8 @@ class MessageTemplates::HookExecutionService
   end
 
   def email_collect_was_sent?
-    conversation.messages.where(content_type: 'input_email').present?
+    conversation.additional_attributes[MessageTemplates::Template::EmailCollect::REQUESTED_FLAG].present? ||
+      conversation.messages.where(content_type: 'input_email').present?
   end
 
   # TODO: we should be able to reduce this logic once we have a toggle for email collect messages

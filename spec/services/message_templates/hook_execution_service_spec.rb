@@ -270,4 +270,37 @@ describe MessageTemplates::HookExecutionService do
       expect(out_of_office_service).not_to receive(:perform)
     end
   end
+
+  context 'when a widget visitor types their email (Peach Labels)' do
+    let(:account) { create(:account) }
+    let(:contact) { create(:contact, account: account, email: nil) }
+    let(:inbox) { create(:inbox, account: account, enable_email_collect: true) }
+    let(:conversation) { create(:conversation, account: account, inbox: inbox, contact: contact) }
+
+    it 'asks once, saves the typed email on the contact and confirms' do
+      create(:message, conversation: conversation, account: conversation.account, content: 'Hi, how much for 200 patches?')
+      create(:message, conversation: conversation, account: conversation.account, content: 'Sure, it is Jane.Doe@Example.com thanks')
+
+      expect(contact.reload.email).to eq('jane.doe@example.com')
+      templates = conversation.messages.template.order(:id).pluck(:content)
+      expect(templates.size).to eq(2)
+      expect(templates.first).to include('Could you share your email')
+      expect(templates.last).to eq("Thank you! We'll get back to you at jane.doe@example.com.")
+    end
+
+    it 'merges into the existing contact that already has the email' do
+      existing = create(:contact, account: account, email: 'known@example.com')
+      create(:message, conversation: conversation, account: conversation.account, content: 'hello')
+      create(:message, conversation: conversation, account: conversation.account, content: 'known@example.com')
+
+      expect(conversation.reload.contact_id).to eq(existing.id)
+    end
+
+    it 'does not ask when the first message already has the email' do
+      create(:message, conversation: conversation, account: conversation.account, content: 'Hi, I am a@b.co, need labels')
+
+      expect(contact.reload.email).to eq('a@b.co')
+      expect(conversation.messages.template.count).to eq(0)
+    end
+  end
 end
