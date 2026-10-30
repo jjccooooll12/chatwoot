@@ -286,7 +286,7 @@ describe MessageTemplates::HookExecutionService do
       expect(templates.size).to eq(3)
       expect(templates.first(2)).to eq(['Thanks for reaching out! A real agent will be with you shortly.',
                                         'Could you share your email so we can get back to you?'])
-      expect(templates.last).to eq("Thank you so much! A real agent will be with you shortly, and we'll also reply to jane.doe@example.com.")
+      expect(templates.last).to eq('Thank you so much!')
     end
 
     it 'merges into the existing contact that already has the email' do

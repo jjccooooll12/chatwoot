@@ -30,7 +30,7 @@ class MessageTemplates::HookExecutionService
     conversation.reload
     return unless email_collect_was_sent?
 
-    conversation.messages.create!(email_received_message_params(email))
+    conversation.messages.create!(email_received_message_params)
   rescue ActiveRecord::RecordInvalid => e
     # Text that looks like an email but fails Contact's email validation must
     # not fail the visitor's message; the request stays open for a real one.
@@ -41,12 +41,12 @@ class MessageTemplates::HookExecutionService
     message.incoming? && inbox.web_widget? && !contact_has_email?
   end
 
-  def email_received_message_params(email)
+  def email_received_message_params
     {
       account_id: conversation.account_id,
       inbox_id: conversation.inbox_id,
       message_type: :template,
-      content: I18n.t('conversations.templates.email_received_message_body', email: email)
+      content: I18n.t('conversations.templates.email_received_message_body')
     }
   end
 
