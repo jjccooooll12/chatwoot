@@ -283,8 +283,9 @@ describe MessageTemplates::HookExecutionService do
 
       expect(contact.reload.email).to eq('jane.doe@example.com')
       templates = conversation.messages.template.order(:id).pluck(:content)
-      expect(templates.size).to eq(2)
-      expect(templates.first).to include('Could you share your email')
+      expect(templates.size).to eq(3)
+      expect(templates.first(2)).to eq(['Thanks for reaching out! A real agent will be with you shortly.',
+                                        'Could you share your email so we can get back to you?'])
       expect(templates.last).to eq("Thank you so much! A real agent will be with you shortly, and we'll also reply to jane.doe@example.com.")
     end
 

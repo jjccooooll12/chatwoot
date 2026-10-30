@@ -28,7 +28,7 @@ Git commits.
 
 | Path | Why | Upstream base |
 | --- | --- | --- |
-| `app/services/message_templates/template/email_collect.rb`, `app/services/message_templates/hook_execution_service.rb`, `config/locales/en.yml` | Website chat asks for an email in one plain-text bot message ("We'll be with you shortly. Could you share your email…") instead of upstream's message + email input box, only when the contact has no email, once per conversation (`additional_attributes.email_requested`). An email typed in a visitor message is saved with `ContactIdentifyAction` (merges into an existing contact with that email), followed by a short confirmation. | `chatwoot/chatwoot@v4.16.1` |
+| `app/services/message_templates/template/email_collect.rb`, `app/services/message_templates/hook_execution_service.rb`, `config/locales/en.yml` | Website chat sends "A real agent will be with you shortly." and then, as the next message, a plain-text email request instead of upstream's message + email input box, only when the contact has no email, once per conversation (`additional_attributes.email_requested`). An email typed in a visitor message is saved with `ContactIdentifyAction` (merges into an existing contact with that email), followed by a short confirmation. | `chatwoot/chatwoot@v4.16.1` |
 | `app/jobs/auto_follow_up_job.rb`, `app/services/conversations/auto_follow_up_service.rb`, `config/schedule.yml` | Reopens every Pending ticket at its priority deadline. The per-ticket auto-follow-up switch controls customer reminder emails only, so disabling reminders cannot strand a ticket in Pending forever. | Peach Labels custom feature |
 
 ## Deployment
