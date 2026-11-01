@@ -1,9 +1,11 @@
 <script setup>
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import { useStore } from 'vuex';
 import { useWindowSize } from '@vueuse/core';
 import { useMessageFormatter } from 'shared/composables/useMessageFormatter';
 import { getLastMessage } from 'dashboard/helper/conversationHelper';
+import { INBOX_TYPES, TWILIO_CHANNEL_MEDIUM } from 'dashboard/helper/inbox';
 
 const props = defineProps({
   chat: {
@@ -13,10 +15,22 @@ const props = defineProps({
 });
 
 const { t } = useI18n();
+const store = useStore();
 const { getPlainText } = useMessageFormatter();
 const { width: windowWidth } = useWindowSize();
 
 const lastMessageInChat = computed(() => getLastMessage(props.chat));
+const inbox = computed(() =>
+  store.getters['inboxes/getInbox'](props.chat.inbox_id || props.chat.inboxId)
+);
+const isWhatsApp = computed(() => {
+  const channelType = inbox.value?.channel_type || inbox.value?.channelType;
+  return (
+    channelType === INBOX_TYPES.WHATSAPP ||
+    (channelType === INBOX_TYPES.TWILIO &&
+      inbox.value?.medium === TWILIO_CHANNEL_MEDIUM.WHATSAPP)
+  );
+});
 
 // Same precedence as ConversationCard.vue's subject computed — the locked-in
 // ticket subject, falling back to the last message so it's never blank.
@@ -49,6 +63,15 @@ const iconStyle = computed(() => ({
   >
     <div class="flex min-w-0 items-center gap-3">
       <span
+        v-if="isWhatsApp"
+        class="grid shrink-0 place-content-center"
+        :style="iconStyle"
+        aria-hidden="true"
+      >
+        <span class="i-logos-whatsapp-icon size-full" />
+      </span>
+      <span
+        v-else
         class="grid shrink-0 place-content-center rounded-full bg-[#536273] text-white"
         :style="iconStyle"
       >
