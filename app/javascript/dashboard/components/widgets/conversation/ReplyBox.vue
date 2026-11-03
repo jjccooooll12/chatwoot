@@ -581,9 +581,12 @@ export default {
       this.setReplyMode(mode);
       // Start the caret above the signature, not after it — an agent clicking
       // Reply on an untouched ticket should be able to type straight away.
-      // A reply also starts pre-greeted ("Hi Noah,"), caret on the line below.
+      // A reply also starts pre-greeted ("Hi Noah,"), caret on the line below —
+      // but NOT on website chat or WhatsApp: those are live chats where a
+      // "Hi there," on every message reads as a letter (owner, 2026-11-03).
+      const isChat = this.isAWebWidgetInbox || this.isAWhatsAppChannel;
       this.$nextTick(() => {
-        if (greet && mode === REPLY_EDITOR_MODES.REPLY) {
+        if (greet && !isChat && mode === REPLY_EDITOR_MODES.REPLY) {
           this.messageEditor?.startWithGreeting(this.replyGreeting);
         } else {
           this.messageEditor?.focusEditor();
