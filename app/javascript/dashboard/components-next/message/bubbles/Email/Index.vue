@@ -8,6 +8,7 @@ import { allowedCssProperties } from 'lettersanitizer';
 import Icon from 'next/icon/Icon.vue';
 import Avatar from 'next/avatar/Avatar.vue';
 import { EmailQuoteExtractor } from 'dashboard/helper/emailQuoteExtractor.js';
+import { fixUnreadableText } from 'dashboard/helper/emailReadableColors.js';
 import FormattedContent from 'next/message/bubbles/Text/FormattedContent.vue';
 import BaseBubble from 'next/message/bubbles/Base.vue';
 import AttachmentChips from 'next/message/chips/AttachmentChips.vue';
@@ -132,6 +133,18 @@ const letterClass = computed(
   () =>
     `prose prose-bubble !max-w-none letter-render ${isOutgoing.value ? 'prose-editor' : ''}`
 );
+
+// Pale text whose dark email background got dropped falls back to our text colour.
+const fixEmailTextContrast = () => {
+  const root = contentContainer.value;
+  if (!root) return;
+  fixUnreadableText(root, window.getComputedStyle(root).color);
+};
+
+onMounted(fixEmailTextContrast);
+watch([fullHTML, unquotedHTML, showQuotedMessage], fixEmailTextContrast, {
+  flush: 'post',
+});
 
 const handleSeeOriginal = () => {
   renderOriginal.value = !renderOriginal.value;
