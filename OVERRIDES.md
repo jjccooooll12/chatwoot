@@ -30,6 +30,7 @@ Git commits.
 | --- | --- | --- |
 | `app/services/message_templates/template/email_collect.rb`, `app/services/message_templates/hook_execution_service.rb`, `config/locales/en.yml` | Website chat sends "A real agent will be with you shortly." and then, as the next message, a plain-text email request instead of upstream's message + email input box, only when the contact has no email, once per conversation (`additional_attributes.email_requested`). An email typed in a visitor message is saved with `ContactIdentifyAction` (merges into an existing contact with that email), followed by "Thank you so much!". | `chatwoot/chatwoot@v4.16.1` |
 | `app/jobs/auto_follow_up_job.rb`, `app/services/conversations/auto_follow_up_service.rb`, `config/schedule.yml` | Reopens every Pending ticket at its priority deadline. The per-ticket auto-follow-up switch controls customer reminder emails only, so disabling reminders cannot strand a ticket in Pending forever. | Peach Labels custom feature |
+| `app/controllers/api/v1/accounts/conversations_controller.rb`, `app/javascript/dashboard/components/{ConversationItem.vue,widgets/conversation/ConversationHeader.vue,widgets/conversation/contextMenu/Index.vue}`, `app/javascript/dashboard/helper/conversationHelper.js`, `config/locales/en.yml` | Prevents Magento order tickets from being hard-deleted and hides their delete actions. Explicit `deletion_protected` metadata is authoritative; legacy order-ticket subjects remain protected for records created before that marker existed. | Peach Labels custom feature |
 
 ## Deployment
 

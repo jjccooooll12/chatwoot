@@ -1330,6 +1330,33 @@ RSpec.describe 'Conversations API', type: :request do
         expect(response).to have_http_status(:ok)
       end
 
+      it 'refuses to delete a protected Magento order ticket' do
+        conversation.update!(custom_attributes: { deletion_protected: true })
+
+        expect do
+          delete "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}",
+                 headers: administrator.create_new_auth_token,
+                 as: :json
+        end.not_to have_enqueued_job(DeleteObjectJob)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response.parsed_body['error']).to eq(
+          'This ticket is linked to a Magento order and cannot be deleted. Close it instead.'
+        )
+      end
+
+      it 'refuses to delete a legacy Magento order ticket identified by subject' do
+        conversation.update!(additional_attributes: { mail_subject: 'Questions About Your Order #261109002' })
+
+        expect do
+          delete "/api/v1/accounts/#{account.id}/conversations/#{conversation.display_id}",
+                 headers: administrator.create_new_auth_token,
+                 as: :json
+        end.not_to have_enqueued_job(DeleteObjectJob)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+
       it 'can delete conversations from inboxes without direct access' do
         other_inbox = create(:inbox, account: account)
         other_conversation = create(:conversation, account: account, inbox: other_inbox)

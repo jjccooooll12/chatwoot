@@ -65,6 +65,10 @@ export default {
       type: Array,
       default: () => [],
     },
+    canDelete: {
+      type: Boolean,
+      default: true,
+    },
   },
   emits: [
     'updateConversation',
@@ -395,7 +399,7 @@ export default {
         @click.stop="copyConversationLink"
       />
     </template>
-    <template v-if="isAdmin && isAllowed([MENU.DELETE])">
+    <template v-if="canDelete && isAdmin && isAllowed([MENU.DELETE])">
       <hr class="m-1 rounded border-b border-n-weak dark:border-n-weak" />
       <MenuItem
         :option="deleteOption"

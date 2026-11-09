@@ -124,3 +124,32 @@ export const getTicketNumber = (conversation = {}) => {
     conversation.id
   );
 };
+
+const MAGENTO_ORDER_TICKET_SUBJECT =
+  /^(Questions About Your Order|Photo Proof Follow-Up) #\d+(?:-\d+)?$/;
+
+/**
+ * Magento order tickets are durable operational records. They may be closed,
+ * but the dashboard must not offer the destructive delete action for them.
+ * The subject fallback covers tickets created before the explicit protection
+ * marker was added.
+ */
+export const isConversationDeletionProtected = (conversation = {}) => {
+  const customAttributes =
+    conversation.custom_attributes || conversation.customAttributes || {};
+  if (
+    customAttributes.deletion_protected === true ||
+    customAttributes.deletionProtected === true
+  ) {
+    return true;
+  }
+
+  const additionalAttributes =
+    conversation.additional_attributes ||
+    conversation.additionalAttributes ||
+    {};
+
+  return MAGENTO_ORDER_TICKET_SUBJECT.test(
+    additionalAttributes.mail_subject || additionalAttributes.mailSubject || ''
+  );
+};

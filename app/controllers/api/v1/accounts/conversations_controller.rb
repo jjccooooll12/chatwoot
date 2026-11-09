@@ -193,11 +193,23 @@ class Api::V1::Accounts::ConversationsController < Api::V1::Accounts::BaseContro
 
   def destroy
     authorize @conversation, :destroy?
+    if deletion_protected?
+      return render json: { error: I18n.t('errors.conversation.deletion_protected') }, status: :unprocessable_entity
+    end
+
     ::Conversations::DeleteService.new(conversation: @conversation, user: Current.user, ip: request.ip).perform
     head :ok
   end
 
   private
+
+  def deletion_protected?
+    return true if @conversation.custom_attributes['deletion_protected'] == true
+
+    @conversation.additional_attributes['mail_subject'].to_s.match?(
+      /\A(?:Questions About Your Order|Photo Proof Follow-Up) #\d+(?:-\d+)?\z/
+    )
+  end
 
   def permitted_update_params
     # TODO: Move the other conversation attributes to this method and remove specific endpoints for each attribute

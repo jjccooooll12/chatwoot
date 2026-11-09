@@ -6,6 +6,7 @@ import { frontendURL, conversationUrl } from 'dashboard/helper/URLHelper';
 import ConversationCard from './widgets/conversation/ConversationCard.vue';
 import ContextMenu from 'dashboard/components/ui/ContextMenu.vue';
 import ConversationContextMenu from './widgets/conversation/contextMenu/Index.vue';
+import { isConversationDeletionProtected } from 'dashboard/helper/conversationHelper';
 
 const props = defineProps({
   source: { type: Object, required: true },
@@ -61,6 +62,9 @@ const currentContact = computed(() =>
 );
 
 const isActiveChat = computed(() => currentChat.value.id === props.source.id);
+const canDelete = computed(
+  () => !isConversationDeletionProtected(props.source)
+);
 
 const inbox = computed(() => {
   const inboxId = props.source.inbox_id;
@@ -192,6 +196,7 @@ const onDeleteConversation = () => {
       :has-unread-messages="source.unread_count > 0"
       :conversation-labels="source.labels"
       :conversation-url="conversationPath"
+      :can-delete="canDelete"
       @update-conversation="onUpdateConversation"
       @assign-agent="onAssignAgent"
       @assign-label="onAssignLabel"

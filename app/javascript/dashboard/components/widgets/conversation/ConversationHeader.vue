@@ -1,6 +1,9 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
-import { getTicketNumber } from 'dashboard/helper/conversationHelper';
+import {
+  getTicketNumber,
+  isConversationDeletionProtected,
+} from 'dashboard/helper/conversationHelper';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import MoreActions from './MoreActions.vue';
@@ -60,6 +63,7 @@ const backButtonUrl = computed(() => {
 });
 
 const ticketNumber = computed(() => getTicketNumber(props.chat));
+const canDelete = computed(() => !isConversationDeletionProtected(props.chat));
 
 const inbox = computed(() => {
   const { inbox_id: inboxId } = props.chat;
@@ -150,7 +154,7 @@ const toolbarOverflowItems = computed(() => {
   }
   // Phones: Delete lives in this menu, away from the details button it used
   // to sit next to, so a thumb can't hit it by accident.
-  if (isBelowMd.value) {
+  if (isBelowMd.value && canDelete.value) {
     items.push({
       icon: 'i-lucide-trash-2',
       label: t('CONVERSATION.DELETE_CONVERSATION.CONFIRM'),
@@ -310,6 +314,7 @@ const onTicketMerged = async (
           <span class="i-lucide-chevron-left size-3.5" />
         </button>
         <button
+          v-if="canDelete"
           type="button"
           class="hidden size-7 place-content-center rounded-md border border-fd-border bg-fd-surface text-fd-muted shadow-sm hover:border-n-ruby-9 hover:bg-n-ruby-2 hover:text-n-ruby-11 md:grid"
           :title="$t('CONVERSATION.DELETE_CONVERSATION.CONFIRM')"

@@ -3,6 +3,7 @@ import {
   getLastMessage,
   getReadMessages,
   getUnreadMessages,
+  isConversationDeletionProtected,
 } from '../conversationHelper';
 import {
   conversationData,
@@ -96,6 +97,34 @@ describe('conversationHelper', () => {
       expect(getLastMessage(testConversation)).toEqual(
         testConversation.messages[1]
       );
+    });
+  });
+
+  describe('#isConversationDeletionProtected', () => {
+    it('protects explicitly marked conversations', () => {
+      expect(
+        isConversationDeletionProtected({
+          custom_attributes: { deletion_protected: true },
+        })
+      ).toBe(true);
+    });
+
+    it('protects legacy Magento order-ticket subjects', () => {
+      expect(
+        isConversationDeletionProtected({
+          additional_attributes: {
+            mail_subject: 'Questions About Your Order #261109002',
+          },
+        })
+      ).toBe(true);
+    });
+
+    it('allows ordinary conversations to be deleted', () => {
+      expect(
+        isConversationDeletionProtected({
+          additional_attributes: { mail_subject: 'Customer question' },
+        })
+      ).toBe(false);
     });
   });
 });
