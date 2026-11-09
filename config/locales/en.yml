@@ -74,8 +74,6 @@ en:
       cannot_revoke_current: You cannot revoke the current session.
 
   errors:
-    conversation:
-      deletion_protected: This ticket is linked to a Magento order and cannot be deleted. Close it instead.
     account:
       not_authorized: You are not authorized to access this account
       reporting_timezone:
@@ -83,6 +81,7 @@ en:
       support_email:
         invalid: is not a valid email address
     conversation:
+      deletion_protected: This ticket is linked to a Magento order and cannot be deleted. Close it instead.
       not_switchable_to_email: This conversation can't be switched to email
     validations:
       presence: must not be blank
