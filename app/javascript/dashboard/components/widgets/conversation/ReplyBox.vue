@@ -332,6 +332,11 @@ export default {
         (this.isATiktokChannel && tiktokAttachmentSupported)
       );
     },
+    usesChatEnterToSend() {
+      return (
+        !this.isPrivate && (this.isAWebWidgetInbox || this.isAWhatsAppChannel)
+      );
+    },
     // FRESHDESK-SKIN: a reply's button just says "Send" (the shortcut moves
     // to its tooltip); a note keeps "Add Note (shortcut)".
     sendShortcutLabel() {
@@ -737,7 +742,7 @@ export default {
         },
         Enter: {
           action: e => {
-            if (this.isAValidEvent('enter')) {
+            if (this.isPlainEnter(e) && this.isAValidEvent('enter')) {
               this.onSendReply();
               e.preventDefault();
             }
@@ -756,6 +761,11 @@ export default {
         },
       };
     },
+    isPlainEnter(event) {
+      return (
+        !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey
+      );
+    },
     isAValidEvent(selectedKey) {
       return (
         !this.showUserMentions &&
@@ -763,7 +773,9 @@ export default {
         !this.showCannedMenu &&
         !this.showVariablesMenu &&
         this.isFocused &&
-        this.isEditorHotKeyEnabled(selectedKey)
+        (this.usesChatEnterToSend
+          ? selectedKey === 'enter'
+          : this.isEditorHotKeyEnabled(selectedKey))
       );
     },
     onPaste(e) {

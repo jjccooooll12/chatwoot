@@ -82,7 +82,7 @@ import {
 import { createTypingIndicator } from '@chatwoot/utils';
 import { checkFileSizeLimit } from 'shared/helpers/FileHelper';
 import { uploadFile } from 'dashboard/helper/uploadHelper';
-import { INBOX_TYPES } from 'dashboard/helper/inbox';
+import { INBOX_TYPES, TWILIO_CHANNEL_MEDIUM } from 'dashboard/helper/inbox';
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -778,11 +778,21 @@ function toggleSignatureInEditor(signatureEnabled) {
 }
 
 function isEnterToSendEnabled() {
-  return isEditorHotKeyEnabled('enter');
+  return usesChatEnterToSend() || isEditorHotKeyEnabled('enter');
 }
 
 function isCmdPlusEnterToSendEnabled() {
-  return isEditorHotKeyEnabled('cmd_enter');
+  return !usesChatEnterToSend() && isEditorHotKeyEnabled('cmd_enter');
+}
+
+function usesChatEnterToSend() {
+  return (
+    !props.isPrivate &&
+    (props.channelType === INBOX_TYPES.WEB ||
+      props.channelType === INBOX_TYPES.WHATSAPP ||
+      (props.channelType === INBOX_TYPES.TWILIO &&
+        props.medium === TWILIO_CHANNEL_MEDIUM.WHATSAPP))
+  );
 }
 
 function onImageInsertInEditor(fileUrl) {
@@ -890,6 +900,7 @@ useKeyboardEvents({
 function handleLineBreakWhenEnterToSendEnabled(event) {
   if (
     hasPressedEnterAndNotCmdOrShift(event) &&
+    !event.altKey &&
     isEnterToSendEnabled() &&
     !props.overrideLineBreaks
   ) {
