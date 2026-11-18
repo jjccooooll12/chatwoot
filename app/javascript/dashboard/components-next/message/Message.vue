@@ -164,7 +164,7 @@ const isCaptainMessage = computed(() => {
 const variant = computed(() => {
   if (props.private) return MESSAGE_VARIANTS.PRIVATE;
 
-  if (props.isEmailInbox) {
+  if (props.isEmailInbox && props.contentType !== CONTENT_TYPES.VOICE_CALL) {
     const emailInboxTypes = [MESSAGE_TYPES.INCOMING, MESSAGE_TYPES.OUTGOING];
     if (emailInboxTypes.includes(props.messageType)) {
       return MESSAGE_VARIANTS.EMAIL;
@@ -293,6 +293,7 @@ const isEmailCard = computed(() => {
   if (
     props.isEmailInbox &&
     !props.private &&
+    props.contentType !== CONTENT_TYPES.VOICE_CALL &&
     emailTypes.includes(props.messageType)
   ) {
     return true;
@@ -317,6 +318,10 @@ const shouldShowAvatar = computed(() => {
 });
 
 const componentToRender = computed(() => {
+  if (props.contentType === CONTENT_TYPES.VOICE_CALL) {
+    return VoiceCallBubble;
+  }
+
   if (props.isEmailInbox && !props.private) {
     const emailInboxTypes = [MESSAGE_TYPES.INCOMING, MESSAGE_TYPES.OUTGOING];
     if (emailInboxTypes.includes(props.messageType)) return EmailBubble;
@@ -330,10 +335,6 @@ const componentToRender = computed(() => {
     [CONTENT_TYPES.INPUT_SELECT, CONTENT_TYPES.FORM].includes(props.contentType)
   ) {
     return FormBubble;
-  }
-
-  if (props.contentType === CONTENT_TYPES.VOICE_CALL) {
-    return VoiceCallBubble;
   }
 
   if (props.contentType === CONTENT_TYPES.INCOMING_EMAIL) {
