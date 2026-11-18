@@ -9,12 +9,17 @@ class MessageTemplates::Template::EmailCollect
   pattr_initialize [:conversation!]
 
   def perform
-    conversation.with_lock do
+    Conversation.transaction do
       # The hook can run again with a stale conversation or overlap another
-      # message callback. Recheck the flag after locking the current row.
-      next if conversation.additional_attributes[REQUESTED_FLAG].present?
+      # message callback, so lock the row and recheck the flag from the DB.
+      # Not `with_lock`: on a brand-new conversation the in-memory record has a
+      # dirty display_id (load_attributes_created_by_db_triggers), and lock!
+      # raises on unsaved changes — that silently skipped the email ask on
+      # every new web chat (ticket 2611183).
+      current = Conversation.where(id: conversation.id).lock.pick(:additional_attributes) || {}
+      next if current[REQUESTED_FLAG].present?
 
-      conversation.update!(additional_attributes: conversation.additional_attributes.merge(REQUESTED_FLAG => true))
+      conversation.update!(additional_attributes: current.merge(REQUESTED_FLAG => true))
       conversation.messages.create!(template_message_params('agent_on_the_way_message_body'))
       conversation.messages.create!(template_message_params('email_request_message_body'))
     end

@@ -13,5 +13,14 @@ describe MessageTemplates::Template::EmailCollect do
       )
       expect(conversation.reload.additional_attributes['email_requested']).to be(true)
     end
+
+    it 'does not ask again when a stale copy of the conversation runs the hook after the flag was saved' do
+      stale = Conversation.find(conversation.id)
+      described_class.new(conversation: conversation).perform
+
+      described_class.new(conversation: stale).perform
+
+      expect(conversation.messages.count).to eq(2)
+    end
   end
 end
