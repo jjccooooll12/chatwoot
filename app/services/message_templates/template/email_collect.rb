@@ -9,9 +9,11 @@ class MessageTemplates::Template::EmailCollect
   pattr_initialize [:conversation!]
 
   def perform
-    ActiveRecord::Base.transaction do
-      # Flag first: the hook runs again for the template message itself and
-      # must see that the email was already asked for.
+    conversation.with_lock do
+      # The hook can run again with a stale conversation or overlap another
+      # message callback. Recheck the flag after locking the current row.
+      next if conversation.additional_attributes[REQUESTED_FLAG].present?
+
       conversation.update!(additional_attributes: conversation.additional_attributes.merge(REQUESTED_FLAG => true))
       conversation.messages.create!(template_message_params('agent_on_the_way_message_body'))
       conversation.messages.create!(template_message_params('email_request_message_body'))
