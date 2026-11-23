@@ -1,9 +1,10 @@
 <script setup>
-import { computed, onMounted, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { getTicketNumber } from 'dashboard/helper/conversationHelper';
 import { useStore, useMapGetter } from 'dashboard/composables/store';
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
+import { DuplicateContactException } from 'shared/helpers/CustomErrors';
 import Avatar from 'next/avatar/Avatar.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
 import { frontendURL } from 'dashboard/helper/URLHelper';
@@ -23,6 +24,46 @@ const route = useRoute();
 const accountId = computed(() => route.params.accountId);
 const contact = computed(() => props.chat?.meta?.sender || {});
 const contactId = computed(() => contact.value?.id);
+const contactGetter = useMapGetter('contacts/getContact');
+const contactEmail = computed(
+  () => contactGetter.value(contactId.value)?.email || contact.value.email
+);
+const isAddingEmail = ref(false);
+const isSavingEmail = ref(false);
+const emailInput = ref(null);
+const email = ref('');
+const emailError = ref('');
+
+const startAddingEmail = async () => {
+  email.value = '';
+  emailError.value = '';
+  isAddingEmail.value = true;
+  await nextTick();
+  emailInput.value?.focus();
+};
+const cancelAddingEmail = () => {
+  isAddingEmail.value = false;
+  emailError.value = '';
+};
+const saveEmail = async () => {
+  if (isSavingEmail.value || !contactId.value) return;
+  isSavingEmail.value = true;
+  emailError.value = '';
+  try {
+    await store.dispatch('contacts/update', {
+      id: contactId.value,
+      email: email.value.trim(),
+    });
+    cancelAddingEmail();
+  } catch (error) {
+    emailError.value =
+      error instanceof DuplicateContactException
+        ? t('CONTACT_FORM.FORM.EMAIL_ADDRESS.DUPLICATE')
+        : error.message || t('CONTACT_FORM.ERROR_MESSAGE');
+  } finally {
+    isSavingEmail.value = false;
+  }
+};
 
 const conversationsGetter = useMapGetter(
   'contactConversations/getContactConversation'
@@ -91,7 +132,10 @@ const fetchConversations = () => {
   }
 };
 onMounted(fetchConversations);
-watch(contactId, fetchConversations);
+watch(contactId, () => {
+  cancelAddingEmail();
+  fetchConversations();
+});
 </script>
 
 <template>
@@ -118,18 +162,68 @@ watch(contactId, fetchConversations);
             {{ contact.name }}
           </p>
           <p
-            v-if="contact.email"
-            class="m-0 select-text truncate text-xs text-fd-primary"
-          >
-            {{ contact.email }}
-          </p>
-          <p
             v-if="contact.phone_number"
             class="m-0 mt-1.5 select-text truncate text-xs text-fd-muted"
           >
             {{ contact.phone_number }}
           </p>
+          <p
+            v-if="contactEmail"
+            class="m-0 mt-1.5 select-text truncate text-xs text-fd-primary"
+            :title="contactEmail"
+          >
+            {{ contactEmail }}
+          </p>
         </div>
+      </div>
+      <div v-if="contactId && !contactEmail" class="mt-3">
+        <form
+          v-if="isAddingEmail"
+          class="flex flex-col gap-2"
+          @submit.prevent="saveEmail"
+        >
+          <label class="text-xs font-medium text-fd-text">
+            {{ t('CONTACT_FORM.FORM.EMAIL_ADDRESS.LABEL') }}
+            <input
+              ref="emailInput"
+              v-model="email"
+              type="email"
+              required
+              :placeholder="t('CONTACT_FORM.FORM.EMAIL_ADDRESS.PLACEHOLDER')"
+              class="mt-1 block h-8 w-full rounded-md border border-fd-border bg-fd-surface px-2 text-xs text-fd-text outline-none focus:border-fd-primary"
+              @input="emailError = ''"
+            />
+          </label>
+          <p v-if="emailError" role="alert" class="m-0 text-xs text-red-600">
+            {{ emailError }}
+          </p>
+          <div class="flex items-center gap-3">
+            <button
+              type="submit"
+              :disabled="isSavingEmail"
+              class="text-xs font-medium text-fd-primary disabled:opacity-50"
+            >
+              {{ t('CHAT_LIST.FRESHDESK_DETAIL.SAVE_EMAIL') }}
+            </button>
+            <button
+              type="button"
+              :disabled="isSavingEmail"
+              class="text-xs text-fd-muted disabled:opacity-50"
+              @click="cancelAddingEmail"
+            >
+              {{ t('CHAT_LIST.FRESHDESK_DETAIL.CANCEL_EMAIL') }}
+            </button>
+          </div>
+        </form>
+        <button
+          v-else
+          type="button"
+          class="inline-flex items-center gap-1 text-xs font-medium text-fd-primary hover:underline"
+          @click="startAddingEmail"
+        >
+          <Icon icon="i-lucide-plus" class="size-3" />
+          {{ t('CHAT_LIST.FRESHDESK_DETAIL.ADD_EMAIL') }}
+        </button>
       </div>
       <a
         v-if="contactId"
