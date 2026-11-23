@@ -275,6 +275,7 @@ export const actions = {
     try {
       const response = await AccountActionsAPI.merge(parentId, childId);
       commit(types.SET_CONTACT_ITEM, response.data);
+      return response.data;
     } catch (error) {
       throw new Error(error);
     } finally {
